@@ -1,0 +1,37 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{mathtools}
+\usepackage{soul}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{tabularx}
+
+\title{Types and Programming Languages (Pierce)}
+\author{Bruno Flores}
+\date{September 2021}
+
+\begin{document}
+
+\maketitle
+
+\section{The Untyped Lambda-Calculus}
+
+\subsection{Syntax}
+
+The syntax of the lambda-calculus comprises just three sorts of terms:
+
+\begin{table}[h!]
+    \begin{tabularx}{1\textwidth} 
+      { >{\raggedright\arraybackslash}l
+        >{\raggedright\arraybackslash}l
+        >{\raggedleft\arraybackslash}X }
+    
+         \texttt{x ::=} & & terms: \\
+         & \texttt{x} & variable \\
+         & \(\lambda\) \texttt{x.t} & abstraction \\
+         & \texttt{t t} & application \\
+    \end{tabularx}
+    \caption{Syntax}
+\end{table}
+
+\end{document}
