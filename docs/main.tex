@@ -6,6 +6,9 @@
 \usepackage{listings}
 \usepackage{tabularx}
 
+% Arrows.
+\usepackage{mathabx}
+
 \title{Types and Programming Languages (Pierce)}
 \author{Bruno Flores}
 \date{September 2021}
@@ -21,17 +24,33 @@
 The syntax of the lambda-calculus comprises just three sorts of terms:
 
 \begin{table}[h!]
-    \begin{tabularx}{1\textwidth} 
-      { >{\raggedright\arraybackslash}l
-        >{\raggedright\arraybackslash}l
-        >{\raggedleft\arraybackslash}X }
-    
-         \texttt{x ::=} & & terms: \\
-         & \texttt{x} & variable \\
-         & \(\lambda\) \texttt{x.t} & abstraction \\
-         & \texttt{t t} & application \\
-    \end{tabularx}
-    \caption{Syntax}
+\begin{tabularx}{1\textwidth} 
+  { >{\raggedright\arraybackslash}l
+    >{\raggedright\arraybackslash}l
+    >{\raggedleft\arraybackslash}X }
+
+    \texttt{x ::=} & & terms: \\
+    & \texttt{x} & variable \\
+    & \(\lambda\)\texttt{x.t} & abstraction \\
+    & \texttt{t t} & application \\
+\end{tabularx}
+\caption{Syntax}
 \end{table}
+
+\subsection{The \textit{call-by-value} strategy}
+
+\begin{table}[h!]
+\begin{tabularx}{1\textwidth} 
+  { >{\raggedright\arraybackslash}l
+    >{\raggedright\arraybackslash}l }
+
+    & id \underline{(id (\(\lambda\)z. id z))} \\
+    \(\rightarrow\) & \underline{id (\(\lambda\)z. id z)} \\
+    \(\rightarrow\) & \(\lambda\)z. id z \\
+    \(\nrightarrow\) & \\
+\end{tabularx}
+\end{table}
+
+The call-by-value strategy is \textit{strict}, in the sense that the arguments to functions are always evaluated, whether or not they are used by the body of the function.
 
 \end{document}
