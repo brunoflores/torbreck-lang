@@ -1,15 +1,14 @@
-; (ocamllex
-;   (modules lexer))
+(ocamllex
+ (modules lexer))
 
-; (menhir
-;  (modules parser)
-;  (flags --table --strict))
+(menhir
+ (modules parser)
+ (flags --table --strict))
 
 (library
  (name fulluntypedLib)
  (inline_tests)
- (modules fulluntyped syntax support)
- ; (modules fulluntyped parser lexer support syntax)
+ (modules fulluntyped parser lexer support syntax)
  (libraries core menhirLib)
  (preprocess
   (pps ppx_inline_test)))
