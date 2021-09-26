@@ -3,6 +3,8 @@ fulluntyped
 
 Chapters 5, 6 and 7 of Types and Programming Languages, by Benjamin C. Pierce.
 
+This is an interpreter for the untyped lambda-calculus.
+
 .. code:: sh
 
    $ dune build ./bin/main.exe
