@@ -115,6 +115,28 @@ In practice, the name of any \(\lambda\)-bound variable can be changed to anothe
 
 The evaluation relations in the right-hand column of Table \ref{untyped} completely determine the order of evaluation for an application \texttt{t$_1$ t$_2$}: we first use E-App1 to reduce \texttt{t$_1$} to a value, then use E-App2 to reduce \texttt{t$_2$} to a value, and finally use E-AppAbs to perform the application itself.
 
-\subsubsection{de Bruijn presentation}
+\subsubsection{de Bruijn presentation ("static distances")}
+
+\paragraph{Motivation} Bound variables can be renamed, at any moment, to enable substitution or because a new name is more convenient for some other reason.
+
+For building an implementation, we need to choose a single representation for each term; in particular, we must decide how occurrences of variables are to \emph{be represented}.
+
+The technique due to Nicolas de Bruijn (1972) is one that devises some "canonical" representation of variables and terms that does not require renaming.
+
+In \texttt{$\lambda$x.t}, we can say that \texttt{$\lambda$x} is a \emph{binder} whose scope is \texttt{t}. De Bruijn's idea was that we can represent terms more straightforwardly by making variable occurrences \emph{point directly} to their binders, rather than referring to them by name. This can be accomplished by replacing named variables by natural numbers, where the number k stands for "the variable bound by the k'th enclosing $\lambda$".
+
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{|c|c|}
+    \hline
+    \multicolumn{2}{|c|}{\textbf{Examples}} \\
+    \hline
+    Term & \emph{Nameless term} \\
+    \hline
+    \texttt{$\lambda$x.x} & \texttt{$\lambda$.0}  \\
+    \texttt{$\lambda$x.$\lambda$y.x (y x)} & \texttt{$\lambda$.$\lambda$.1 (0 1)}  \\
+    \hline
+    \end{tabular}
+\end{table}
 
 \end{document}
