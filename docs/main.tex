@@ -9,6 +9,10 @@
 % Arrows.
 \usepackage{mathabx}
 
+% Programming languages
+% https://mirror.its.dal.ca/ctan/macros/latex/contrib/semantic/semantic.pdf
+\usepackage{semantic}
+
 \title{Types and Programming Languages (Pierce)}
 \author{Bruno Flores}
 \date{September 2021}
@@ -52,5 +56,65 @@ The syntax of the lambda-calculus comprises just three sorts of terms:
 \end{table}
 
 The call-by-value strategy is \textit{strict}, in the sense that the arguments to functions are always evaluated, whether or not they are used by the body of the function.
+
+\subsection{Variable substitution}
+
+\paragraph{Intuition} The names of bound variables do not matter.
+
+\paragraph{Convention} Terms that differ only in the names of bound variables are interchangeable in all contexts.
+
+In practice, the name of any \(\lambda\)-bound variable can be changed to another name (consistently making the same change in the body of the \(\lambda\)), at any point where this is convenient.
+
+\begin{table}[h!]
+\begin{tabularx}{1\textwidth} 
+  {   >{}X
+    | >{}X }
+
+    Syntax & Evaluation 
+    \\\\
+    {
+    \begin{tabularx}{1\linewidth}
+    { >{\raggedright\arraybackslash}l 
+      >{\raggedright\arraybackslash}l
+      >{\raggedleft\arraybackslash}X }
+      
+      \texttt{t ::=} & & terms: \\
+      & \texttt{x} & variable \\
+      & \texttt{\(\lambda\)x.t} & abstraction \\
+      & \texttt{t t} & application \\
+      \\
+      \texttt{v ::=} & & values: \\
+      & \texttt{\(\lambda\)x.t} & abstraction value \\
+      
+    \end{tabularx}
+    }
+    &
+    {
+    \begin{tabularx}{1\linewidth}
+    { >{\raggedright\arraybackslash\texttt}l 
+      >{\raggedleft\arraybackslash}X }
+      
+      \inference[]
+      {\texttt{t$_1$ $\rightarrow$ t$'_1$}}
+      {\texttt{t$_1$ t$_2$ $\rightarrow$ t$'_1$ t$_2$}} & (E-App1)
+      \\\\
+      \inference[]
+      {\texttt{t$_2$ $\rightarrow$ t$'_2$}}
+      {\texttt{v$_1$ t$_2$ $\rightarrow$ v$_1$ t$'_2$}} & (E-App2)
+      \\\\
+      \texttt{($\lambda$x.t$_{12}$)v$_2$ $\rightarrow$ 
+      [x $\mapsto$ v$_2$]t$_{12}$} & (E-AppAbs)
+      
+    \end{tabularx}
+    }
+
+\end{tabularx}
+\caption{Untyped lambda-calculus}
+\label{untyped}
+\end{table}
+
+The evaluation relations in the right-hand column of Table \ref{untyped} completely determine the order of evaluation for an application \texttt{t$_1$ t$_2$}: we first use E-App1 to reduce \texttt{t$_1$} to a value, then use E-App2 to reduce \texttt{t$_2$} to a value, and finally use E-AppAbs to perform the application itself.
+
+\subsubsection{de Bruijn presentation}
 
 \end{document}
