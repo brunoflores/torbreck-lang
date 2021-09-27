@@ -48,10 +48,7 @@ let parse lexbuf text =
   let supplier = I.lexer_lexbuf_to_supplier Lexer.read lexbuf in
   let buffer, supplier = E.wrap_supplier supplier in
   let checkpoint = Parser.Incremental.prog lexbuf.lex_curr_p in
-  try I.loop_handle succeed (fail text buffer) supplier checkpoint
-  with Lexer.Error msg ->
-    fprintf stderr "%a: %s\n" print_position lexbuf msg;
-    ()
+  I.loop_handle succeed (fail text buffer) supplier checkpoint
 
 let get_contents s =
   let filename, content =

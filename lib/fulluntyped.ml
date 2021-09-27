@@ -1,4 +1,5 @@
 open Syntax
+open Support.Error
 
 exception NoRuleApplies
 
@@ -59,13 +60,13 @@ let rec eval1 ctx t =
   | TmSucc (i, t1) ->
       let t1' = eval1 ctx t1 in
       TmSucc (i, t1')
-  | TmPred (_, TmZero _) -> TmZero DUMMY
+  | TmPred (_, TmZero _) -> TmZero dummyinfo
   | TmPred (_, TmSucc (_, nv1)) when isnumericval ctx nv1 -> nv1
   | TmPred (i, t1) ->
       let t1' = eval1 ctx t1 in
       TmPred (i, t1')
-  | TmIsZero (_, TmZero _) -> TmTrue DUMMY
-  | TmIsZero (_, TmSucc (_, nv1)) when isnumericval ctx nv1 -> TmFalse DUMMY
+  | TmIsZero (_, TmZero _) -> TmTrue dummyinfo
+  | TmIsZero (_, TmSucc (_, nv1)) when isnumericval ctx nv1 -> TmFalse dummyinfo
   | TmIsZero (i, t1) ->
       let t1' = eval1 ctx t1 in
       TmIsZero (i, t1')
