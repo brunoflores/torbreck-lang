@@ -101,9 +101,9 @@
     try (Hashtbl.find symbolTable str) i
     with _ ->
       if (String.get str 0) >= 'A' && (String.get str 0) <= 'Z' then
-         Parser.UCID {i=i;v=str}
+         Parser.UCID {i = i; v = str}
       else
-         Parser.LCID {i=i;v=str}
+         Parser.LCID {i = i; v = str}
 }
 
 let white = [' ' '\t']+
