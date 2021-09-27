@@ -62,4 +62,4 @@ val printtm_aterm : bool -> context -> term -> unit
 val prbinding : context -> binding -> unit
 
 (* Misc. *)
-(* val tminfo : term -> info *)
+val tmInfo : term -> info

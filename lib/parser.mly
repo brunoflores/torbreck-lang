@@ -63,16 +63,119 @@
 %token <Support.Error.info> USCORE
 %token <Support.Error.info> VBAR
 
-%start <Syntax.term option> prog
+%start <Syntax.context -> (Syntax.command list * Syntax.context)> topLevel
 
 %%
 
-prog:
-  | e = expr; SEMI
-    { Some e }
+/* The top level of a file is a sequence of commands, each terminated
+   by a semicolon. */
+topLevel:
+  | EOF
+    { fun ctx -> ([], ctx) }
+  | c = command; SEMI; t = topLevel
+    { fun ctx ->
+        let cmd, ctx = c ctx in
+        let cmds, ctx = t ctx in
+        ((cmd :: cmds), ctx) }
 
-expr:
-  | x = constant { x }
+/* A top-level command */
+command:
+  | IMPORT; s = STRINGV
+    { fun ctx -> (Import(s.v), ctx) }
+  | t = term
+    { fun ctx -> ((let t = t ctx in Eval (tmInfo t, t)), ctx) }
+  | x = LCID; b = binder
+    { fun ctx -> (Bind (x.i, x.v, b ctx), addname ctx x.v) }
 
-constant:
-  | x = STRINGV { TmString (x.i, x.v) }
+/* Right-hand sides of top-level bindings */
+binder:
+  | SLASH
+    { fun _ -> NameBind }
+  | EQ; t = term
+    { fun ctx -> TmAbbBind (t ctx) }
+
+term:
+  | a = appTerm
+    { a }
+  | i = IF; t1 = term; THEN; t2 = term; ELSE; t3 = term
+    { fun ctx -> TmIf (i, t1 ctx, t2 ctx, t3 ctx) }
+  | i = LET; id = LCID; EQ; t1 = term; IN; t2 = term
+    { fun ctx -> TmLet (i, id.v, t1 ctx, t2 (addname ctx id.v)) }
+  | i = LET USCORE EQ t1 = term IN t2 = term
+    { fun ctx -> TmLet(i, "_", t1 ctx, t2 (addname ctx "_")) }
+  | i = LAMBDA; id = LCID; DOT; t = term
+    { fun ctx ->
+        let ctx1 = addname ctx id.v in
+        TmAbs (i, id.v, t ctx1) }
+  | i = LAMBDA; USCORE; DOT; t = term
+    { fun ctx ->
+        let ctx1 = addname ctx "_" in
+        TmAbs(i, "_", t ctx1) }
+
+appTerm:
+  | p = pathTerm
+    { p }
+  | a = appTerm; p = pathTerm
+    { fun ctx ->
+        let e1 = a ctx in
+        let e2 = p ctx in
+        TmApp (tmInfo e1,e1,e2) }
+  | i = SUCC; p = pathTerm
+    { fun ctx -> TmSucc (i, p ctx) }
+  | i = PRED; p = pathTerm
+    { fun ctx -> TmPred (i, p ctx) }
+  | i = ISZERO; p = pathTerm
+    { fun ctx -> TmIsZero (i, p ctx) }
+  | i = TIMESFLOAT; p1 = pathTerm; p2 = pathTerm
+    { fun ctx -> TmTimesFloat (i, p1 ctx, p2 ctx) }
+
+pathTerm:
+  | p = pathTerm; i = DOT; id = LCID
+    { fun ctx ->
+        TmProj (i, p ctx, id.v) }
+  | p = pathTerm; i = DOT; v = INTV
+    { fun ctx ->
+        TmProj (i, p ctx, string_of_int v.v) }
+  | t = aTerm
+    { t }
+
+/* Atomic terms are ones that never require extra parentheses */
+aTerm:
+  | LPAREN; t = term; RPAREN
+    { t }
+  | s = STRINGV
+    { fun _ -> TmString (s.i, s.v) }
+  | id = LCID
+    { fun ctx -> TmVar (id.i, name_to_index id.i ctx id.v, ctxlength ctx) }
+  | t = TRUE
+    { fun _ -> TmTrue (t) }
+  | f = FALSE
+    { fun _ -> TmFalse (f) }
+  | i = LCURLY; f = fields; RCURLY
+    { fun ctx -> TmRecord (i, f ctx 1) }
+  | v = INTV
+    { fun _ ->
+        let rec f n = match n with
+          | 0 -> TmZero (v.i)
+          | n -> TmSucc (v.i, f (n - 1))
+        in f v.v }
+  | f = FLOATV
+    { fun _ -> TmFloat (f.i, f.v) }
+
+fields:
+  | /* Empty */
+    { fun _ _ -> [] }
+  | x = neFields
+    { x }
+
+neFields:
+  | f = field
+    { fun ctx i -> [f ctx i] }
+  | f = field; COMMA; ne = neFields
+    { fun ctx i -> (f ctx i) :: (ne ctx (i + 1)) }
+
+field:
+  | id = LCID; EQ; t = term
+    { fun ctx _ -> (id.v, t ctx) }
+  | t = term
+    { fun ctx i -> (string_of_int i, t ctx) }

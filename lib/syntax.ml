@@ -247,3 +247,22 @@ let rec name_to_index fi ctx x =
   match ctx with
   | [] -> failwith (Printf.sprintf "Identifier %s is unbound" x)
   | (y, _) :: rest -> if y = x then 0 else 1 + name_to_index fi rest x
+
+let tmInfo t =
+  match t with
+  | TmString (fi, _) -> fi
+  | TmVar (fi, _, _) -> fi
+  | TmTrue fi -> fi
+  | TmFalse fi -> fi
+  | TmIf (fi, _, _, _) -> fi
+  | TmLet (fi, _, _, _) -> fi
+  | TmProj (fi, _, _) -> fi
+  | TmRecord (fi, _) -> fi
+  | TmAbs (fi, _, _) -> fi
+  | TmApp (fi, _, _) -> fi
+  | TmZero fi -> fi
+  | TmSucc (fi, _) -> fi
+  | TmPred (fi, _) -> fi
+  | TmIsZero (fi, _) -> fi
+  | TmFloat (fi, _) -> fi
+  | TmTimesFloat (fi, _, _) -> fi
