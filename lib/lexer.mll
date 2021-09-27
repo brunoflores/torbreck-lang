@@ -49,7 +49,7 @@
     ("|>", fun i -> Parser.BARGT i);
     ("|]", fun i -> Parser.BARRSQUARE i);
 
-    (* Special compound symbols: *)
+    (* Special compound symbols *)
     (":=", fun i -> Parser.COLONEQ i);
     ("->", fun i -> Parser.ARROW i);
     ("=>", fun i -> Parser.DARROW i);
