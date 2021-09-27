@@ -178,4 +178,4 @@ and escaped = parse
       else
         Char.chr x }
   | [^ '"' '\\' 't' 'n' '\'']
-      { error (info lexbuf) "Illegal character constant" }
+    { error (info lexbuf) "Illegal character constant" }
