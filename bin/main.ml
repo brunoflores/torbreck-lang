@@ -32,11 +32,24 @@ let string_of_term (t : Syntax.term) =
   | Syntax.TmSucc _ | Syntax.TmPred _ -> string_of_int (int_of_term t)
   | _ -> failwith "cannot print"
 
-let succeed (v : Syntax.term option) =
-  match v with
-  | Some v ->
-      printf "%s\n" (string_of_term (Fulluntyped.eval Syntax.emptycontext v))
-  | None -> ()
+let succeed (cmds : Syntax.context -> Syntax.command list * Syntax.context) =
+  let cmds, ctx = cmds Syntax.emptycontext in
+  let one ctx cmd =
+    match cmd with
+    | Syntax.Eval (_, t) ->
+        let t' = Fulluntyped.eval ctx t in
+        Syntax.printtm_aterm true ctx t';
+        ctx
+    | _ -> failwith "not implemented"
+  in
+  let rec all ctx cmds =
+    match cmds with
+    | [] -> ()
+    | x :: xs ->
+        let ctx = one ctx x in
+        all ctx xs
+  in
+  all ctx cmds
 
 let fail text buffer _ =
   let location = L.range (E.last buffer) in
@@ -44,10 +57,10 @@ let fail text buffer _ =
   eprintf "%s%s%!" location indication;
   exit 1
 
-let parse lexbuf text =
+let parse lexbuf text : unit =
   let supplier = I.lexer_lexbuf_to_supplier Lexer.read lexbuf in
   let buffer, supplier = E.wrap_supplier supplier in
-  let checkpoint = Parser.Incremental.prog lexbuf.lex_curr_p in
+  let checkpoint = Parser.Incremental.topLevel lexbuf.lex_curr_p in
   I.loop_handle succeed (fail text buffer) supplier checkpoint
 
 let get_contents s =
