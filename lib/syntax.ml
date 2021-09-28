@@ -186,7 +186,7 @@ let prbinding ctx b =
   match b with
   | NameBind -> ()
   | TmAbbBind t ->
-      print_string "= ";
+      print_string " = ";
       printtm ctx t
 
 let tmmap onvar c t =
