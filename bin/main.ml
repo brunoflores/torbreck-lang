@@ -23,8 +23,18 @@ let succeed (cmds : Syntax.context -> Syntax.command list * Syntax.context) =
   let one ctx cmd =
     match cmd with
     | Syntax.Eval (_, t) ->
+        let open Format in
         let t' = Fulluntyped.eval ctx t in
         Syntax.printtm_aterm true ctx t';
+        force_newline ();
+        ctx
+    | Syntax.Bind (_, x, bind) ->
+        let open Format in
+        let bind' = Fulluntyped.evalbinding ctx bind in
+        print_string x;
+        Syntax.prbinding ctx bind';
+        force_newline ();
+        (* Syntax.addbinding ctx x bind' *)
         ctx
     | _ -> failwith "not implemented"
   in
