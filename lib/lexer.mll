@@ -111,6 +111,8 @@ let white = [' ' '\t']+
 rule read = parse
   | white
     { read lexbuf }
+  | [' ' '\009' '\012']*"\n"
+    { newline lexbuf; read lexbuf }
   | "*/"
     { error (info lexbuf) "Unmatched end of comment" }
   | "/*"
