@@ -18,20 +18,6 @@ let print_position outx (lexbuf : Lexing.lexbuf) =
 let show text positions =
   E.extract text positions |> E.sanitize |> E.compress |> E.shorten 20
 
-let rec int_of_term = function
-  | Syntax.TmSucc (_, v) -> 1 + int_of_term v
-  | Syntax.TmPred (_, v) -> 1 - int_of_term v
-  | _ -> 0
-
-let string_of_term (t : Syntax.term) =
-  match t with
-  | Syntax.TmString (_, s) -> s
-  | Syntax.TmTrue _ -> "true"
-  | Syntax.TmFalse _ -> "false"
-  | Syntax.TmZero _ -> "0"
-  | Syntax.TmSucc _ | Syntax.TmPred _ -> string_of_int (int_of_term t)
-  | _ -> failwith "cannot print"
-
 let succeed (cmds : Syntax.context -> Syntax.command list * Syntax.context) =
   let cmds, ctx = cmds Syntax.emptycontext in
   let one ctx cmd =
