@@ -90,4 +90,4 @@ let evalbinding (ctx : context) (b : binding) =
   | TmAbbBind t ->
       let t' = eval ctx t in
       TmAbbBind t'
-  | bind -> bind
+  | NameBind -> b
