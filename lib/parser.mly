@@ -4,18 +4,31 @@
 
 /* Keyword tokens */
 %token <Support.Error.info> IMPORT
+%token <Support.Error.info> AS
+%token <Support.Error.info> USTRING
 %token <Support.Error.info> IF
 %token <Support.Error.info> THEN
 %token <Support.Error.info> ELSE
 %token <Support.Error.info> TRUE
 %token <Support.Error.info> FALSE
+%token <Support.Error.info> BOOL
+%token <Support.Error.info> CASE
+%token <Support.Error.info> OF
+%token <Support.Error.info> UNIT
+%token <Support.Error.info> UUNIT
+%token <Support.Error.info> TIMESFLOAT
+%token <Support.Error.info> UFLOAT
 %token <Support.Error.info> LET
 %token <Support.Error.info> IN
+%token <Support.Error.info> INERT
 %token <Support.Error.info> LAMBDA
+%token <Support.Error.info> FIX
+%token <Support.Error.info> LETREC
+%token <Support.Error.info> TYPE
 %token <Support.Error.info> SUCC
 %token <Support.Error.info> PRED
 %token <Support.Error.info> ISZERO
-%token <Support.Error.info> TIMESFLOAT
+%token <Support.Error.info> NAT
 
 /* Identifier and constant value tokens */
 %token <string Support.Error.withinfo> UCID  /* uppercase-initial */

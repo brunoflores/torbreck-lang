@@ -4,18 +4,31 @@
   let reservedWords = [
     (* Keywords *)
     ("import", fun i -> Parser.IMPORT i);
+    ("as", fun i -> Parser.AS i);
+    ("String", fun i -> Parser.USTRING i);
     ("if", fun i -> Parser.IF i);
     ("then", fun i -> Parser.THEN i);
     ("else", fun i -> Parser.ELSE i);
     ("true", fun i -> Parser.TRUE i);
     ("false", fun i -> Parser.FALSE i);
+    ("Bool", fun i -> Parser.BOOL i);
+    ("case", fun i -> Parser.CASE i);
+    ("of", fun i -> Parser.OF i);
+    ("unit", fun i -> Parser.UNIT i);
+    ("Unit", fun i -> Parser.UUNIT i);
+    ("timesfloat", fun i -> Parser.TIMESFLOAT i);
+    ("Float", fun i -> Parser.UFLOAT i);
     ("let", fun i -> Parser.LET i);
     ("in", fun i -> Parser.IN i);
+    ("inert", fun i -> Parser.INERT i);
     ("lambda", fun i -> Parser.LAMBDA i);
+    ("fix", fun i -> Parser.FIX i);
+    ("letrec", fun i -> Parser.LETREC i);
+    ("type", fun i -> Parser.TYPE i);
     ("succ", fun i -> Parser.SUCC i);
     ("pred", fun i -> Parser.PRED i);
     ("iszero", fun i -> Parser.ISZERO i);
-    ("timesfloat", fun i -> Parser.TIMESFLOAT i);
+    ("Nat", fun i -> Parser.NAT i);
 
     (* Symbols *)
     ("_", fun i -> Parser.USCORE i);
@@ -56,12 +69,19 @@
     ("==>", fun i -> Parser.DDARROW i);
   ]
 
-  let info (buf : Lexing.lexbuf) : info =
-    let p = buf.lex_start_p in
-    createInfo p.pos_fname
-               p.pos_lnum
-               p.pos_bol
-               p.pos_cnum
+  (* Support functions *)
+
+  type buildfun = info -> Parser.token
+  let (symbolTable : (string,buildfun) Hashtbl.t) = Hashtbl.create 1024
+  let _ = List.iter (fun (str,f) -> Hashtbl.add symbolTable str f) reservedWords
+
+  let createID i str =
+    try (Hashtbl.find symbolTable str) i
+    with _ ->
+      if (String.get str 0) >= 'A' && (String.get str 0) <= 'Z' then
+         Parser.UCID {i = i; v = str}
+      else
+         Parser.LCID {i = i; v = str}
 
   let lineno = ref 1
   and depth = ref 0
@@ -69,6 +89,15 @@
   and start = ref 0
 
   let newline lexbuf = incr lineno; start := (Lexing.lexeme_start lexbuf)
+
+  let info (buf : Lexing.lexbuf) : info =
+    let p = buf.lex_start_p in
+    createInfo p.pos_fname
+               p.pos_lnum
+               p.pos_bol
+               p.pos_cnum
+
+
 
   let text = Lexing.lexeme
 
@@ -93,17 +122,6 @@
 
   let getStr () = Bytes.sub_string (!stringBuffer) 0 (!stringEnd)
 
-  type buildfun = info -> Parser.token
-  let (symbolTable : (string,buildfun) Hashtbl.t) = Hashtbl.create 1024
-  let _ = List.iter (fun (str,f) -> Hashtbl.add symbolTable str f) reservedWords
-
-  let createID i str =
-    try (Hashtbl.find symbolTable str) i
-    with _ ->
-      if (String.get str 0) >= 'A' && (String.get str 0) <= 'Z' then
-         Parser.UCID {i = i; v = str}
-      else
-         Parser.LCID {i = i; v = str}
 }
 
 let white = [' ' '\t']+
@@ -117,20 +135,27 @@ rule read = parse
     { error (info lexbuf) "Unmatched end of comment" }
   | "/*"
     { depth := 1; startLex := info lexbuf; comment lexbuf; read lexbuf }
+
   | ['0'-'9']+
     { Parser.INTV { i= info lexbuf; v = int_of_string (text lexbuf)} }
   | ['0'-'9']+ '.' ['0'-'9']+
     { Parser.FLOATV { i = info lexbuf; v = float_of_string (text lexbuf)} }
+
   | ['A'-'Z' 'a'-'z' '_']
   | ['A'-'Z' 'a'-'z' '_' '0'-'9' '\'']*
     { createID (info lexbuf) (text lexbuf) }
+
   | ":=" | "<:" | "<-" | "->" | "=>" | "==>"
   | "{|" | "|}" | "<|" | "|>" | "[|" | "|]" | "=="
     { createID (info lexbuf) (text lexbuf) }
+
   | ['~' '%' '\\' '+' '-' '&' '|' ':' '@' '`' '$']+
     { createID (info lexbuf) (text lexbuf) }
-  | ['*' '#' '/' '!' '?' '^' '(' ')' '{' '}' '[' ']' '<' '>' '.' ';' '_' ',' '=' '\'']
+
+  | ['*' '#' '/' '!' '?' '^' '(' ')' '{' '}' '[' ']' '<' '>' '.' ';' '_' ','
+     '=' '\'']
     { createID (info lexbuf) (text lexbuf) }
+
   | "\""
     { resetStr(); startLex := info lexbuf; string lexbuf }
   | eof
