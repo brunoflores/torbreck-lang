@@ -1,9 +1,8 @@
 open Core
-module A = CoreLib
-module Syntax = A.Syntax
-module Parser = A.Parser
-module Lexer = A.Lexer
-module Core = A.Core
+module Syntax = CoreLib.Syntax
+module Parser = CoreLib.Parser
+module Lexer = CoreLib.Lexer
+module Core = CoreLib.Core
 module E = MenhirLib.ErrorReports
 module L = MenhirLib.LexerUtil
 module I = Parser.MenhirInterpreter
