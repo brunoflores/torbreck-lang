@@ -1,6 +1,6 @@
 (executable
   (name main)
   (modules main)
-  (libraries core fulluntypedLib)
+  (libraries core coreLib)
   (preprocess
     (pps ppx_jane ppx_deriving.show)))

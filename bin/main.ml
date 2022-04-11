@@ -1,11 +1,11 @@
 open Core
-module E = MenhirLib.ErrorReports
-module L = MenhirLib.LexerUtil
-module A = FulluntypedLib
+module A = CoreLib
 module Syntax = A.Syntax
 module Parser = A.Parser
 module Lexer = A.Lexer
-module Fulluntyped = A.Fulluntyped
+module Core = A.Core
+module E = MenhirLib.ErrorReports
+module L = MenhirLib.LexerUtil
 module I = Parser.MenhirInterpreter
 
 let print_position outx (lexbuf : Lexing.lexbuf) =
@@ -24,13 +24,13 @@ let succeed (cmds : Syntax.context -> Syntax.command list * Syntax.context) =
     match cmd with
     | Syntax.Eval (_, t) ->
         let open Format in
-        let t' = Fulluntyped.eval ctx t in
+        let t' = Core.eval ctx t in
         Syntax.printtm_aterm true ctx t';
         force_newline ();
         ctx
     | Syntax.Bind (_, x, bind) ->
         let open Format in
-        let bind' = Fulluntyped.evalbinding ctx bind in
+        let bind' = Core.evalbinding ctx bind in
         print_string x;
         Syntax.prbinding ctx bind';
         force_newline ();

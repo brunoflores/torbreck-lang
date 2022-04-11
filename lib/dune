@@ -6,9 +6,9 @@
  (flags --table --strict))
 
 (library
- (name fulluntypedLib)
+ (name coreLib)
  (inline_tests)
- (modules fulluntyped parser lexer support syntax)
+ (modules core parser lexer support syntax)
  (libraries core menhirLib)
  (preprocess
   (pps ppx_inline_test)))
