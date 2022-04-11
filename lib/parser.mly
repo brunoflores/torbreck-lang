@@ -63,6 +63,16 @@
 %token <Support.Error.info> USCORE
 %token <Support.Error.info> VBAR
 
+/* The starting production is the syntactic class [topLevel].
+   The parser returns to the user program a function that,
+   when given a naming context, returns a fully parsed list of
+   Syntax.commands and the new naming context that results when
+   all the names bound in these commands are defined.
+
+   All of the syntactic productions in the parser follow the same
+   pattern: they take a context as argument and return a fully
+   parsed abstract syntax tree (and, if they involve any constructs
+   that bind variables in some following phrase, a new context). */
 %start <Syntax.context -> (Syntax.command list * Syntax.context)> topLevel
 
 %%
@@ -72,11 +82,11 @@
 topLevel:
   | EOF
     { fun ctx -> ([], ctx) }
-  | c = command; SEMI; t = topLevel
+  | cmd = command; SEMI; top = topLevel
     { fun ctx ->
-        let cmd, ctx = c ctx in
-        let cmds, ctx = t ctx in
-        ((cmd :: cmds), ctx) }
+        let cmd', ctx' = cmd ctx in
+        let cmds, ctx'' = top ctx' in
+        ((cmd' :: cmds), ctx'') }
 
 /* A top-level command */
 command:
@@ -97,20 +107,20 @@ binder:
 term:
   | a = appTerm
     { a }
-  | i = IF; t1 = term; THEN; t2 = term; ELSE; t3 = term
-    { fun ctx -> TmIf (i, t1 ctx, t2 ctx, t3 ctx) }
-  | i = LET; id = LCID; EQ; t1 = term; IN; t2 = term
-    { fun ctx -> TmLet (i, id.v, t1 ctx, t2 (addname ctx id.v)) }
-  | i = LET USCORE EQ t1 = term IN t2 = term
-    { fun ctx -> TmLet(i, "_", t1 ctx, t2 (addname ctx "_")) }
-  | i = LAMBDA; id = LCID; DOT; t = term
+  | fi = IF; t1 = term; THEN; t2 = term; ELSE; t3 = term
+    { fun ctx -> TmIf (fi, t1 ctx, t2 ctx, t3 ctx) }
+  | fi = LET; id = LCID; EQ; t1 = term; IN; t2 = term
+    { fun ctx -> TmLet (fi, id.v, t1 ctx, t2 (addname ctx id.v)) }
+  | fi = LET USCORE EQ t1 = term IN t2 = term
+    { fun ctx -> TmLet(fi, "_", t1 ctx, t2 (addname ctx "_")) }
+  | fi = LAMBDA; id = LCID; DOT; t = term
     { fun ctx ->
         let ctx' = addname ctx id.v in
-        TmAbs (i, id.v, t ctx') }
-  | i = LAMBDA; USCORE; DOT; t = term
+        TmAbs (fi, id.v, t ctx') }
+  | fi = LAMBDA; USCORE; DOT; t = term
     { fun ctx ->
         let ctx' = addname ctx "_" in
-        TmAbs(i, "_", t ctx') }
+        TmAbs(fi, "_", t ctx') }
 
 appTerm:
   | p = pathTerm
@@ -120,22 +130,22 @@ appTerm:
         let e1 = a ctx in
         let e2 = p ctx in
         TmApp (tmInfo e1,e1,e2) }
-  | i = SUCC; p = pathTerm
-    { fun ctx -> TmSucc (i, p ctx) }
-  | i = PRED; p = pathTerm
-    { fun ctx -> TmPred (i, p ctx) }
-  | i = ISZERO; p = pathTerm
-    { fun ctx -> TmIsZero (i, p ctx) }
-  | i = TIMESFLOAT; p1 = pathTerm; p2 = pathTerm
-    { fun ctx -> TmTimesFloat (i, p1 ctx, p2 ctx) }
+  | fi = SUCC; p = pathTerm
+    { fun ctx -> TmSucc (fi, p ctx) }
+  | fi = PRED; p = pathTerm
+    { fun ctx -> TmPred (fi, p ctx) }
+  | fi = ISZERO; p = pathTerm
+    { fun ctx -> TmIsZero (fi, p ctx) }
+  | fi = TIMESFLOAT; p1 = pathTerm; p2 = pathTerm
+    { fun ctx -> TmTimesFloat (fi, p1 ctx, p2 ctx) }
 
 pathTerm:
-  | p = pathTerm; i = DOT; id = LCID
+  | p = pathTerm; fi = DOT; id = LCID
     { fun ctx ->
-        TmProj (i, p ctx, id.v) }
-  | p = pathTerm; i = DOT; v = INTV
+        TmProj (fi, p ctx, id.v) }
+  | p = pathTerm; fi = DOT; v = INTV
     { fun ctx ->
-        TmProj (i, p ctx, string_of_int v.v) }
+        TmProj (fi, p ctx, string_of_int v.v) }
   | t = aTerm
     { t }
 
@@ -151,8 +161,8 @@ aTerm:
     { fun _ -> TmTrue (t) }
   | f = FALSE
     { fun _ -> TmFalse (f) }
-  | i = LCURLY; f = fields; RCURLY
-    { fun ctx -> TmRecord (i, f ctx 1) }
+  | fi = LCURLY; f = fields; RCURLY
+    { fun ctx -> TmRecord (fi, f ctx 1) }
   | v = INTV
     { fun _ ->
         let rec f n = match n with
