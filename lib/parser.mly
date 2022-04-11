@@ -105,12 +105,12 @@ term:
     { fun ctx -> TmLet(i, "_", t1 ctx, t2 (addname ctx "_")) }
   | i = LAMBDA; id = LCID; DOT; t = term
     { fun ctx ->
-        let ctx1 = addname ctx id.v in
-        TmAbs (i, id.v, t ctx1) }
+        let ctx' = addname ctx id.v in
+        TmAbs (i, id.v, t ctx') }
   | i = LAMBDA; USCORE; DOT; t = term
     { fun ctx ->
-        let ctx1 = addname ctx "_" in
-        TmAbs(i, "_", t ctx1) }
+        let ctx' = addname ctx "_" in
+        TmAbs(i, "_", t ctx') }
 
 appTerm:
   | p = pathTerm

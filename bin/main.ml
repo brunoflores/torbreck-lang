@@ -34,9 +34,8 @@ let succeed (cmds : Syntax.context -> Syntax.command list * Syntax.context) =
         print_string x;
         Syntax.prbinding ctx bind';
         force_newline ();
-        (* Syntax.addbinding ctx x bind' *)
-        ctx
-    | _ -> failwith "not implemented"
+        Syntax.addbinding ctx x bind'
+    | Syntax.Import _ -> failwith "not implemented"
   in
   let rec all ctx cmds =
     match cmds with

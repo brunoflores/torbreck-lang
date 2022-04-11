@@ -4,6 +4,8 @@ open Support.Error
 type term =
   | TmString of info * string
   | TmVar of info * int * int
+      (** TmVar carries its de Bruijn index and the total length of the
+          context in which the variable occurs. *)
   | TmTrue of info
   | TmFalse of info
   | TmIf of info * term * term * term
@@ -11,6 +13,8 @@ type term =
   | TmRecord of info * (string * term) list
   | TmProj of info * term * string
   | TmAbs of info * string * term
+      (** TmAbs carries a string to be used as a hint for the name
+          of the bound variable. Used when printing. *)
   | TmApp of info * term * term
   | TmZero of info
   | TmSucc of info * term
@@ -29,19 +33,12 @@ type command =
 type context = (string * binding) list
 
 let emptycontext = []
-
 let ctxlength ctx = List.length ctx
-
 let addbinding ctx x bind = (x, bind) :: ctx
-
 let addname ctx x = addbinding ctx x NameBind
-
 let obox0 () = open_hvbox 0
-
 let obox () = open_hvbox 2
-
 let cbox () = close_box ()
-
 let break () = print_break 0 0
 
 let rec isnamebound ctx x =
@@ -193,23 +190,23 @@ let tmmap onvar c t =
   let rec walk c t =
     match t with
     | TmString _ as t -> t
-    | TmVar (i, x, n) -> onvar i c x n
+    | TmVar (fi, x, n) -> onvar fi c x n
     | TmTrue _ as t -> t
     | TmFalse _ as t -> t
-    | TmIf (i, t1, t2, t3) -> TmIf (i, walk c t1, walk c t2, walk c t3)
-    | TmLet (i, x, t1, t2) -> TmLet (i, x, walk c t1, walk (c + 1) t2)
-    | TmProj (i, t1, l) -> TmProj (i, walk c t1, l)
-    | TmRecord (i, fields) ->
+    | TmIf (fi, t1, t2, t3) -> TmIf (fi, walk c t1, walk c t2, walk c t3)
+    | TmLet (fi, x, t1, t2) -> TmLet (fi, x, walk c t1, walk (c + 1) t2)
+    | TmProj (fi, t1, l) -> TmProj (fi, walk c t1, l)
+    | TmRecord (fi, fields) ->
         let fieldswalked = List.map (fun (li, ti) -> (li, walk c ti)) fields in
-        TmRecord (i, fieldswalked)
-    | TmAbs (i, x, t2) -> TmAbs (i, x, walk (c + 1) t2)
-    | TmApp (i, t1, t2) -> TmApp (i, walk c t1, walk c t2)
-    | TmZero i -> TmZero i
-    | TmSucc (i, t1) -> TmSucc (i, walk c t1)
-    | TmPred (i, t1) -> TmPred (i, walk c t1)
-    | TmIsZero (i, t1) -> TmIsZero (i, walk c t1)
+        TmRecord (fi, fieldswalked)
+    | TmAbs (fi, x, t2) -> TmAbs (fi, x, walk (c + 1) t2)
+    | TmApp (fi, t1, t2) -> TmApp (fi, walk c t1, walk c t2)
+    | TmZero fi -> TmZero fi
+    | TmSucc (fi, t1) -> TmSucc (fi, walk c t1)
+    | TmPred (fi, t1) -> TmPred (fi, walk c t1)
+    | TmIsZero (fi, t1) -> TmIsZero (fi, walk c t1)
     | TmFloat _ as t -> t
-    | TmTimesFloat (i, t1, t2) -> TmTimesFloat (i, walk c t1, walk c t2)
+    | TmTimesFloat (fi, t1, t2) -> TmTimesFloat (fi, walk c t1, walk c t2)
   in
   walk c t
 
@@ -231,6 +228,11 @@ let termsubst j s t =
     (fun fi c x n -> if x = j + c then termshift c s else TmVar (fi, x, n))
     0 t
 
+(* Beta-reduction rule.
+   1) The term being substituted for the bound variable is first shifted by one
+   2) then the substitution is made
+   3) then the whole result is shifted down by one to accounr for the fact that
+      the bound variable has been used up. *)
 let termsubsttop s t = termshift (-1) (termsubst 0 (termshift 1 s) t)
 
 let getbinding _ ctx i =
