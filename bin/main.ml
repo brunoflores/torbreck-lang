@@ -7,12 +7,42 @@ module E = MenhirLib.ErrorReports
 module L = MenhirLib.LexerUtil
 module I = Parser.MenhirInterpreter
 
+(*
 let print_position outx (lexbuf : Lexing.lexbuf) =
   let pos = lexbuf.lex_curr_p in
   let fname = pos.pos_fname in
   let line = pos.pos_lnum in
   let col = pos.pos_cnum - pos.pos_bol + 1 in
   fprintf outx "%s:%d:%d" fname line col
+*)
+
+let printbindingty ctx b =
+  match b with
+  | Syntax.NameBind -> ()
+  | Syntax.VarBind tyT ->
+      print_string ": ";
+      Syntax.printty ctx tyT
+  | Syntax.TmAbbBind (t, tyT_opt) -> (
+      print_string ": ";
+      match tyT_opt with
+      | None -> Syntax.printty ctx (Core.typeof ctx t)
+      | Some tyT -> Syntax.printty ctx tyT)
+  | Syntax.TyVarBind -> ()
+  | Syntax.TyAbbBind t -> Syntax.printty ctx t
+
+let checkbinding fi ctx b =
+  match b with
+  | Syntax.NameBind as b -> b
+  | Syntax.VarBind _ as b -> b
+  | Syntax.TmAbbBind (t, None) -> TmAbbBind (t, Some (Core.typeof ctx t))
+  | Syntax.TmAbbBind (t, Some tyT) as b ->
+      let tyT' = Core.typeof ctx t in
+      if Core.tyeqv ctx tyT' tyT then b
+      else
+        CoreLib.Support.Error.error fi
+          "type of binding does not match declared type"
+  | Syntax.TyVarBind as b -> b
+  | Syntax.TyAbbBind _ as b -> b
 
 let show text positions =
   E.extract text positions |> E.sanitize |> E.compress |> E.shorten 20
@@ -23,15 +53,21 @@ let succeed (cmds : Syntax.context -> Syntax.command list * Syntax.context) =
     match cmd with
     | Syntax.Eval (_, t) ->
         let open Format in
+        let tyT = Core.typeof ctx t in
         let t' = Core.eval ctx t in
         Syntax.printtm_aterm true ctx t';
+        print_break 1 2;
+        print_string ": ";
+        Syntax.printty ctx tyT;
         force_newline ();
         ctx
-    | Syntax.Bind (_, x, bind) ->
+    | Syntax.Bind (fi, x, bind) ->
         let open Format in
+        let bind = checkbinding fi ctx bind in
         let bind' = Core.evalbinding ctx bind in
         print_string x;
-        Syntax.prbinding ctx bind';
+        print_string ": ";
+        printbindingty ctx bind';
         force_newline ();
         Syntax.addbinding ctx x bind'
     | Syntax.Import _ -> failwith "not implemented"
@@ -40,8 +76,8 @@ let succeed (cmds : Syntax.context -> Syntax.command list * Syntax.context) =
     match cmds with
     | [] -> ()
     | x :: xs ->
-        let ctx = one ctx x in
-        all ctx xs
+        let ctx' = one ctx x in
+        all ctx' xs
   in
   all ctx cmds
 
