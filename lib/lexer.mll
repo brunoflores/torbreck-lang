@@ -24,49 +24,58 @@
     ("lambda", fun i -> Parser.LAMBDA i);
     ("fix", fun i -> Parser.FIX i);
     ("letrec", fun i -> Parser.LETREC i);
-    ("type", fun i -> Parser.TYPE i);
     ("succ", fun i -> Parser.SUCC i);
     ("pred", fun i -> Parser.PRED i);
     ("iszero", fun i -> Parser.ISZERO i);
     ("Nat", fun i -> Parser.NAT i);
 
+    (* TODO
+    ("type", fun i -> Parser.TYPE i);
+    *)
+
     (* Symbols *)
     ("_", fun i -> Parser.USCORE i);
-    ("'", fun i -> Parser.APOSTROPHE i);
-    ("\"", fun i -> Parser.DQUOTE i);
-    ("!", fun i -> Parser.BANG i);
-    ("#", fun i -> Parser.HASH i);
-    ("$", fun i -> Parser.TRIANGLE i);
-    ("*", fun i -> Parser.STAR i);
     ("|", fun i -> Parser.VBAR i);
     (".", fun i -> Parser.DOT i);
     (";", fun i -> Parser.SEMI i);
     (",", fun i -> Parser.COMMA i);
     ("/", fun i -> Parser.SLASH i);
     (":", fun i -> Parser.COLON i);
-    ("::", fun i -> Parser.COLONCOLON i);
     ("=", fun i -> Parser.EQ i);
-    ("==", fun i -> Parser.EQEQ i);
     ("[", fun i -> Parser.LSQUARE i);
     ("<", fun i -> Parser.LT i);
     ("{", fun i -> Parser.LCURLY i);
     ("(", fun i -> Parser.LPAREN i);
-    ("<-", fun i -> Parser.LEFTARROW i);
-    ("{|", fun i -> Parser.LCURLYBAR i);
-    ("[|", fun i -> Parser.LSQUAREBAR i);
     ("}", fun i -> Parser.RCURLY i);
     (")", fun i -> Parser.RPAREN i);
     ("]", fun i -> Parser.RSQUARE i);
     (">", fun i -> Parser.GT i);
-    ("|}", fun i -> Parser.BARRCURLY i);
+
+    (* TODO
+    ("$", fun i -> Parser.TRIANGLE i);
+    ("*", fun i -> Parser.STAR i);
+    ("[|", fun i -> Parser.LSQUAREBAR i);
+    ("<-", fun i -> Parser.LEFTARROW i);
+    ("{|", fun i -> Parser.LCURLYBAR i);
+    ("#", fun i -> Parser.HASH i);
+    ("==", fun i -> Parser.EQEQ i);
+    ("\"", fun i -> Parser.DQUOTE i);
+    ("'", fun i -> Parser.APOSTROPHE i);
+    ("!", fun i -> Parser.BANG i);
     ("|>", fun i -> Parser.BARGT i);
+    ("|}", fun i -> Parser.BARRCURLY i);
     ("|]", fun i -> Parser.BARRSQUARE i);
+    ("::", fun i -> Parser.COLONCOLON i);
+    *)
 
     (* Special compound symbols *)
-    (":=", fun i -> Parser.COLONEQ i);
     ("->", fun i -> Parser.ARROW i);
-    ("=>", fun i -> Parser.DARROW i);
     ("==>", fun i -> Parser.DDARROW i);
+
+    (* TODO
+    (":=", fun i -> Parser.COLONEQ i);
+    ("=>", fun i -> Parser.DARROW i);
+    *)
   ]
 
   (* Support functions *)

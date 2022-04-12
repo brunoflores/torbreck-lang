@@ -1,29 +1,48 @@
 open Format
 open Support.Error
 
+type ty =
+  | TyId of string
+  | TyVar of int * int
+  | TyUnit
+  | TyFloat
+  | TyRecord of (string * ty) list
+  | TyVariant of (string * ty) list
+  | TyString
+  | TyBool
+  | TyArr of ty * ty
+  | TyNat
+
 type term =
+  | TmAscribe of info * term * ty
   | TmString of info * string
-  | TmVar of info * int * int
-      (** TmVar carries its de Bruijn index and the total length of the
-          context in which the variable occurs. *)
   | TmTrue of info
   | TmFalse of info
   | TmIf of info * term * term * term
+  | TmCase of info * term * (string * (string * term)) list
+  | TmTag of info * string * term * ty
+  | TmUnit of info
+  | TmVar of info * int * int
+  | TmFloat of info * float
+  | TmTimesFloat of info * term * term
   | TmLet of info * string * term * term
   | TmRecord of info * (string * term) list
   | TmProj of info * term * string
-  | TmAbs of info * string * term
-      (** TmAbs carries a string to be used as a hint for the name
-          of the bound variable. Used when printing. *)
+  | TmAbs of info * string * ty * term
   | TmApp of info * term * term
+  | TmFix of info * term
   | TmZero of info
   | TmSucc of info * term
   | TmPred of info * term
   | TmIsZero of info * term
-  | TmFloat of info * float
-  | TmTimesFloat of info * term * term
+  | TmInert of info * ty
 
-type binding = NameBind | TmAbbBind of term
+type binding =
+  | NameBind
+  | TmAbbBind of term * ty option
+  | VarBind of ty
+  | TyVarBind
+  | TyAbbBind of ty
 
 type command =
   | Import of string
@@ -36,10 +55,6 @@ let emptycontext = []
 let ctxlength ctx = List.length ctx
 let addbinding ctx x bind = (x, bind) :: ctx
 let addname ctx x = addbinding ctx x NameBind
-let obox0 () = open_hvbox 0
-let obox () = open_hvbox 2
-let cbox () = close_box ()
-let break () = print_break 0 0
 
 let rec isnamebound ctx x =
   match ctx with
@@ -60,9 +75,252 @@ let index_to_name _ ctx x =
     in
     failwith (msg x (List.length ctx))
 
-let small t = match t with TmVar _ -> true | _ -> false
+let rec name_to_index fi ctx x =
+  match ctx with
+  | [] -> failwith (Printf.sprintf "Identifier %s is unbound" x)
+  | (y, _) :: rest -> if y = x then 0 else 1 + name_to_index fi rest x
+
+let tymap onvar c tyT =
+  let rec walk c tyT =
+    match tyT with
+    | TyString -> TyString
+    | TyId _ as tyT -> tyT
+    | TyVariant fieldTys ->
+        TyVariant (List.map (fun (li, tyTi) -> (li, walk c tyTi)) fieldTys)
+    | TyUnit -> TyUnit
+    | TyFloat -> TyFloat
+    | TyRecord fieldTys ->
+        TyRecord (List.map (fun (li, tyTi) -> (li, walk c tyTi)) fieldTys)
+    | TyVar (x, n) -> onvar c x n
+    | TyArr (tyT1, tyT2) -> TyArr (walk c tyT1, walk c tyT2)
+    | TyBool -> TyBool
+    | TyNat -> TyNat
+  in
+  walk c tyT
+
+let tmmap onvar ontype c t =
+  let rec walk c t =
+    match t with
+    | TmAscribe (fi, t1, tyT1) -> TmAscribe (fi, walk c t1, ontype c tyT1)
+    | TmString _ as t -> t
+    | TmVar (fi, x, n) -> onvar fi c x n
+    | TmTrue _ as t -> t
+    | TmFalse _ as t -> t
+    | TmIf (fi, t1, t2, t3) -> TmIf (fi, walk c t1, walk c t2, walk c t3)
+    | TmTag (fi, l, t1, tyT) -> TmTag (fi, l, walk c t1, ontype c tyT)
+    | TmCase (fi, t, cases) ->
+        TmCase
+          ( fi,
+            walk c t,
+            List.map (fun (li, (xi, ti)) -> (li, (xi, walk (c + 1) ti))) cases
+          )
+    | TmLet (fi, x, t1, t2) -> TmLet (fi, x, walk c t1, walk (c + 1) t2)
+    | TmUnit _ as t -> t
+    | TmInert (fi, tyT) -> TmInert (fi, ontype c tyT)
+    | TmFloat _ as t -> t
+    | TmTimesFloat (fi, t1, t2) -> TmTimesFloat (fi, walk c t1, walk c t2)
+    | TmProj (fi, t1, l) -> TmProj (fi, walk c t1, l)
+    | TmRecord (fi, fields) ->
+        let fieldswalked = List.map (fun (li, ti) -> (li, walk c ti)) fields in
+        TmRecord (fi, fieldswalked)
+    | TmAbs (fi, x, tyT1, t2) -> TmAbs (fi, x, ontype c tyT1, walk (c + 1) t2)
+    | TmApp (fi, t1, t2) -> TmApp (fi, walk c t1, walk c t2)
+    | TmFix (fi, t1) -> TmFix (fi, walk c t1)
+    | TmZero fi -> TmZero fi
+    | TmSucc (fi, t1) -> TmSucc (fi, walk c t1)
+    | TmPred (fi, t1) -> TmPred (fi, walk c t1)
+    | TmIsZero (fi, t1) -> TmIsZero (fi, walk c t1)
+  in
+  walk c t
+
+let typeshiftabove d c tyT =
+  tymap
+    (fun c x n -> if x >= c then TyVar (x + d, n + d) else TyVar (x, n + d))
+    c tyT
+
+let termshiftabove d c t =
+  tmmap
+    (fun fi c x n ->
+      if x >= c then TmVar (fi, x + d, n + d) else TmVar (fi, x, n + d))
+    (typeshiftabove d) c t
+
+let termshift d t = termshiftabove d 0 t
+let typeshift d tyT = typeshiftabove d 0 tyT
+
+let bindingshift d bind =
+  match bind with
+  | NameBind -> NameBind
+  | TmAbbBind (t, tyT) ->
+      let tyT =
+        match tyT with None -> None | Some tyT -> Some (typeshift d tyT)
+      in
+      TmAbbBind (termshift d t, tyT)
+  | VarBind tyT -> VarBind (typeshift d tyT)
+  | TyVarBind -> TyVarBind
+  | TyAbbBind tyT -> TyAbbBind (typeshift d tyT)
+
+let termsubst j s t =
+  tmmap
+    (fun fi j x n -> if x = j then termshift j s else TmVar (fi, x, n))
+    (fun _ tyT -> tyT)
+    j t
+
+(* Beta-reduction rule.
+   1) The term being substituted for the bound variable is first shifted by one
+   2) then the substitution is made
+   3) then the whole result is shifted down by one to accounr for the fact that
+      the bound variable has been used up. *)
+let termsubsttop s t = termshift (-1) (termsubst 0 (termshift 1 s) t)
+
+let typesubst tyS j tyT =
+  tymap (fun j x n -> if x = j then typeshift j tyS else TyVar (x, n)) j tyT
+
+let typesubsttop tyS tyT = typeshift (-1) (typesubst (typeshift 1 tyS) 0 tyT)
+
+let tytermsubst tyS j t =
+  tmmap
+    (fun fi _ x n -> TmVar (fi, x, n))
+    (fun j tyT -> typesubst tyS j tyT)
+    j t
+
+let tytermsubsttop tyS t = termshift (-1) (tytermsubst (typeshift 1 tyS) 0 t)
+
+let getbinding fi ctx i =
+  try
+    let _, bind = List.nth ctx i in
+    bindingshift (i + 1) bind
+  with Failure _ ->
+    let msg =
+      Printf.sprintf "Variable lookup failure: offset: %d, ctx size: %d"
+    in
+    error fi (msg i (List.length ctx))
+
+let gettypefromcontext fi ctx i =
+  match getbinding fi ctx i with
+  | VarBind tyT -> tyT
+  | TmAbbBind (_, Some tyT) -> tyT
+  | TmAbbBind (_, None) ->
+      error fi
+        (Printf.sprintf "No type recorded for variable %s"
+           (index_to_name fi ctx i))
+  | _ ->
+      error fi
+        (Printf.sprintf "Wrong kind of binding for variable %s"
+           (index_to_name fi ctx i))
+
+let tmInfo t =
+  match t with
+  | TmAscribe (fi, _, _) -> fi
+  | TmString (fi, _) -> fi
+  | TmTrue fi -> fi
+  | TmFalse fi -> fi
+  | TmIf (fi, _, _, _) -> fi
+  | TmTag (fi, _, _, _) -> fi
+  | TmCase (fi, _, _) -> fi
+  | TmUnit fi -> fi
+  | TmVar (fi, _, _) -> fi
+  | TmFloat (fi, _) -> fi
+  | TmTimesFloat (fi, _, _) -> fi
+  | TmLet (fi, _, _, _) -> fi
+  | TmProj (fi, _, _) -> fi
+  | TmRecord (fi, _) -> fi
+  | TmInert (fi, _) -> fi
+  | TmAbs (fi, _, _, _) -> fi
+  | TmApp (fi, _, _) -> fi
+  | TmFix (fi, _) -> fi
+  | TmZero fi -> fi
+  | TmSucc (fi, _) -> fi
+  | TmPred (fi, _) -> fi
+  | TmIsZero (fi, _) -> fi
+
+let obox0 () = open_hvbox 0
+let obox () = open_hvbox 2
+let cbox () = close_box ()
+let break () = print_break 0 0
+
+let rec printty_Type outer ctx tyT =
+  match tyT with tyT -> printty_ArrowType outer ctx tyT
+
+and printty_ArrowType outer ctx tyT =
+  match tyT with
+  | TyArr (tyT1, tyT2) ->
+      obox0 ();
+      printty_AType false ctx tyT1;
+      if outer then print_string " ";
+      print_string "->";
+      if outer then print_space () else break ();
+      printty_ArrowType outer ctx tyT2;
+      cbox ()
+  | tyT -> printty_AType outer ctx tyT
+
+and printty_AType outer ctx tyT =
+  match tyT with
+  | TyString -> print_string "String"
+  | TyBool -> print_string "Bool"
+  | TyVariant fields ->
+      let pf i (li, tyTi) =
+        if li <> string_of_int i then (
+          print_string li;
+          print_string ":");
+        printty_Type false ctx tyTi
+      in
+      let rec p i l =
+        match l with
+        | [] -> ()
+        | [ f ] -> pf i f
+        | f :: rest ->
+            pf i f;
+            print_string ",";
+            if outer then print_space () else break ();
+            p (i + 1) rest
+      in
+      print_string "<";
+      open_hovbox 0;
+      p 1 fields;
+      print_string ">";
+      cbox ()
+  | TyUnit -> print_string "Unit"
+  | TyId b -> print_string b
+  | TyFloat -> print_string "Float"
+  | TyRecord fields ->
+      let pf i (li, tyTi) =
+        if li <> string_of_int i then (
+          print_string li;
+          print_string ":");
+        printty_Type false ctx tyTi
+      in
+      let rec p i l =
+        match l with
+        | [] -> ()
+        | [ f ] -> pf i f
+        | f :: rest ->
+            pf i f;
+            print_string ",";
+            if outer then print_space () else break ();
+            p (i + 1) rest
+      in
+      print_string "{";
+      open_hovbox 0;
+      p 1 fields;
+      print_string "}";
+      cbox ()
+  | TyVar (x, n) ->
+      if ctxlength ctx = n then print_string (index_to_name dummyinfo ctx x)
+      else
+        print_string
+          ("[bad index: " ^ string_of_int x ^ "/" ^ string_of_int n ^ " in {"
+          ^ List.fold_left (fun s (x, _) -> s ^ " " ^ x) "" ctx
+          ^ " }]")
+  | TyNat -> print_string "Nat"
+  | tyT ->
+      print_string "(";
+      printty_Type outer ctx tyT;
+      print_string ")"
+
+let printty ctx tyT = printty_Type true ctx tyT
 
 let rec printtm_term outer ctx t =
+  let small t = match t with TmVar _ -> true | _ -> false in
   match t with
   | TmIf (_, t1, t2, t3) ->
       obox0 ();
@@ -86,11 +344,13 @@ let rec printtm_term outer ctx t =
       print_space ();
       printtm_term false (addname ctx x) t2;
       cbox ()
-  | TmAbs (_, x, t2) ->
+  | TmAbs (_, x, tyT1, t2) ->
       let ctx', x' = pickfreshname ctx x in
       obox ();
       print_string "lambda ";
       print_string x';
+      print_string ":";
+      printty_Type false ctx tyT1;
       print_string ".";
       if small t2 && not outer then break () else print_space ();
       printtm_term outer ctx' t2;
@@ -182,89 +442,13 @@ let printtm ctx t = printtm_term true ctx t
 let prbinding ctx b =
   match b with
   | NameBind -> ()
-  | TmAbbBind t ->
-      print_string " = ";
+  | TmAbbBind (t, _) ->
+      print_string "= ";
       printtm ctx t
-
-let tmmap onvar c t =
-  let rec walk c t =
-    match t with
-    | TmString _ as t -> t
-    | TmVar (fi, x, n) -> onvar fi c x n
-    | TmTrue _ as t -> t
-    | TmFalse _ as t -> t
-    | TmIf (fi, t1, t2, t3) -> TmIf (fi, walk c t1, walk c t2, walk c t3)
-    | TmLet (fi, x, t1, t2) -> TmLet (fi, x, walk c t1, walk (c + 1) t2)
-    | TmProj (fi, t1, l) -> TmProj (fi, walk c t1, l)
-    | TmRecord (fi, fields) ->
-        let fieldswalked = List.map (fun (li, ti) -> (li, walk c ti)) fields in
-        TmRecord (fi, fieldswalked)
-    | TmAbs (fi, x, t2) -> TmAbs (fi, x, walk (c + 1) t2)
-    | TmApp (fi, t1, t2) -> TmApp (fi, walk c t1, walk c t2)
-    | TmZero fi -> TmZero fi
-    | TmSucc (fi, t1) -> TmSucc (fi, walk c t1)
-    | TmPred (fi, t1) -> TmPred (fi, walk c t1)
-    | TmIsZero (fi, t1) -> TmIsZero (fi, walk c t1)
-    | TmFloat _ as t -> t
-    | TmTimesFloat (fi, t1, t2) -> TmTimesFloat (fi, walk c t1, walk c t2)
-  in
-  walk c t
-
-let termshiftabove d c t =
-  tmmap
-    (fun fi c x n ->
-      if x >= c then TmVar (fi, x + d, n + d) else TmVar (fi, x, n + d))
-    c t
-
-let termshift d t = termshiftabove d 0 t
-
-let bindingshift d bind =
-  match bind with
-  | NameBind -> NameBind
-  | TmAbbBind t -> TmAbbBind (termshift d t)
-
-let termsubst j s t =
-  tmmap
-    (fun fi c x n -> if x = j + c then termshift c s else TmVar (fi, x, n))
-    0 t
-
-(* Beta-reduction rule.
-   1) The term being substituted for the bound variable is first shifted by one
-   2) then the substitution is made
-   3) then the whole result is shifted down by one to accounr for the fact that
-      the bound variable has been used up. *)
-let termsubsttop s t = termshift (-1) (termsubst 0 (termshift 1 s) t)
-
-let getbinding _ ctx i =
-  try
-    let _, bind = List.nth ctx i in
-    bindingshift (i + 1) bind
-  with Failure _ ->
-    let msg =
-      Printf.sprintf "Variable lookup failure: offset: %d, ctx size : %d"
-    in
-    failwith (msg i (List.length ctx))
-
-let rec name_to_index fi ctx x =
-  match ctx with
-  | [] -> failwith (Printf.sprintf "Identifier %s is unbound" x)
-  | (y, _) :: rest -> if y = x then 0 else 1 + name_to_index fi rest x
-
-let tmInfo t =
-  match t with
-  | TmString (fi, _) -> fi
-  | TmVar (fi, _, _) -> fi
-  | TmTrue fi -> fi
-  | TmFalse fi -> fi
-  | TmIf (fi, _, _, _) -> fi
-  | TmLet (fi, _, _, _) -> fi
-  | TmProj (fi, _, _) -> fi
-  | TmRecord (fi, _) -> fi
-  | TmAbs (fi, _, _) -> fi
-  | TmApp (fi, _, _) -> fi
-  | TmZero fi -> fi
-  | TmSucc (fi, _) -> fi
-  | TmPred (fi, _) -> fi
-  | TmIsZero (fi, _) -> fi
-  | TmFloat (fi, _) -> fi
-  | TmTimesFloat (fi, _, _) -> fi
+  | VarBind tyT ->
+      print_string ": ";
+      printty ctx tyT
+  | TyVarBind -> ()
+  | TyAbbBind tyT ->
+      print_string "= ";
+      printty ctx tyT
