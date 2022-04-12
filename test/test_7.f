@@ -1,3 +1,3 @@
-{x=lambda x.x, y=(lambda x.x)(lambda x.x)};
-{x=lambda x.x, y=(lambda x.x)(lambda x.x)}.x;
-{x=lambda x.x, y=(lambda x.x)(lambda x.x)}.y;
+lambda x:Bool. x;
+(lambda x:Bool->Bool. if x false then true else false)
+(lambda x:Bool. if x then false else true);
