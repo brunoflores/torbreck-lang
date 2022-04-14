@@ -28,6 +28,12 @@
 %token <Support.Error.info> PRED
 %token <Support.Error.info> ISZERO
 %token <Support.Error.info> NAT
+%token <Support.Error.info> REF
+%token <Support.Error.info> RREF
+%token <Support.Error.info> TBOT
+%token <Support.Error.info> TTOP
+%token <Support.Error.info> SSOURCE
+%token <Support.Error.info> SSINK
 
 /* TODO
 %token <Support.Error.info> TYPE
@@ -60,15 +66,15 @@
 %token <Support.Error.info> SLASH
 %token <Support.Error.info> USCORE
 %token <Support.Error.info> VBAR
+%token <Support.Error.info> COLONEQ
+%token <Support.Error.info> BANG
 
 /* TODO
 %token <Support.Error.info> APOSTROPHE
-%token <Support.Error.info> BANG
 %token <Support.Error.info> BARGT
 %token <Support.Error.info> BARRCURLY
 %token <Support.Error.info> BARRSQUARE
 %token <Support.Error.info> COLONCOLON
-%token <Support.Error.info> COLONEQ
 %token <Support.Error.info> COLONHASH
 %token <Support.Error.info> DARROW
 %token <Support.Error.info> DQUOTE
@@ -120,24 +126,40 @@ Command:
 
 /* Right-hand sides of top-level bindings */
 Binder:
+  | COLON; ty = Type
+    { fun ctx -> VarBind (ty ctx) }
   | SLASH
     { fun _ -> NameBind }
   | EQ; t = Term
     { fun ctx -> TmAbbBind (t ctx, None) }
 
-/* All time expressions */
+/* All type expressions */
 Type:
   | ty = ArrowType
     { ty }
+  | RREF; ty = AType
+    { fun ctx -> TyRef (ty ctx) }
+  | SSOURCE; ty = AType
+    { fun ctx -> TySource (ty ctx) }
+  | SSINK; ty = AType
+    { fun ctx -> TySink (ty ctx) }
 
 /* Atomic types are those that never need extra parentheses */
 AType:
   | LPAREN; ty = Type; RPAREN
     { ty }
+  | TBOT
+    { fun _ -> TyBot }
+  | TTOP
+    { fun _ -> TyTop }
   | USTRING
     { fun _ -> TyString }
   | BOOL
     { fun _ -> TyBool }
+  | NAT
+    { fun _ -> TyNat }
+  | UFLOAT
+    { fun _ -> TyFloat }
   | LT; tys = FieldTypes; GT
     { fun ctx -> TyVariant (tys ctx 1) }
   | UUNIT
@@ -148,12 +170,8 @@ AType:
           TyVar (name_to_index id.i ctx id.v, ctxlength ctx)
         else
           TyId id.v }
-  | UFLOAT
-    { fun _ -> TyFloat }
   | LCURLY; tys = FieldTypes; RCURLY
     { fun ctx -> TyRecord (tys ctx 1) }
-  | NAT
-    { fun _ -> TyNat }
 
 AscribeTerm:
   | t = ATerm; fi = AS; ty = Type
@@ -197,15 +215,22 @@ ArrowType:
 Term:
   | a = AppTerm
     { a }
+
   | fi = IF; t1 = Term; THEN; t2 = Term; ELSE; t3 = Term
     { fun ctx -> TmIf (fi, t1 ctx, t2 ctx, t3 ctx) }
+
   | fi = CASE; t = Term; OF; cs = Cases
     { fun ctx ->
       TmCase (fi, t ctx, cs ctx) }
+
   | fi = LET; id = LCID; EQ; t1 = Term; IN; t2 = Term
     { fun ctx -> TmLet (fi, id.v, t1 ctx, t2 (addname ctx id.v)) }
-  | fi = LET USCORE EQ t1 = Term IN t2 = Term
+  | fi = LET; USCORE; EQ; t1 = Term; IN; t2 = Term
     { fun ctx -> TmLet(fi, "_", t1 ctx, t2 (addname ctx "_")) }
+  | fi = LETREC; id = LCID; COLON; ty = Type; EQ; t1 = Term; IN; t2 = Term
+    { fun ctx ->
+        let ctx' = addname ctx id.v in
+        TmLet (fi, id.v, TmFix (fi, TmAbs (fi, id.v, ty ctx, t1 ctx')), t2 ctx') }
 
   | fi = LAMBDA; id = LCID; COLON; ty = Type; DOT; t = Term
     { fun ctx ->
@@ -216,10 +241,8 @@ Term:
         let ctx' = addname ctx "_" in
         TmAbs(fi, "_", ty ctx', t ctx') }
 
-  | fi = LETREC; id = LCID; COLON; ty = Type; EQ; t1 = Term; IN; t2 = Term
-    { fun ctx ->
-        let ctx' = addname ctx id.v in
-        TmLet (fi, id.v, TmFix (fi, TmAbs (fi, id.v, ty ctx, t1 ctx')), t2 ctx') }
+  | app1 = AppTerm; fi = COLONEQ; app2 = AppTerm
+    { fun ctx -> TmAssign (fi, app1 ctx, app2 ctx) }
 
 AppTerm:
   | p = PathTerm
@@ -239,6 +262,11 @@ AppTerm:
     { fun ctx -> TmPred (fi, p ctx) }
   | fi = ISZERO; p = PathTerm
     { fun ctx -> TmIsZero (fi, p ctx) }
+
+  | fi = REF; p = PathTerm
+    { fun ctx -> TmRef (fi, p ctx) }
+  | fi = BANG; p = PathTerm
+    { fun ctx -> TmDeref (fi, p ctx) }
 
 TermSeq:
   | t = Term
