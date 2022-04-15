@@ -48,38 +48,39 @@ let show text positions =
   E.extract text positions |> E.sanitize |> E.compress |> E.shorten 20
 
 let succeed (cmds : Syntax.context -> Syntax.command list * Syntax.context) =
-  let cmds, ctx = cmds Syntax.emptycontext in
-  let one ctx cmd =
+  let one ctx store cmd =
     match cmd with
     | Syntax.Eval (_, t) ->
         let open Format in
         let tyT = Core.typeof ctx t in
-        let t' = Core.eval ctx t in
+        let t', store' = Core.eval ctx store t in
         Syntax.printtm_aterm true ctx t';
         print_break 1 2;
         print_string ": ";
         Syntax.printty ctx tyT;
         force_newline ();
-        ctx
+        (ctx, store')
     | Syntax.Bind (fi, x, bind) ->
         let open Format in
         let bind = checkbinding fi ctx bind in
-        let bind' = Core.evalbinding ctx bind in
+        let bind', store' = Core.evalbinding ctx store bind in
         print_string x;
         print_string ": ";
         printbindingty ctx bind';
         force_newline ();
-        Syntax.addbinding ctx x bind'
+        (Syntax.addbinding ctx x bind', Core.shiftstore 1 store')
     | Syntax.Import _ -> failwith "not implemented"
   in
-  let rec all ctx cmds =
+  let rec all ctx store cmds =
     match cmds with
     | [] -> ()
     | x :: xs ->
-        let ctx' = one ctx x in
-        all ctx' xs
+        let ctx', store' = one ctx store x in
+        all ctx' store' xs
   in
-  all ctx cmds
+  let cmds, ctx = cmds Syntax.emptycontext in
+  let store = Core.emptystore in
+  all ctx store cmds
 
 let fail text buffer _ =
   let location = L.range (E.last buffer) in
