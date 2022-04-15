@@ -2,6 +2,11 @@ open Support.Error
 
 (* Data type definitions *)
 type ty =
+  | TyBot
+  | TyTop
+  | TyRef of ty
+  | TySource of ty
+  | TySink of ty
   | TyId of string
   | TyVar of int * int
   | TyUnit
@@ -14,6 +19,10 @@ type ty =
   | TyNat
 
 type term =
+  | TmLoc of info * int
+  | TmRef of info * term
+  | TmDeref of info * term
+  | TmAssign of info * term * term
   | TmAscribe of info * term * ty
   | TmString of info * string
   | TmTrue of info

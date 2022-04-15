@@ -2,6 +2,11 @@ open Format
 open Support.Error
 
 type ty =
+  | TyBot
+  | TyTop
+  | TyRef of ty
+  | TySource of ty
+  | TySink of ty
   | TyId of string
   | TyVar of int * int
   | TyUnit
@@ -14,6 +19,10 @@ type ty =
   | TyNat
 
 type term =
+  | TmLoc of info * int
+  | TmRef of info * term
+  | TmDeref of info * term
+  | TmAssign of info * term * term
   | TmAscribe of info * term * ty
   | TmString of info * string
   | TmTrue of info
@@ -83,6 +92,11 @@ let rec name_to_index fi ctx x =
 let tymap onvar c tyT =
   let rec walk c tyT =
     match tyT with
+    | TyBot -> TyBot
+    | TyTop -> TyTop
+    | TyRef tyT1 -> TyRef (walk c tyT1)
+    | TySource tyT1 -> TySource (walk c tyT1)
+    | TySink tyT1 -> TySink (walk c tyT1)
     | TyString -> TyString
     | TyId _ as tyT -> tyT
     | TyVariant fieldTys ->
@@ -101,6 +115,10 @@ let tymap onvar c tyT =
 let tmmap onvar ontype c t =
   let rec walk c t =
     match t with
+    | TmLoc _ as t -> t
+    | TmRef (fi, t1) -> TmRef (fi, walk c t1)
+    | TmDeref (fi, t1) -> TmDeref (fi, walk c t1)
+    | TmAssign (fi, t1, t2) -> TmAssign (fi, walk c t1, walk c t2)
     | TmAscribe (fi, t1, tyT1) -> TmAscribe (fi, walk c t1, ontype c tyT1)
     | TmString _ as t -> t
     | TmVar (fi, x, n) -> onvar fi c x n
@@ -210,6 +228,10 @@ let gettypefromcontext fi ctx i =
 
 let tmInfo t =
   match t with
+  | TmLoc (fi, _) -> fi
+  | TmRef (fi, _) -> fi
+  | TmDeref (fi, _) -> fi
+  | TmAssign (fi, _, _) -> fi
   | TmAscribe (fi, _, _) -> fi
   | TmString (fi, _) -> fi
   | TmTrue fi -> fi
