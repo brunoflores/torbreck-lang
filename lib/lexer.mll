@@ -14,6 +14,7 @@
     ("Bool", fun i -> Parser.BOOL i);
     ("case", fun i -> Parser.CASE i);
     ("of", fun i -> Parser.OF i);
+    ("ref", fun i -> Parser.REF i);
     ("unit", fun i -> Parser.UNIT i);
     ("Unit", fun i -> Parser.UUNIT i);
     ("timesfloat", fun i -> Parser.TIMESFLOAT i);
@@ -50,6 +51,7 @@
     (")", fun i -> Parser.RPAREN i);
     ("]", fun i -> Parser.RSQUARE i);
     (">", fun i -> Parser.GT i);
+    ("!", fun i -> Parser.BANG i);
 
     (* TODO
     ("$", fun i -> Parser.TRIANGLE i);
@@ -61,7 +63,6 @@
     ("==", fun i -> Parser.EQEQ i);
     ("\"", fun i -> Parser.DQUOTE i);
     ("'", fun i -> Parser.APOSTROPHE i);
-    ("!", fun i -> Parser.BANG i);
     ("|>", fun i -> Parser.BARGT i);
     ("|}", fun i -> Parser.BARRCURLY i);
     ("|]", fun i -> Parser.BARRSQUARE i);
