@@ -261,7 +261,17 @@ let cbox () = close_box ()
 let break () = print_break 0 0
 
 let rec printty_Type outer ctx tyT =
-  match tyT with tyT -> printty_ArrowType outer ctx tyT
+  match tyT with
+  | TyRef tyT ->
+      print_string "Ref ";
+      printty_AType false ctx tyT
+  | TySource tyT ->
+      print_string "Source ";
+      printty_AType false ctx tyT
+  | TySink tyT ->
+      print_string "Sink ";
+      printty_AType false ctx tyT
+  | tyT -> printty_ArrowType outer ctx tyT
 
 and printty_ArrowType outer ctx tyT =
   match tyT with
@@ -277,6 +287,8 @@ and printty_ArrowType outer ctx tyT =
 
 and printty_AType outer ctx tyT =
   match tyT with
+  | TyBot -> print_string "Bot"
+  | TyTop -> print_string "Top"
   | TyString -> print_string "String"
   | TyBool -> print_string "Bool"
   | TyVariant fields ->
@@ -377,6 +389,44 @@ let rec printtm_term outer ctx t =
       if small t2 && not outer then break () else print_space ();
       printtm_term outer ctx' t2;
       cbox ()
+  | TmAssign (_, t1, t2) ->
+      obox ();
+      printtm_appterm false ctx t1;
+      print_string " := ";
+      printtm_appterm false ctx t2;
+      cbox ()
+  | TmCase (_, t, cases) ->
+      obox ();
+      print_string "case ";
+      printtm_term false ctx t;
+      print_string " of";
+      print_space ();
+      let pc (li, (xi, ti)) =
+        let ctx', xi' = pickfreshname ctx xi in
+        print_string "<";
+        print_string li;
+        print_string "=";
+        print_string xi';
+        print_string ">==>";
+        printtm_term false ctx' ti
+      in
+      let rec p l =
+        match l with
+        | [] -> ()
+        | [ c ] -> pc c
+        | c :: rest ->
+            pc c;
+            print_space ();
+            print_string "|";
+            p rest
+      in
+      p cases;
+      cbox ()
+  | TmFix (_, t1) ->
+      obox ();
+      print_string "fix ";
+      printtm_term false ctx t1;
+      cbox ()
   | t -> printtm_appterm outer ctx t
 
 and printtm_appterm outer ctx t =
@@ -386,6 +436,16 @@ and printtm_appterm outer ctx t =
       printtm_appterm false ctx t1;
       print_space ();
       printtm_appterm false ctx t2;
+      cbox ()
+  | TmRef (_, t1) ->
+      obox ();
+      print_string "ref ";
+      printtm_aterm false ctx t1;
+      cbox ()
+  | TmDeref (_, t1) ->
+      obox ();
+      print_string "!";
+      printtm_aterm false ctx t1;
       cbox ()
   | TmPred (_, t1) ->
       print_string "pred ";
@@ -400,16 +460,47 @@ and printtm_appterm outer ctx t =
       printtm_aterm false ctx t2
   | t -> printtm_pathterm outer ctx t
 
+and printtm_ascribeterm outer ctx t =
+  match t with
+  | TmAscribe (_, t1, tyT1) ->
+      obox0 ();
+      printtm_appterm false ctx t1;
+      print_space ();
+      print_string "as ";
+      printty_Type false ctx tyT1;
+      cbox ()
+  | t -> printtm_aterm outer ctx t
+
 and printtm_pathterm outer ctx t =
   match t with
   | TmProj (_, t1, l) ->
       printtm_aterm false ctx t1;
       print_string ".";
       print_string l
-  | t -> printtm_aterm outer ctx t
+  | t -> printtm_ascribeterm outer ctx t
 
 and printtm_aterm outer ctx t =
   match t with
+  | TmLoc (_, l) ->
+      print_string "<loc #";
+      print_int l;
+      print_string ">"
+  | TmTag (_, l, t, tyT) ->
+      obox ();
+      print_string "<";
+      print_string l;
+      print_string "=";
+      printtm_term false ctx t;
+      print_string ">";
+      print_space ();
+      print_string "as ";
+      printty_Type outer ctx tyT;
+      cbox ()
+  | TmFloat (_, s) -> print_string (string_of_float s)
+  | TmInert (_, tyT) ->
+      print_string "inert[";
+      printty_Type false ctx tyT;
+      print_string "]"
   | TmString (_, s) -> print_string ("\"" ^ s ^ "\"")
   | TmVar (i, x, n) ->
       if ctxlength ctx = n then print_string (index_to_name i ctx x)
