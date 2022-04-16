@@ -34,6 +34,9 @@ open Syntax
 %token <Support.Error.info> TTOP
 %token <Support.Error.info> SSOURCE
 %token <Support.Error.info> SSINK
+%token <Support.Error.info> TRY
+%token <Support.Error.info> ERROR
+%token <Support.Error.info> OTHERWISE
 
 /* Identifier and constant value tokens */
 %token <string Support.Error.withinfo> UCID  /* uppercase-initial */
@@ -220,6 +223,8 @@ Term:
 
   | app1 = AppTerm; fi = COLONEQ; app2 = AppTerm
     { fun ctx -> TmAssign (fi, app1 ctx, app2 ctx) }
+  | fi = TRY; t1 = Term; OTHERWISE; t2 = Term
+    { fun ctx -> TmTry (fi, t1 ctx, t2 ctx) }
 
 AppTerm:
   | p = PathTerm
@@ -267,6 +272,8 @@ ATerm:
     { fun _ -> TmUnit fi }
   | id = LCID
     { fun ctx -> TmVar (id.i, name_to_index id.i ctx id.v, ctxlength ctx) }
+  | fi = ERROR
+    { fun ctx -> TmError fi }
   | fi = LCURLY; f = Fields; RCURLY
     { fun ctx -> TmRecord (fi, f ctx 1) }
   | v = INTV

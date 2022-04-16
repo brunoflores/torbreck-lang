@@ -29,6 +29,8 @@
     ("pred", fun i -> Parser.PRED i);
     ("iszero", fun i -> Parser.ISZERO i);
     ("Nat", fun i -> Parser.NAT i);
+    ("error", fun i -> Parser.ERROR i);
+    ("with", fun i -> Parser.OTHERWISE i);
 
     (* TODO
     ("type", fun i -> Parser.TYPE i);
