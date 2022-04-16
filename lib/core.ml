@@ -21,9 +21,11 @@ let rec isval ctx t =
   | t when isnumericval ctx t -> true
   | TmAbs _ -> true
   | TmRecord (_, fields) -> List.for_all (fun (_, ti) -> isval ctx ti) fields
+  (* Else *)
   | TmZero _ | TmSucc _ | TmAscribe _ | TmIf _ | TmCase _ | TmVar _
   | TmTimesFloat _ | TmLet _ | TmProj _ | TmApp _ | TmIsZero _ | TmInert _
-  | TmAssign _ | TmRef _ | TmDeref _ | TmFix _ | TmPred _ ->
+  | TmTry _ | TmError _ | TmAssign _ | TmRef _ | TmDeref _ | TmFix _ | TmPred _
+    ->
       false
 
 type store = term list
@@ -71,10 +73,13 @@ let rec eval1 ctx store t =
         match t1 with
         | TmLoc (_, l) -> (TmUnit dummyinfo, updatestore store l t2)
         | _ -> raise NoRuleApplies)
+  (* TmAscribe *)
   | TmAscribe (_, v1, _) when isval ctx v1 -> (v1, store)
   | TmAscribe (fi, t1, tyT) ->
       let t1', store' = eval1 ctx store t1 in
       (TmAscribe (fi, t1', tyT), store')
+  (* TmIf *)
+  | TmIf (_, TmError fi, _, _) -> (TmError fi, store)
   | TmIf (_, TmTrue _, t2, _) -> (t2, store)
   | TmIf (_, TmFalse _, _, t3) -> (t3, store)
   | TmIf (fi, t1, t2, t3) ->
@@ -83,6 +88,7 @@ let rec eval1 ctx store t =
   | TmTag (fi, l, t1, tyT) ->
       let t1', store' = eval1 ctx store t1 in
       (TmTag (fi, l, t1', tyT), store')
+  (* TmCase *)
   | TmCase (_, TmTag (_, li, v11, _), branches) when isval ctx v11 -> (
       try
         let _, body = List.assoc li branches in
@@ -95,6 +101,7 @@ let rec eval1 ctx store t =
       match getbinding fi ctx n with
       | TmAbbBind (t, _) -> (t, store)
       | _ -> raise NoRuleApplies)
+  (* TmTimesFloat *)
   | TmTimesFloat (fi, TmFloat (_, f1), TmFloat (_, f2)) ->
       (TmFloat (fi, f1 *. f2), store)
   | TmTimesFloat (fi, (TmFloat (_, _) as t1), t2) ->
@@ -103,6 +110,7 @@ let rec eval1 ctx store t =
   | TmTimesFloat (fi, t1, t2) ->
       let t1', store' = eval1 ctx store t1 in
       (TmTimesFloat (fi, t1', t2), store')
+  (* TmLet *)
   | TmLet (_, _, v1, t2) when isval ctx v1 -> (termsubsttop v1 t2, store)
   | TmLet (fi, x, t1, t2) ->
       let t1', store' = eval1 ctx store t1 in
@@ -120,11 +128,15 @@ let rec eval1 ctx store t =
       in
       let fields', store' = evalfields fields in
       (TmRecord (fi, fields'), store')
+  (* TmProj *)
   | TmProj (_, TmRecord (_, fields), l) -> (
       try (List.assoc l fields, store) with Not_found -> raise NoRuleApplies)
   | TmProj (fi, t1, l) ->
       let t1', store' = eval1 ctx store t1 in
       (TmProj (fi, t1', l), store')
+  (* TmApp *)
+  | TmApp (_, TmError fi, _) -> (TmError fi, store)
+  | TmApp (_, v1, TmError fi) when isval ctx v1 -> (TmError fi, store)
   | TmApp (_, TmAbs (_, _, _, t12), v2) when isval ctx v2 ->
       (termsubsttop v2 t12, store)
   | TmApp (i, v1, t2) when isval ctx v1 ->
@@ -140,19 +152,22 @@ let rec eval1 ctx store t =
   | TmSucc (i, t1) ->
       let t1', store' = eval1 ctx store t1 in
       (TmSucc (i, t1'), store')
+  (* TmPred *)
   | TmPred (_, TmZero _) -> (TmZero dummyinfo, store)
   | TmPred (_, TmSucc (_, nv1)) when isnumericval ctx nv1 -> (nv1, store)
   | TmPred (i, t1) ->
       let t1', store' = eval1 ctx store t1 in
       (TmPred (i, t1'), store')
+  (* TmIsZero *)
   | TmIsZero (_, TmZero _) -> (TmTrue dummyinfo, store)
   | TmIsZero (_, TmSucc (_, nv1)) when isnumericval ctx nv1 ->
       (TmFalse dummyinfo, store)
   | TmIsZero (i, t1) ->
       let t1', store' = eval1 ctx store t1 in
       (TmIsZero (i, t1'), store')
-  | TmString _ | TmTrue _ | TmFalse _ | TmUnit _ | TmFloat _ | TmAbs _ | TmFix _
-  | TmLoc _ | TmZero _ | TmInert _ ->
+  (* Else *)
+  | TmError _ | TmTry _ | TmString _ | TmTrue _ | TmFalse _ | TmUnit _
+  | TmFloat _ | TmAbs _ | TmFix _ | TmLoc _ | TmZero _ | TmInert _ ->
       raise NoRuleApplies
 
 let rec eval (ctx : context) (store : store) (t : term) =
@@ -447,3 +462,5 @@ let rec typeof ctx t =
   | TmIsZero (fi, t1) ->
       if subtype ctx (typeof ctx t1) TyNat then TyBool
       else error fi "argument of iszero is not a number"
+  | TmError _ -> TyBot
+  | TmTry (_, t1, t2) -> join ctx (typeof ctx t1) (typeof ctx t2)

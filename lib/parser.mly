@@ -273,7 +273,7 @@ ATerm:
   | id = LCID
     { fun ctx -> TmVar (id.i, name_to_index id.i ctx id.v, ctxlength ctx) }
   | fi = ERROR
-    { fun ctx -> TmError fi }
+    { fun _ -> TmError fi }
   | fi = LCURLY; f = Fields; RCURLY
     { fun ctx -> TmRecord (fi, f ctx 1) }
   | v = INTV
