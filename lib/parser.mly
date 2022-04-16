@@ -1,5 +1,5 @@
 %{
-  open Syntax
+open Syntax
 %}
 
 /* Keyword tokens */
@@ -35,10 +35,6 @@
 %token <Support.Error.info> SSOURCE
 %token <Support.Error.info> SSINK
 
-/* TODO
-%token <Support.Error.info> TYPE
-*/
-
 /* Identifier and constant value tokens */
 %token <string Support.Error.withinfo> UCID  /* uppercase-initial */
 %token <string Support.Error.withinfo> LCID  /* lowercase / symbolic-initial */
@@ -68,25 +64,6 @@
 %token <Support.Error.info> VBAR
 %token <Support.Error.info> COLONEQ
 %token <Support.Error.info> BANG
-
-/* TODO
-%token <Support.Error.info> APOSTROPHE
-%token <Support.Error.info> BARGT
-%token <Support.Error.info> BARRCURLY
-%token <Support.Error.info> BARRSQUARE
-%token <Support.Error.info> COLONCOLON
-%token <Support.Error.info> COLONHASH
-%token <Support.Error.info> DARROW
-%token <Support.Error.info> DQUOTE
-%token <Support.Error.info> EQEQ
-%token <Support.Error.info> EXISTS
-%token <Support.Error.info> HASH
-%token <Support.Error.info> LCURLYBAR
-%token <Support.Error.info> LEFTARROW
-%token <Support.Error.info> LSQUAREBAR
-%token <Support.Error.info> STAR
-%token <Support.Error.info> TRIANGLE
-*/
 
 /* The starting production is the syntactic class [topLevel].
    The parser returns to the user program a function that,
