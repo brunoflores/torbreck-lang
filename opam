@@ -1,0 +1,14 @@
+opam-version: "2.0"
+name: "fulluntyped"
+version: "0.1"
+license: "APACHE-2.0"
+depends: [
+  "ocaml" 
+  "ocamlfind" 
+  "dune" 
+  "core"
+  "ppx_jane"
+  "ppx_deriving"
+  "menhir"
+  "menhirLib"
+]
