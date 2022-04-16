@@ -45,6 +45,8 @@ type term =
   | TmPred of info * term
   | TmIsZero of info * term
   | TmInert of info * ty
+  | TmError of info
+  | TmTry of info * term * term
 
 type binding =
   | NameBind
@@ -148,6 +150,8 @@ let tmmap onvar ontype c t =
     | TmSucc (fi, t1) -> TmSucc (fi, walk c t1)
     | TmPred (fi, t1) -> TmPred (fi, walk c t1)
     | TmIsZero (fi, t1) -> TmIsZero (fi, walk c t1)
+    | TmError _ as t -> t
+    | TmTry (fi, t1, t2) -> TmTry (fi, walk c t1, walk c t2)
   in
   walk c t
 
@@ -254,6 +258,8 @@ let tmInfo t =
   | TmSucc (fi, _) -> fi
   | TmPred (fi, _) -> fi
   | TmIsZero (fi, _) -> fi
+  | TmError fi -> fi
+  | TmTry (fi, _, _) -> fi
 
 let obox0 () = open_hvbox 0
 let obox () = open_hvbox 2
@@ -427,6 +433,14 @@ let rec printtm_term outer ctx t =
       print_string "fix ";
       printtm_term false ctx t1;
       cbox ()
+  | TmTry (_, t1, t2) ->
+      obox0 ();
+      print_string "try ";
+      printtm_term false ctx t1;
+      print_space ();
+      print_string "with ";
+      printtm_term false ctx t2;
+      cbox ()
   | t -> printtm_appterm outer ctx t
 
 and printtm_appterm outer ctx t =
@@ -545,6 +559,7 @@ and printtm_aterm outer ctx t =
             print_string ")"
       in
       f 1 t1
+  | TmError _ -> print_string "error"
   | t ->
       print_string "(";
       printtm_term outer ctx t;

@@ -50,6 +50,8 @@ type term =
   | TmPred of info * term
   | TmIsZero of info * term
   | TmInert of info * ty
+  | TmError of info
+  | TmTry of info * term * term
 
 (* Note on bindings and contexts:
    We use the same context for parsing, printing and type-checking.
