@@ -237,6 +237,9 @@ let rec tyeqv ctx tyS tyT =
 let rec subtype ctx tyS tyT =
   tyeqv ctx tyS tyT
   ||
+  (* The [||] operator is a _short-circuiting_ boolean "or": optimization.
+     The heuristic is that most times when the subtype checker is called,
+     the two types being compared are actually equal. *)
   let tyS = simplifyty ctx tyS in
   let tyT = simplifyty ctx tyT in
   match (tyS, tyT) with
@@ -258,13 +261,13 @@ let rec subtype ctx tyS tyT =
           with Not_found -> false)
         fS
   | TyRecord fS, TyRecord fT ->
-      List.for_all
-        (fun (li, tyTi) ->
-          try
-            let tySi = List.assoc li fS in
-            subtype ctx tySi tyTi
-          with Not_found -> false)
-        fT
+      let field_is_subtype (li, tyTi) =
+        try
+          let tySi = List.assoc li fS in
+          subtype ctx tySi tyTi
+        with Not_found -> false
+      in
+      List.for_all field_is_subtype fT
   | _ -> false
 
 let rec join ctx tyS tyT =
@@ -274,8 +277,9 @@ let rec join ctx tyS tyT =
     let tyS = simplifyty ctx tyS in
     let tyT = simplifyty ctx tyT in
     match (tyS, tyT) with
-    | TyArr (tyS1, tyS2), TyArr (tyT1, tyT2) ->
-        TyArr (meet ctx tyS1 tyT1, join ctx tyS2 tyT2)
+    | TyArr (tyS1, tyS2), TyArr (tyT1, tyT2) -> (
+        try TyArr (meet ctx tyS1 tyT1, join ctx tyS2 tyT2)
+        with Not_found -> TyTop)
     | TyRef tyT1, TyRef tyT2 ->
         if subtype ctx tyT1 tyT2 && subtype ctx tyT2 tyT1 then TyRef tyT1
         else (* Warning: incomplete *) TySource (join ctx tyT1 tyT2)
