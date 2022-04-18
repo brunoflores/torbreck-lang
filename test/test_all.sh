@@ -17,12 +17,12 @@ for test in ./test/*.f; do
     if [ "$DIFF" != "" ]; then
         echo ""
         echo "-------------------------"
-        printf "${RED}FAILED DIFF:${NOCOLOR} $test\n"
+        printf "${RED}FAIL DIFF:${NOCOLOR} $test\n"
         echo $DIFF
         echo "-------------------------"
-        exit 0
+        exit 1
     else
-        printf "${GREEN}PASSED:${NOCOLOR} $test\n"
+        printf "${GREEN}PASS:${NOCOLOR} $test\n"
     fi
 done
 
