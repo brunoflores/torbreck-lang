@@ -1,1 +1,4 @@
 c: { get: Unit->Nat, inc: Unit->Unit }
+unit: Unit
+2: Nat
+4: Nat

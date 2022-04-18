@@ -499,6 +499,7 @@ and printtm_pathterm outer ctx t =
 
 and printtm_aterm outer ctx t =
   match t with
+  | TmUnit _ -> print_string "unit"
   | TmLoc (_, l) ->
       print_string "<loc #";
       print_int l;
