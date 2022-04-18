@@ -7,14 +7,12 @@ module E = MenhirLib.ErrorReports
 module L = MenhirLib.LexerUtil
 module I = Parser.MenhirInterpreter
 
-(*
-let print_position outx (lexbuf : Lexing.lexbuf) =
-  let pos = lexbuf.lex_curr_p in
-  let fname = pos.pos_fname in
-  let line = pos.pos_lnum in
-  let col = pos.pos_cnum - pos.pos_bol + 1 in
-  fprintf outx "%s:%d:%d" fname line col
-*)
+let cli_state =
+  object
+    val mutable d = false
+    method init ~debug = d <- debug
+    method debug = d
+  end
 
 let printbindingty ctx b =
   match b with
@@ -75,6 +73,7 @@ let succeed (cmds : Syntax.context -> Syntax.command list * Syntax.context) =
     match cmds with
     | [] -> ()
     | x :: xs ->
+        if cli_state#debug then Format.printf "%a\n" Syntax.pp_command x else ();
         let ctx', store' = one ctx store x in
         all ctx' store' xs
   in
@@ -109,7 +108,10 @@ let loop filename =
 let command =
   Command.basic ~summary:"Type-check a program"
     Command.Let_syntax.(
-      let%map_open filename = anon (maybe ("filename" %: Filename.arg_type)) in
-      fun () -> loop filename)
+      let%map_open debug = flag "-d" no_arg ~doc:"print debug information"
+      and filename = anon (maybe ("filename" %: Filename.arg_type)) in
+      fun () ->
+        cli_state#init ~debug;
+        loop filename)
 
 let () = Command.run command
