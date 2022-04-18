@@ -1,5 +1,4 @@
-{x=true, y=false} : {x:Bool, y:Bool}
-true : Bool
-{true, false} : {Bool, Bool}
-true
-  : Bool
+{ x=true, y=false }: { x: Bool, y: Bool }
+true: Bool
+{ true, false }: { Bool, Bool }
+true: Bool

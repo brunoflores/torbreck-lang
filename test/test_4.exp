@@ -1,4 +1,3 @@
-: x: Bool
-true : Bool
-false
-  : Bool
+x: Bool
+true: Bool
+false: Bool

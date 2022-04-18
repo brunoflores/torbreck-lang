@@ -1,3 +1,2 @@
-<loc #0> : Ref Nat
-5
-  : Nat
+<loc #0>: Ref Nat
+5: Nat

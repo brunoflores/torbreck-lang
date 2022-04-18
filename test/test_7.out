@@ -1,3 +1,2 @@
-(lambda x:Bool. x) : Bool -> Bool
-true
-  : Bool
+(lambda x:Bool. x): Bool -> Bool
+true: Bool

@@ -1,5 +1,4 @@
-0 : Nat
-1 : Nat
-true : Bool
-false
-  : Bool
+0: Nat
+1: Nat
+true: Bool
+false: Bool
