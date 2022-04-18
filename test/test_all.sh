@@ -11,7 +11,7 @@ for test in ./test/*.f; do
     fname_out=$(basename "$test" ".f").out
     fname_exp=$(basename "$test" ".f").exp
 
-    $exe "$test" > ./test/"$fname_out"
+    $exe "$test" 2>/dev/null 1> ./test/"$fname_out"
 
     # To promote, uncomment:
     # cp ./test/"$fname_out" ./test/"$fname_exp"
@@ -23,6 +23,7 @@ for test in ./test/*.f; do
         printf "%sFAIL%s: %s\n" "$RED" "$NOCOLOR" "$test"
         echo "$DIFF"
         echo "-------------------------"
+        echo ""
     else
         printf "%sPASS:%s %s\n" "$GREEN" "$NOCOLOR" "$test"
     fi
