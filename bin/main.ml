@@ -21,7 +21,6 @@ let printbindingty ctx b =
       print_string ": ";
       Syntax.printty ctx tyT
   | Syntax.TmAbbBind (t, tyT_opt) -> (
-      print_string ": ";
       match tyT_opt with
       | None -> Syntax.printty ctx (Core.typeof ctx t)
       | Some tyT -> Syntax.printty ctx tyT)
@@ -53,7 +52,6 @@ let succeed (cmds : Syntax.context -> Syntax.command list * Syntax.context) =
         let tyT = Core.typeof ctx t in
         let t', store' = Core.eval ctx store t in
         Syntax.printtm_aterm true ctx t';
-        print_break 1 2;
         print_string ": ";
         Syntax.printty ctx tyT;
         force_newline ();

@@ -330,7 +330,7 @@ and printty_AType outer ctx tyT =
       let pf i (li, tyTi) =
         if li <> string_of_int i then (
           print_string li;
-          print_string ":");
+          print_string ": ");
         printty_Type false ctx tyTi
       in
       let rec p i l =
@@ -343,10 +343,10 @@ and printty_AType outer ctx tyT =
             if outer then print_space () else break ();
             p (i + 1) rest
       in
-      print_string "{";
+      print_string "{ ";
       open_hovbox 0;
       p 1 fields;
-      print_string "}";
+      print_string " }";
       cbox ()
   | TyVar (x, n) ->
       if ctxlength ctx = n then print_string (index_to_name dummyinfo ctx x)
@@ -546,10 +546,10 @@ and printtm_aterm outer ctx t =
             if outer then print_space () else break ();
             p (i + 1) rest
       in
-      print_string "{";
+      print_string "{ ";
       open_hovbox 0;
       p 1 fields;
-      print_string "}";
+      print_string " }";
       cbox ()
   | TmZero _ -> print_string "0"
   | TmSucc (_, t1) ->
