@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -10,15 +9,8 @@ for test in ./test/*.f; do
     fname_exp=$(basename $test ".f").exp
 
     dune exec ./bin/main.exe -- $test >./test/$fname_out
-    if [ $? -ne 0 ]; then
-        echo ""
-        echo "-------------------------"
-        printf "${RED}FAILED:${NOCOLOR} $test\n"
-        echo "-------------------------"
-        exit 0
-    fi
 
-    # Promote:
+    # To promote, uncomment:
     # cp ./test/$fname_out ./test/$fname_exp
 
     DIFF=$(diff ./test/$fname_out ./test/$fname_exp)
