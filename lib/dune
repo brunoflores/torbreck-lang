@@ -11,4 +11,4 @@
  (modules core parser lexer support syntax)
  (libraries core menhirLib)
  (preprocess
-  (pps ppx_inline_test)))
+  (pps ppx_deriving.show ppx_inline_test)))

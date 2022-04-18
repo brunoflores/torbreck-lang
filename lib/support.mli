@@ -1,5 +1,5 @@
 module Error : sig
-  type info
+  type info [@@deriving show]
 
   val dummyinfo : info
   val createInfo : string -> int -> int -> int -> info

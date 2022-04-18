@@ -17,6 +17,7 @@ type ty =
   | TyBool
   | TyArr of ty * ty
   | TyNat
+[@@deriving show]
 
 type term =
   | TmLoc of info * int
@@ -47,6 +48,7 @@ type term =
   | TmInert of info * ty
   | TmError of info
   | TmTry of info * term * term
+[@@deriving show]
 
 type binding =
   | NameBind
@@ -54,11 +56,13 @@ type binding =
   | VarBind of ty
   | TyVarBind
   | TyAbbBind of ty
+[@@deriving show]
 
 type command =
   | Import of string
   | Eval of info * term
   | Bind of info * string * binding
+[@@deriving show]
 
 type context = (string * binding) list
 

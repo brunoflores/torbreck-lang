@@ -70,6 +70,7 @@ type command =
   | Import of string
   | Eval of info * term
   | Bind of info * string * binding
+[@@deriving show]
 
 (* Naming contexts. *)
 type context

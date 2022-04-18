@@ -11,6 +11,7 @@ module Error = struct
         pos_cnum : int;
       }
     | DUMMY
+  [@@deriving show]
 
   type 'a withinfo = { i : info; v : 'a }
 
