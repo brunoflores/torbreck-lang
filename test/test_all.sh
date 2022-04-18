@@ -1,29 +1,29 @@
 #!/usr/bin/env bash
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-NOCOLOR='\033[0m'
+RED=$'\033[0;31m'
+GREEN=$'\033[0;32m'
+NOCOLOR=$'\033[0m'
+
+dune build
+exe=./_build/default/bin/main.exe
 
 for test in ./test/*.f; do
-    fname_out=$(basename $test ".f").out
-    fname_exp=$(basename $test ".f").exp
+    fname_out=$(basename "$test" ".f").out
+    fname_exp=$(basename "$test" ".f").exp
 
-    dune exec ./bin/main.exe -- $test >./test/$fname_out
+    $exe "$test" > ./test/"$fname_out"
 
     # To promote, uncomment:
-    # cp ./test/$fname_out ./test/$fname_exp
+    # cp ./test/"$fname_out" ./test/"$fname_exp"
 
-    DIFF=$(diff ./test/$fname_out ./test/$fname_exp)
+    DIFF=$(diff ./test/"$fname_out" ./test/"$fname_exp")
     if [ "$DIFF" != "" ]; then
         echo ""
         echo "-------------------------"
-        printf "${RED}FAIL DIFF:${NOCOLOR} $test\n"
-        echo $DIFF
+        printf "%sFAIL%s: %s\n" "$RED" "$NOCOLOR" "$test"
+        echo "$DIFF"
         echo "-------------------------"
-        exit 1
     else
-        printf "${GREEN}PASS:${NOCOLOR} $test\n"
+        printf "%sPASS:%s %s\n" "$GREEN" "$NOCOLOR" "$test"
     fi
 done
-
-exit 0
