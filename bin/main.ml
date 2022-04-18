@@ -110,6 +110,6 @@ let command =
       and filename = anon (maybe ("filename" %: Filename.arg_type)) in
       fun () ->
         cli_state#init ~debug;
-        loop filename)
+        try loop filename with CoreLib.Support.Error.Exit code -> exit code)
 
 let () = Command.run command

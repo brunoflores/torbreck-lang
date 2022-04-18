@@ -81,8 +81,8 @@
   let info (buf : Lexing.lexbuf) : info =
     let p = buf.lex_start_p in
     createInfo p.pos_fname
-               p.pos_lnum
-               p.pos_bol
+               (!lineno)
+               (Lexing.lexeme_start buf - !start)
                p.pos_cnum
 
 

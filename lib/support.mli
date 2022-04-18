@@ -1,4 +1,6 @@
 module Error : sig
+  exception Exit of int
+
   type info [@@deriving show]
 
   val dummyinfo : info

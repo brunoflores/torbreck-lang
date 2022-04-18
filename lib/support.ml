@@ -23,7 +23,20 @@ module Error = struct
   let printInfo (i : info) =
     match i with
     | INFO { pos_fname; pos_lnum; pos_bol; pos_cnum } ->
-        Printf.printf "{ %s; %d; %d; %d }" pos_fname pos_lnum pos_bol pos_cnum
+        let _ = pos_fname in
+        let _ = pos_bol in
+        let _ = pos_cnum in
+        let lines = Stdio.In_channel.read_lines pos_fname in
+        let line = List.nth lines (pos_lnum - 1) in
+        print_newline ();
+        print_endline "  |";
+        Printf.printf "%d | %s\n" pos_lnum line;
+        Printf.printf "  |";
+        for _ = 0 to pos_bol do
+          Printf.printf " "
+        done;
+        Printf.printf "^";
+        print_newline ()
     | DUMMY -> Printf.printf "%s" "<Unknown file and line>: "
 
   let errf f =
