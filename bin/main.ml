@@ -103,13 +103,14 @@ let loop filename =
   let lexbuf, content = get_contents filename in
   parse lexbuf content
 
-let command =
-  Command.basic ~summary:"Type-check a program"
-    Command.Let_syntax.(
-      let%map_open debug = flag "-d" no_arg ~doc:"print debug information"
-      and filename = anon (maybe ("filename" %: Filename.arg_type)) in
-      fun () ->
-        cli_state#init ~debug;
-        try loop filename with CoreLib.Support.Error.Exit code -> exit code)
-
-let () = Command.run command
+let () =
+  let usage = "fulluntyped [-d] <file1> [<file2>] ..." in
+  let debug = ref false in
+  let filename = ref None in
+  let spec = [ ("-d", Arg.Set debug, "Print debug information") ] in
+  let readfname fname =
+    filename := if String.length fname > 0 then Some fname else None
+  in
+  Arg.parse spec readfname usage;
+  cli_state#init ~debug:!debug;
+  try loop !filename with CoreLib.Support.Error.Exit code -> exit code
