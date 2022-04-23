@@ -7,16 +7,13 @@ depends: [
   "base-bigarray" {= "base"}
   "base-threads" {= "base"}
   "base-unix" {= "base"}
-  "base_bigstring" {= "v0.15.0"}
   "base_quickcheck" {= "v0.15.0"}
   "bin_prot" {= "v0.15.0"}
-  "core" {= "v0.15.0"}
   "cppo" {= "1.6.8"}
   "csexp" {= "1.5.1"}
   "dune" {= "3.1.1"}
   "dune-configurator" {= "3.1.1"}
   "fieldslib" {= "v0.15.0"}
-  "int_repr" {= "v0.15.0"}
   "jane-street-headers" {= "v0.15.0"}
   "jst-config" {= "v0.15.0"}
   "menhir" {= "20220210"}

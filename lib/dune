@@ -9,6 +9,6 @@
  (name coreLib)
  (inline_tests)
  (modules core parser lexer support syntax)
- (libraries core menhirLib)
+ (libraries stdio menhirLib)
  (preprocess
   (pps ppx_deriving.show ppx_inline_test)))

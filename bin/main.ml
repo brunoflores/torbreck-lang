@@ -1,4 +1,3 @@
-open Core
 module Syntax = CoreLib.Syntax
 module Parser = CoreLib.Parser
 module Lexer = CoreLib.Lexer
@@ -81,8 +80,10 @@ let succeed (cmds : Syntax.context -> Syntax.command list * Syntax.context) =
 
 let fail text buffer _ =
   let location = L.range (E.last buffer) in
-  let indication = sprintf "Syntax error %s.\n" (E.show (show text) buffer) in
-  eprintf "%s%s%!" location indication;
+  let indication =
+    Format.sprintf "Syntax error %s.\n" (E.show (show text) buffer)
+  in
+  Format.eprintf "%s%s%!" location indication;
   exit 1
 
 let parse lexbuf text : unit =
@@ -95,7 +96,7 @@ let get_contents s =
   let filename, content =
     match s with
     | None | Some "-" -> ("-", In_channel.input_all In_channel.stdin)
-    | Some filename -> (filename, In_channel.read_all filename)
+    | Some filename -> (filename, Stdio.In_channel.read_all filename)
   in
   (L.init filename (content |> Lexing.from_string), content)
 
