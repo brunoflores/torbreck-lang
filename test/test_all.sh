@@ -26,7 +26,7 @@ for test in ./test/*.f; do
         echo "-------------------------"
         echo ""
 
-	exit_status=1
+        exit_status=1
     else
         printf "%sPASS:%s %s\n" "$GREEN" "$NOCOLOR" "$test"
     fi
