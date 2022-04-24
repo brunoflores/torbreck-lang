@@ -1,0 +1,3 @@
+T: { Nat, Nat, Bool }
+v: T
+{ 1, 2, true }: T
