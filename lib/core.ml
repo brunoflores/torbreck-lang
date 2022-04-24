@@ -234,7 +234,7 @@ let rec tyeqv ctx tyS tyT =
   | TyVar (i, _), TyVar (j, _) -> i = j
   | _ -> false
 
-exception Not_subtype of string
+exception Not_subtype of info * string
 
 let rec subtype ctx tyS tyT =
   tyeqv ctx tyS tyT
@@ -260,7 +260,7 @@ let rec subtype ctx tyS tyT =
           try
             let tyTi = List.assoc li fT in
             subtype ctx tySi tyTi
-          with Not_found -> raise @@ Not_subtype "")
+          with Not_found -> raise (Not_subtype (dummyinfo, "")))
         fS
   | TyRecord fS, TyRecord fT ->
       let field_is_subtype (li, tyTi) =
@@ -269,11 +269,11 @@ let rec subtype ctx tyS tyT =
           subtype ctx tySi tyTi
         with Not_found ->
           let msg = Printf.sprintf "field %s not in record provided here" li in
-          raise @@ Not_subtype msg
+          raise (Not_subtype (dummyinfo, msg))
       in
       List.for_all field_is_subtype fT
   (* Else, handle remaining errors here *)
-  | _ -> raise @@ Not_subtype ""
+  | _ -> raise (Not_subtype (dummyinfo, ""))
 
 let rec join ctx tyS tyT =
   if subtype ctx tyS tyT then tyT
@@ -373,7 +373,11 @@ let rec typeof ctx t =
   | TmLoc (fi, _) ->
       error fi "locations are not supposed to occur in source programs"
   | TmAscribe (fi, t1, tyT) ->
-      if subtype ctx (typeof ctx t1) tyT then tyT
+      let sub =
+        try subtype ctx (typeof ctx t1) tyT
+        with Not_subtype (_, msg) -> raise (Not_subtype (fi, msg))
+      in
+      if sub then tyT
       else error fi "body of as-term does not have the expected type"
   | TmString _ -> TyString
   | TmTrue _ -> TyBool
@@ -425,10 +429,11 @@ let rec typeof ctx t =
       then TyFloat
       else error fi "argument of timesfloat is not a number"
   | TmVar (fi, i, _) -> gettypefromcontext fi ctx i
-  | TmLet (_, x, t1, t2) ->
+  | TmLet (fi, x, t1, t2) -> (
       let tyT1 = typeof ctx t1 in
       let ctx' = addbinding ctx x (VarBind tyT1) in
-      typeshift (-1) (typeof ctx' t2)
+      try typeshift (-1) (typeof ctx' t2)
+      with Not_subtype (fi', msg) -> error fi' msg ?context:(Some fi))
   | TmRecord (_, fields) ->
       let fieldtys = List.map (fun (li, ti) -> (li, typeof ctx ti)) fields in
       TyRecord fieldtys
@@ -459,7 +464,7 @@ let rec typeof ctx t =
           try
             if subtype ctx tyT2 tyT11 then tyT12
             else error fi "parameter type mismatch"
-          with Not_subtype msg -> error fi msg)
+          with Not_subtype (_, msg) -> error fi msg)
       | TyBot -> TyBot
       | _ as ty ->
           error fi

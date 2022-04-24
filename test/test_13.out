@@ -1,7 +1,6 @@
 
-  |
 4 | f record2;
-  |   ^
+      ^
 
 field x not in record provided here
 

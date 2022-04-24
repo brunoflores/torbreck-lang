@@ -1,0 +1,9 @@
+Counter: { get: Unit->Nat, inc: Unit->Unit }
+
+4 | c = let r = { x = ref 1 } in
+5 |       { get = lambda _: Unit. !(r.x) } as Counter;
+                                            ^
+
+field inc not in record provided here
+
+

@@ -20,24 +20,32 @@ module Error = struct
   let createInfo fname lnum bol cnum =
     INFO { pos_fname = fname; pos_lnum = lnum; pos_bol = bol; pos_cnum = cnum }
 
-  let printInfo (i : info) =
-    match i with
-    | INFO { pos_fname; pos_lnum; pos_bol; pos_cnum } ->
-        let _ = pos_fname in
-        let _ = pos_bol in
-        let _ = pos_cnum in
+  let printInfo ?context fi =
+    match fi with
+    | INFO { pos_fname; pos_lnum; pos_bol; _ } ->
+        let first_line, last_line =
+          match context with
+          | Some (INFO { pos_lnum = first; _ }) -> (first, pos_lnum)
+          | _ -> (pos_lnum, pos_lnum)
+        in
+        let print_carrot_line _ =
+          let width_num_col = (String.length @@ string_of_int pos_lnum) + 2 in
+          for _ = 0 to pos_bol + width_num_col do
+            Printf.printf " "
+          done;
+          Printf.printf "^"
+        in
         let lines = Stdio.In_channel.read_lines pos_fname in
-        let line = List.nth lines (pos_lnum - 1) in
+        let print_line n =
+          Printf.printf "%d | %s\n" n @@ List.nth lines (n - 1)
+        in
         print_newline ();
-        print_endline "  |";
-        Printf.printf "%d | %s\n" pos_lnum line;
-        Printf.printf "  |";
-        for _ = 0 to pos_bol do
-          Printf.printf " "
+        for n = first_line to last_line do
+          print_line n
         done;
-        Printf.printf "^";
+        print_carrot_line ();
         print_newline ()
-    | DUMMY -> Printf.printf "%s" "<Unknown file and line>: "
+    | DUMMY -> Printf.printf "<Unknown file information>"
 
   let errf f =
     print_flush ();
@@ -49,9 +57,9 @@ module Error = struct
     print_newline ();
     raise (Exit 1)
 
-  let errfAt fi f =
+  let errfAt ?context fi f =
     errf (fun () ->
-        printInfo fi;
+        printInfo fi ?context;
         print_space ();
         f ())
 
@@ -61,10 +69,12 @@ module Error = struct
         print_string s;
         print_newline ())
 
-  let error fi s =
-    errfAt fi (fun () ->
+  let error ?context fi s =
+    errfAt fi
+      (fun () ->
         print_string s;
         print_newline ())
+      ?context
 
   let warning s =
     print_string "Warning: ";
