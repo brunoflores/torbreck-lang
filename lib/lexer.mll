@@ -74,7 +74,7 @@
   and startLex = ref dummyinfo
   and start = ref 0
 
-  let newline lexbuf = incr lineno; start := (Lexing.lexeme_start lexbuf)
+  let incr_line lexbuf = incr lineno; start := (Lexing.lexeme_start lexbuf)
 
   let info (buf : Lexing.lexbuf) : info =
     let p = buf.lex_start_p in
@@ -107,20 +107,22 @@
     end
 
   let getStr () = Bytes.sub_string (!stringBuffer) 0 (!stringEnd)
-
 }
 
 let white = [' ' '\t']+
+let line_break = [' ' '\009' '\012']*"\n"
 
 rule read = parse
   | white
     { read lexbuf }
-  | [' ' '\009' '\012']*"\n"
-    { newline lexbuf; read lexbuf }
+  | line_break
+    { incr_line lexbuf; read lexbuf }
+
   | "*/"
     { error (info lexbuf) "Unmatched end of comment" }
   | "/*"
-    { depth := 1; startLex := info lexbuf; comment lexbuf; read lexbuf }
+    { depth := 1; startLex := info lexbuf; eat_multi_line_comment lexbuf; read lexbuf }
+  | "--" { eat_single_line_comment lexbuf }
 
   | ['0'-'9']+
     { Parser.INTV { i= info lexbuf; v = int_of_string (text lexbuf)} }
@@ -149,17 +151,23 @@ rule read = parse
   | _
     { error (info lexbuf) "Illegal character" }
 
-and comment = parse
+and eat_single_line_comment = parse
+  | line_break
+    { incr_line lexbuf; read lexbuf }
+  | _
+    { eat_single_line_comment lexbuf }
+
+and eat_multi_line_comment = parse
   | "/*"
-    { depth := succ !depth; comment lexbuf }
+    { depth := succ !depth; eat_multi_line_comment lexbuf }
   | "*/"
-    { depth := pred !depth; if !depth > 0 then comment lexbuf }
+    { depth := pred !depth; if !depth > 0 then eat_multi_line_comment lexbuf }
   | eof
     { error (!startLex) "Comment not terminated" }
   | [^ '\n']
-    { comment lexbuf }
+    { eat_multi_line_comment lexbuf }
   | "\n"
-    { newline lexbuf; comment lexbuf }
+    { incr_line lexbuf; eat_multi_line_comment lexbuf }
 
 and string = parse
   | '"'
@@ -167,7 +175,7 @@ and string = parse
   | '\\'
     { addStr (escaped lexbuf); string lexbuf }
   | '\n'
-    { addStr '\n'; newline lexbuf; string lexbuf }
+    { addStr '\n'; incr_line lexbuf; string lexbuf }
   | eof
     { error (!startLex) "String not terminated" }
   | _
