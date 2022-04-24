@@ -47,36 +47,34 @@ let succeed (cmds : Syntax.context -> Syntax.command list * Syntax.context) =
   let one ctx store cmd =
     match cmd with
     | Syntax.Eval (_, t) ->
-        let open Format in
         let tyT = Core.typeof ctx t in
         let t', store' = Core.eval ctx store t in
         Syntax.printtm_aterm true ctx t';
         print_string ": ";
         Syntax.printty ctx tyT;
-        force_newline ();
+        Format.force_newline ();
         (ctx, store')
     | Syntax.Bind (fi, x, bind) ->
-        let open Format in
-        let bind = checkbinding fi ctx bind in
-        let bind', store' = Core.evalbinding ctx store bind in
+        let bind' = checkbinding fi ctx bind in
+        let bind'', store' = Core.evalbinding ctx store bind' in
         print_string x;
         print_string ": ";
-        printbindingty ctx bind';
-        force_newline ();
-        (Syntax.addbinding ctx x bind', Core.shiftstore 1 store')
-    | Syntax.Import _ -> failwith "not implemented"
+        printbindingty ctx bind'';
+        Format.force_newline ();
+        (Syntax.addbinding ctx x bind'', Core.shiftstore 1 store')
   in
   let rec all ctx store cmds =
     match cmds with
     | [] -> ()
     | x :: xs ->
-        if cli_state#debug then Format.printf "%a\n" Syntax.pp_command x else ();
+        if cli_state#debug then print_endline @@ Syntax.show_command x else ();
         let ctx', store' = one ctx store x in
         all ctx' store' xs
   in
-  let cmds, ctx = cmds Syntax.emptycontext in
-  let store = Core.emptystore in
-  all ctx store cmds
+  (* The context output by the parse tree is dircarded and we start with
+     a fresh new one. *)
+  let cmds, (_ : Syntax.context) = cmds Syntax.emptycontext in
+  all Syntax.emptycontext Core.emptystore cmds
 
 let fail text buffer _ =
   let location = L.range (E.last buffer) in
