@@ -73,3 +73,5 @@ depends: [
   "typerep" {= "v0.15.0"}
   "variantslib" {= "v0.15.0"}
 ]
+synopsis: "A compiler"
+maintainer: "Bruno Flores <bruno@brunoflores.com.br>"
