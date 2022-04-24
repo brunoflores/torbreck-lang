@@ -17,7 +17,7 @@ type ty =
   | TyBool
   | TyArr of ty * ty
   | TyNat
-[@@deriving show]
+[@@deriving show { with_path = false }]
 
 type term =
   | TmLoc of info * int
@@ -48,7 +48,7 @@ type term =
   | TmInert of info * ty
   | TmError of info
   | TmTry of info * term * term
-[@@deriving show]
+[@@deriving show { with_path = false }]
 
 type binding =
   | NameBind
@@ -56,13 +56,10 @@ type binding =
   | VarBind of ty
   | TyVarBind
   | TyAbbBind of ty
-[@@deriving show]
+[@@deriving show { with_path = false }]
 
-type command =
-  | Import of string
-  | Eval of info * term
-  | Bind of info * string * binding
-[@@deriving show]
+type command = Eval of info * term | Bind of info * string * binding
+[@@deriving show { with_path = false }]
 
 type context = (string * binding) list
 
@@ -177,10 +174,10 @@ let bindingshift d bind =
   match bind with
   | NameBind -> NameBind
   | TmAbbBind (t, tyT) ->
-      let tyT =
+      let tyT' =
         match tyT with None -> None | Some tyT -> Some (typeshift d tyT)
       in
-      TmAbbBind (termshift d t, tyT)
+      TmAbbBind (termshift d t, tyT')
   | VarBind tyT -> VarBind (typeshift d tyT)
   | TyVarBind -> TyVarBind
   | TyAbbBind tyT -> TyAbbBind (typeshift d tyT)
@@ -217,22 +214,37 @@ let getbinding fi ctx i =
     bindingshift (i + 1) bind
   with Failure _ ->
     let msg =
-      Printf.sprintf "Variable lookup failure: offset: %d, ctx size: %d"
+      Printf.sprintf "variable lookup failure: offset: %d, ctx size: %d"
     in
-    error fi (msg i (List.length ctx))
+    let offset = i in
+    let length = List.length ctx in
+    error fi @@ msg offset length
+
+let string_of_context (ctx : (string * binding) list) =
+  let idx = ref 0 in
+  let string_of_item (id, b) =
+    let idx' = !idx in
+    incr idx;
+    Format.sprintf "\n\t[%d] %s: %s" idx' id (show_binding b)
+  in
+  List.fold_left (fun acc x -> acc ^ string_of_item x) "" ctx
 
 let gettypefromcontext fi ctx i =
   match getbinding fi ctx i with
   | VarBind tyT -> tyT
+  | TyAbbBind tyT -> tyT
   | TmAbbBind (_, Some tyT) -> tyT
   | TmAbbBind (_, None) ->
       error fi
-        (Printf.sprintf "No type recorded for variable %s"
+        (Printf.sprintf "no type recorded for variable %s"
            (index_to_name fi ctx i))
-  | _ ->
+  | _ as b ->
       error fi
-        (Printf.sprintf "Wrong kind of binding for variable %s"
-           (index_to_name fi ctx i))
+        (Printf.sprintf
+           "wrong kind of binding for variable %s at index %d: %s\n\
+            with context:\n\
+            %s"
+           (index_to_name fi ctx i) i (show_binding b) (string_of_context ctx))
 
 let tmInfo t =
   match t with

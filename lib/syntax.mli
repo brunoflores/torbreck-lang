@@ -17,6 +17,7 @@ type ty =
   | TyBool
   | TyArr of ty * ty
   | TyNat
+[@@deriving show]
 
 type term =
   | TmLoc of info * int
@@ -52,6 +53,7 @@ type term =
   | TmInert of info * ty
   | TmError of info
   | TmTry of info * term * term
+[@@deriving show]
 
 (* Note on bindings and contexts:
    We use the same context for parsing, printing and type-checking.
@@ -65,11 +67,9 @@ type binding =
   | VarBind of ty
   | TyVarBind
   | TyAbbBind of ty
+[@@deriving show]
 
-type command =
-  | Import of string
-  | Eval of info * term
-  | Bind of info * string * binding
+type command = Eval of info * term | Bind of info * string * binding
 [@@deriving show]
 
 (* Naming contexts. *)
@@ -77,6 +77,7 @@ type context
 
 val emptycontext : context
 val ctxlength : context -> int
+val string_of_context : context -> string
 
 val addbinding : context -> string -> binding -> context
 (** [addbinding ctx str bind] extends context [ctx] with [str] and [bind]. *)

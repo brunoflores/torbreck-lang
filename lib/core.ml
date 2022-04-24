@@ -438,7 +438,14 @@ let rec typeof ctx t =
           try List.assoc l fieldtys
           with Not_found -> error fi ("label " ^ l ^ " not found"))
       | TyBot -> TyBot
-      | _ -> error fi "expected record type")
+      | TyVar (i, _) ->
+          error fi
+          @@ Format.sprintf "expected record type, got: %s"
+          @@ Syntax.index_to_name fi ctx i
+      | _ as ty ->
+          error fi
+          @@ Format.sprintf "expected record type, got: %s"
+          @@ Syntax.show_ty ty)
   | TmInert (_, tyT) -> tyT
   | TmAbs (_, x, tyT1, t2) ->
       let ctx' = addbinding ctx x (VarBind tyT1) in
@@ -454,7 +461,11 @@ let rec typeof ctx t =
             else error fi "parameter type mismatch"
           with Not_subtype msg -> error fi msg)
       | TyBot -> TyBot
-      | _ -> error fi "arrow type expected")
+      | _ as ty ->
+          error fi
+          @@ Format.sprintf "expected arrow type, got: %s\nwith context:\n%s"
+               (Syntax.show_ty ty)
+               (Syntax.string_of_context ctx))
   | TmFix (fi, t1) -> (
       let tyT1 = typeof ctx t1 in
       match simplifyty ctx tyT1 with
