@@ -209,11 +209,11 @@ Term:
   | fi = LAMBDA; id = LCID; COLON; ty = Type; DOT; t = Term
     { fun ctx ->
         let ctx' = addname ctx id.v in
-        TmAbs (fi, id.v, ty ctx', t ctx') }
+        TmAbs (fi, id.v, ty ctx, t ctx') }
   | fi = LAMBDA; USCORE; COLON; ty = Type; DOT; t = Term
     { fun ctx ->
         let ctx' = addname ctx "_" in
-        TmAbs(fi, "_", ty ctx', t ctx') }
+        TmAbs(fi, "_", ty ctx, t ctx') }
 
   | app1 = AppTerm; fi = COLONEQ; app2 = AppTerm
     { fun ctx -> TmAssign (fi, app1 ctx, app2 ctx) }
