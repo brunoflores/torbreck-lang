@@ -6,6 +6,7 @@ NOCOLOR=$'\033[0m'
 
 dune build
 exe=./_build/default/bin/main.exe
+exit_status=0
 
 for test in ./test/*.f; do
     fname_out=$(basename "$test" ".f").out
@@ -24,7 +25,11 @@ for test in ./test/*.f; do
         echo "$DIFF"
         echo "-------------------------"
         echo ""
+
+	exit_status=1
     else
         printf "%sPASS:%s %s\n" "$GREEN" "$NOCOLOR" "$test"
     fi
 done
+
+exit $exit_status

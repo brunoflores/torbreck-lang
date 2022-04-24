@@ -2,6 +2,8 @@ opam-version: "2.0"
 name: "fulluntyped"
 version: "0.1"
 license: "APACHE-2.0"
+synopsis: "A compiler"
+maintainer: "Bruno Flores <bruno@brunoflores.com.br>"
 depends: [
   "ocaml" 
   "ocamlfind" 

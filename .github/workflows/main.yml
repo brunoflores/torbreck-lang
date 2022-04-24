@@ -1,6 +1,8 @@
-name: Build LaTeX document
+name: Build
 on: [push]
+
 jobs:
+
   build_latex:
     runs-on: ubuntu-latest
     steps:
@@ -14,3 +16,24 @@ jobs:
         with:
           name: docs
           path: main.pdf
+
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+          - windows-latest
+        ocaml-compiler:
+          - 4.14.x
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Use OCaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+      - run: opam install . --deps-only
+      - run: opam exec -- ./test/test_all.sh
