@@ -1,0 +1,8 @@
+CounterRep: { y: Ref Nat }
+
+4 | c = let r = { x = ref 1 } as CounterRep in r;
+                               ^
+
+field y not in record provided here
+
+

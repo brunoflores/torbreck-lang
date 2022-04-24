@@ -430,7 +430,10 @@ let rec typeof ctx t =
       else error fi "argument of timesfloat is not a number"
   | TmVar (fi, i, _) -> gettypefromcontext fi ctx i
   | TmLet (fi, x, t1, t2) -> (
-      let tyT1 = typeof ctx t1 in
+      let tyT1 =
+        try typeof ctx t1
+        with Not_subtype (fi', msg) -> error ?context:(Some fi) fi' msg
+      in
       let ctx' = addbinding ctx x (VarBind tyT1) in
       try typeshift (-1) (typeof ctx' t2)
       with Not_subtype (fi', msg) -> error fi' msg ?context:(Some fi))
