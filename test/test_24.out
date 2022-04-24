@@ -1,0 +1,7 @@
+PhysicalAddr: { firstlast: String, addr: String }
+VirtualAddr: { name: String, email: String }
+pa: PhysicalAddr
+Addr: <physical:PhysicalAddr, virtual:VirtualAddr>
+a: Addr
+getName: Addr -> String
+"Bruno Flores": String

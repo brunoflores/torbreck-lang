@@ -401,7 +401,8 @@ let rec typeof ctx t =
               (fun (li, (xi, ti)) ->
                 let tyTi =
                   try List.assoc li fieldtys
-                  with Not_found -> error fi ("label " ^ li ^ " not found")
+                  with Not_found ->
+                    error fi @@ Format.sprintf "label %s not found" li
                 in
                 let ctx' = addbinding ctx xi (VarBind tyTi) in
                 typeshift (-1) (typeof ctx' ti))
@@ -418,7 +419,7 @@ let rec typeof ctx t =
             let tyTi = typeof ctx ti in
             if subtype ctx tyTi tyTiExpected then tyT
             else error fi "field does not have expected type"
-          with Not_found -> error fi ("label " ^ li ^ " not found"))
+          with Not_found -> error fi @@ Format.sprintf "label %s not found" li)
       | _ -> error fi "annotation is not a variant type")
   | TmUnit _ -> TyUnit
   | TmFloat _ -> TyFloat
@@ -444,7 +445,7 @@ let rec typeof ctx t =
       match simplifyty ctx (typeof ctx t1) with
       | TyRecord fieldtys -> (
           try List.assoc l fieldtys
-          with Not_found -> error fi ("label " ^ l ^ " not found"))
+          with Not_found -> error fi @@ Format.sprintf "label %s not found" l)
       | TyBot -> TyBot
       | TyVar (i, _) ->
           error fi
