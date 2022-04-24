@@ -1,0 +1,1 @@
+newCounter: Unit -> { get: Unit->Nat, inc: Unit->Unit }
