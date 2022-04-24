@@ -89,7 +89,7 @@ let index_to_name _ ctx x =
 
 let rec name_to_index fi ctx x =
   match ctx with
-  | [] -> failwith (Printf.sprintf "Identifier %s is unbound" x)
+  | [] -> error fi @@ Printf.sprintf "Identifier %s is unbound" x
   | (y, _) :: rest -> if y = x then 0 else 1 + name_to_index fi rest x
 
 let tymap onvar c tyT =
