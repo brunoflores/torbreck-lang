@@ -1,0 +1,6 @@
+DollarAmount: <dollars:Float>
+EuroAmount: <euros:Float>
+dollars2euros: DollarAmount -> EuroAmount
+euros2dollars: EuroAmount -> DollarAmount
+mybankbalance: DollarAmount
+<dollars=39.49990125> as DollarAmount: DollarAmount
