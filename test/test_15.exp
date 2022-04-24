@@ -1,0 +1,2 @@
+Counter: { get: Unit->Nat, inc: Unit->Unit }
+inc3: Counter -> Unit
