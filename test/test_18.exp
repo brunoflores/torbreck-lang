@@ -1,0 +1,7 @@
+ResetCounter: { get: Unit->Nat, inc: Unit->Unit, reset: Unit->Unit }
+newResetCounter: Unit ->
+                 { get: Unit->Nat, inc: Unit->Unit, reset: Unit->Unit }
+Counter: { get: Unit->Nat, inc: Unit->Unit }
+inc3: Counter -> Unit
+rc: { get: Unit->Nat, inc: Unit->Unit, reset: Unit->Unit }
+4: Nat
