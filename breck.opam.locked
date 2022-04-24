@@ -1,6 +1,8 @@
 opam-version: "2.0"
-name: "fulluntyped"
+name: "breck"
 version: "0.1"
+synopsis: "A compiler"
+maintainer: "Bruno Flores <bruno@brunoflores.com.br>"
 license: "APACHE-2.0"
 depends: [
   "base" {= "v0.15.0"}
@@ -73,5 +75,3 @@ depends: [
   "typerep" {= "v0.15.0"}
   "variantslib" {= "v0.15.0"}
 ]
-synopsis: "A compiler"
-maintainer: "Bruno Flores <bruno@brunoflores.com.br>"

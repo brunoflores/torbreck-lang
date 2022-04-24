@@ -1,3 +1,3 @@
 (lang dune 2.8)
-(name fulluntyped)
+(name breck)
 (using menhir 2.1)

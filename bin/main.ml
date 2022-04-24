@@ -104,7 +104,7 @@ let loop filename =
   parse lexbuf content
 
 let () =
-  let usage = "fulluntyped [-d] <file1> [<file2>] ..." in
+  let usage = "breck [-d] <file1> [<file2>] ..." in
   let debug = ref false in
   let filename = ref None in
   let spec = [ ("-d", Arg.Set debug, "Print debug information") ] in
