@@ -3,7 +3,6 @@
 
   let reservedWords = [
     (* Keywords *)
-    ("import", fun i -> Parser.IMPORT i);
     ("as", fun i -> Parser.AS i);
     ("String", fun i -> Parser.USTRING i);
     ("if", fun i -> Parser.IF i);
@@ -38,7 +37,6 @@
     (".", fun i -> Parser.DOT i);
     (";", fun i -> Parser.SEMI i);
     (",", fun i -> Parser.COMMA i);
-    ("/", fun i -> Parser.SLASH i);
     (":", fun i -> Parser.COLON i);
     ("=", fun i -> Parser.EQ i);
     ("[", fun i -> Parser.LSQUARE i);

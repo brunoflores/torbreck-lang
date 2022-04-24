@@ -3,7 +3,6 @@ open Syntax
 %}
 
 /* Keyword tokens */
-%token <Support.Error.info> IMPORT
 %token <Support.Error.info> AS
 %token <Support.Error.info> USTRING
 %token <Support.Error.info> IF
@@ -62,7 +61,6 @@ open Syntax
 %token <Support.Error.info> RPAREN
 %token <Support.Error.info> RSQUARE
 %token <Support.Error.info> SEMI
-%token <Support.Error.info> SLASH
 %token <Support.Error.info> USCORE
 %token <Support.Error.info> VBAR
 %token <Support.Error.info> COLONEQ
@@ -95,8 +93,6 @@ topLevel:
 
 /* A top-level command */
 Command:
-  | IMPORT; s = STRINGV
-    { fun ctx -> (Import(s.v), ctx) }
   | t = Term
     { fun ctx -> ((let t = t ctx in Eval (tmInfo t, t)), ctx) }
   | x = LCID; b = Binder
@@ -108,8 +104,6 @@ Command:
 Binder:
   | COLON; ty = Type
     { fun ctx -> VarBind (ty ctx) }
-  | SLASH
-    { fun _ -> NameBind }
   | EQ; t = Term
     { fun ctx -> TmAbbBind (t ctx, None) }
 
