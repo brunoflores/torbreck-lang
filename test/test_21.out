@@ -1,0 +1,5 @@
+Counter: { get: Unit->Nat, inc: Unit->Unit }
+CounterRep: { x: Ref Nat }
+counterClass: CounterRep -> Counter
+newCounter: Unit -> Counter
+c: Counter

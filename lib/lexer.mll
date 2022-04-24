@@ -14,6 +14,7 @@
     ("case", fun i -> Parser.CASE i);
     ("of", fun i -> Parser.OF i);
     ("ref", fun i -> Parser.REF i);
+    ("Ref", fun i -> Parser.RREF i);
     ("unit", fun i -> Parser.UNIT i);
     ("Unit", fun i -> Parser.UUNIT i);
     ("timesfloat", fun i -> Parser.TIMESFLOAT i);
