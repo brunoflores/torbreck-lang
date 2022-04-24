@@ -44,6 +44,7 @@ let show text positions =
   E.extract text positions |> E.sanitize |> E.compress |> E.shorten 20
 
 let succeed (cmds : Syntax.context -> Syntax.command list * Syntax.context) =
+  let open Format in
   let one ctx store cmd =
     match cmd with
     | Syntax.Eval (_, t) ->
@@ -52,7 +53,7 @@ let succeed (cmds : Syntax.context -> Syntax.command list * Syntax.context) =
         Syntax.printtm_aterm true ctx t';
         print_string ": ";
         Syntax.printty ctx tyT;
-        Format.force_newline ();
+        force_newline ();
         (ctx, store')
     | Syntax.Bind (fi, x, bind) ->
         let bind' = checkbinding fi ctx bind in
@@ -60,7 +61,7 @@ let succeed (cmds : Syntax.context -> Syntax.command list * Syntax.context) =
         print_string x;
         print_string ": ";
         printbindingty ctx bind'';
-        Format.force_newline ();
+        force_newline ();
         (Syntax.addbinding ctx x bind'', Core.shiftstore 1 store')
   in
   let rec all ctx store cmds =
