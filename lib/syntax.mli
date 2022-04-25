@@ -17,6 +17,7 @@ type ty =
   | TyBool
   | TyArr of ty * ty
   | TyNat
+  | TyRec of string * ty
 [@@deriving show]
 
 type term =

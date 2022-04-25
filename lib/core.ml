@@ -193,6 +193,7 @@ let gettyabb ctx i =
 
 let computety ctx tyT =
   match tyT with
+  | TyRec (_, tyS1) as tyS -> typesubsttop tyS tyS1
   | TyVar (i, _) when istyabb ctx i -> gettyabb ctx i
   | _ -> raise NoRuleApplies
 
@@ -202,22 +203,27 @@ let rec simplifyty ctx tyT =
     simplifyty ctx tyT'
   with NoRuleApplies -> tyT
 
-let rec tyeqv ctx tyS tyT =
-  let tyS = simplifyty ctx tyS in
-  let tyT = simplifyty ctx tyT in
+let rec tyeqv seen ctx tyS tyT =
+  List.mem (tyS, tyT) seen
+  ||
   match (tyS, tyT) with
+  | TyRec (_, tyS1), _ ->
+      tyeqv ((tyS, tyT) :: seen) ctx (typesubsttop tyS tyS1) tyT
+  | _, TyRec (_, tyT1) ->
+      tyeqv ((tyS, tyT) :: seen) ctx tyS (typesubsttop tyT tyT1)
   | TyUnit, TyUnit -> true
   | TyBot, TyBot -> true
   | TyId b1, TyId b2 -> b1 = b2
   | TyVariant fields1, TyVariant fields2 ->
       List.length fields1 = List.length fields2
       && List.for_all2
-           (fun (li1, tyTi1) (li2, tyTi2) -> li1 = li2 && tyeqv ctx tyTi1 tyTi2)
+           (fun (li1, tyTi1) (li2, tyTi2) ->
+             li1 = li2 && tyeqv seen ctx tyTi1 tyTi2)
            fields1 fields2
   | TyString, TyString -> true
   | TyFloat, TyFloat -> true
   | TyArr (tyS1, tyS2), TyArr (tyT1, tyT2) ->
-      tyeqv ctx tyS1 tyT1 && tyeqv ctx tyS2 tyT2
+      tyeqv seen ctx tyS1 tyT1 && tyeqv seen ctx tyS2 tyT2
   | TyBool, TyBool -> true
   | TyNat, TyNat -> true
   | TyRecord fields1, TyRecord fields2 ->
@@ -226,13 +232,15 @@ let rec tyeqv ctx tyS tyT =
            (fun (li2, tyTi2) ->
              try
                let tyTi1 = List.assoc li2 fields1 in
-               tyeqv ctx tyTi1 tyTi2
+               tyeqv seen ctx tyTi1 tyTi2
              with Not_found -> false)
            fields2
-  | TyVar (i, _), _ when istyabb ctx i -> tyeqv ctx (gettyabb ctx i) tyT
-  | _, TyVar (i, _) when istyabb ctx i -> tyeqv ctx tyS (gettyabb ctx i)
+  | TyVar (i, _), _ when istyabb ctx i -> tyeqv seen ctx (gettyabb ctx i) tyT
+  | _, TyVar (i, _) when istyabb ctx i -> tyeqv seen ctx tyS (gettyabb ctx i)
   | TyVar (i, _), TyVar (j, _) -> i = j
   | _ -> false
+
+let tyeqv ctx tyS tyT = tyeqv [] ctx tyS tyT
 
 exception Not_subtype of info * string
 

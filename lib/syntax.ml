@@ -17,6 +17,7 @@ type ty =
   | TyBool
   | TyArr of ty * ty
   | TyNat
+  | TyRec of string * ty
 [@@deriving show { with_path = false }]
 
 type term =
@@ -97,6 +98,7 @@ let tymap onvar c tyT =
     match tyT with
     | TyBot -> TyBot
     | TyTop -> TyTop
+    | TyRec (x, tyT) -> TyRec (x, walk (c + 1) tyT)
     | TyRef tyT1 -> TyRef (walk c tyT1)
     | TySource tyT1 -> TySource (walk c tyT1)
     | TySink tyT1 -> TySink (walk c tyT1)
@@ -293,6 +295,15 @@ let rec printty_Type outer ctx tyT =
   | TySink tyT ->
       print_string "Sink ";
       printty_AType false ctx tyT
+  | TyRec (x, tyT) ->
+      let ctx', x = pickfreshname ctx x in
+      obox ();
+      print_string "Rec ";
+      print_string x;
+      print_string ".";
+      print_space ();
+      printty_Type outer ctx' tyT;
+      cbox ()
   | tyT -> printty_ArrowType outer ctx tyT
 
 and printty_ArrowType outer ctx tyT =

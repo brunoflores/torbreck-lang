@@ -1,0 +1,10 @@
+NatList: Rec X. <nil:Unit, cons:{ Nat, X }>
+nil: NatList
+cons: Nat -> NatList -> NatList
+isnil: NatList -> Bool
+hd: NatList -> Nat
+tl: NatList -> NatList
+plus: Nat -> Nat -> Nat
+sumlist: NatList -> Nat
+mylist: NatList
+10: Nat

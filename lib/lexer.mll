@@ -24,6 +24,7 @@
     ("inert", fun i -> Parser.INERT i);
     ("lambda", fun i -> Parser.LAMBDA i);
     ("fix", fun i -> Parser.FIX i);
+    ("Rec", fun i -> Parser.REC i);
     ("letrec", fun i -> Parser.LETREC i);
     ("succ", fun i -> Parser.SUCC i);
     ("pred", fun i -> Parser.PRED i);

@@ -22,6 +22,7 @@ open Syntax
 %token <Support.Error.info> INERT
 %token <Support.Error.info> LAMBDA
 %token <Support.Error.info> FIX
+%token <Support.Error.info> REC
 %token <Support.Error.info> LETREC
 %token <Support.Error.info> SUCC
 %token <Support.Error.info> PRED
@@ -111,6 +112,10 @@ Binder:
 Type:
   | ty = ArrowType
     { ty }
+  | REC; id = UCID; DOT; ty = Type
+    { fun ctx ->
+        let ctx' = addname ctx id.v in
+        TyRec (id.v, ty ctx') }
   | RREF; ty = AType
     { fun ctx -> TyRef (ty ctx) }
   | SSOURCE; ty = AType
