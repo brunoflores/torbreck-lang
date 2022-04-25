@@ -1,0 +1,5 @@
+Counter: Rec C. { get: Nat, inc: Unit->C, dec: Unit->C }
+c: Counter
+c1: Counter
+c2: Counter
+2: Nat
