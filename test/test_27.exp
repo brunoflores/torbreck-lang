@@ -1,0 +1,6 @@
+Stream: Rec A. Unit -> { Nat, A }
+hd: Stream -> Nat
+tl: Stream -> Stream
+upfrom0: Unit -> { Nat, Stream }
+0: Nat
+3: Nat
