@@ -211,7 +211,8 @@ Term:
   | fi = LETREC; id = LCID; COLON; ty = Type; EQ; t1 = Term; IN; t2 = Term
     { fun ctx ->
         let ctx' = addname ctx id.v in
-        TmLet (fi, id.v, TmFix (fi, TmAbs (fi, id.v, Some (ty ctx), t1 ctx')), t2 ctx') }
+        let tmFix = TmFix (fi, TmAbs (fi, id.v, Some (ty ctx), t1 ctx')) in
+        TmLet (fi, id.v, tmFix, t2 ctx') }
 
   /* lambda x. x */
   | fi = LAMBDA; id = LCID; DOT; t = Term
