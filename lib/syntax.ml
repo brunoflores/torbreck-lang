@@ -326,8 +326,8 @@ and printty_AType outer ctx tyT =
         | [ f ] -> pf i f
         | f :: rest ->
             pf i f;
-            print_string ",";
-            if outer then print_space () else break ();
+            print_string ", ";
+            if not outer then break ();
             p (i + 1) rest
       in
       print_string "<";
@@ -351,8 +351,8 @@ and printty_AType outer ctx tyT =
         | [ f ] -> pf i f
         | f :: rest ->
             pf i f;
-            print_string ",";
-            if outer then print_space () else break ();
+            print_string ", ";
+            if not outer then break ();
             p (i + 1) rest
       in
       print_string "{ ";
