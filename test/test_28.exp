@@ -1,0 +1,6 @@
+Process: Rec A. Nat -> { Nat, A }
+plus: Nat -> Nat -> Nat
+p: Nat -> { Nat, Process }
+curr: Process -> Nat
+send: Nat -> Process -> Process
+28: Nat
