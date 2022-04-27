@@ -39,7 +39,7 @@ type term =
   | TmLet of info * string * term * term
   | TmRecord of info * (string * term) list
   | TmProj of info * term * string
-  | TmAbs of info * string * ty option * term
+  | TmAbs of info * string * ty * term
   | TmApp of info * term * term
   | TmFix of info * term
   | TmZero of info

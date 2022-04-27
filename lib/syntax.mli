@@ -41,7 +41,7 @@ type term =
   | TmLet of info * string * term * term
   | TmRecord of info * (string * term) list
   | TmProj of info * term * string
-  | TmAbs of info * string * ty option * term
+  | TmAbs of info * string * ty * term
       (** Abstractions are annotated with a string to
           serve as a hint for the name of the bound variable.
           This is used when converting them back from nameless form. *)
