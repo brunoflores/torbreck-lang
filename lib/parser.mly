@@ -202,10 +202,8 @@ Term:
     { fun ctx ->
       TmCase (fi, t ctx, cs ctx) }
 
-  /* let x = true in x; */
   | fi = LET; id = LCID; EQ; t1 = Term; IN; t2 = Term
     { fun ctx -> TmLet (fi, id.v, t1 ctx, t2 (addname ctx id.v)) }
-  /* let _ = some_side_effect () in true */
   | fi = LET; USCORE; EQ; t1 = Term; IN; t2 = Term
     { fun ctx -> TmLet(fi, "_", t1 ctx, t2 (addname ctx "_")) }
   | fi = LETREC; id = LCID; COLON; ty = Type; EQ; t1 = Term; IN; t2 = Term
@@ -213,21 +211,14 @@ Term:
         let ctx' = addname ctx id.v in
         TmLet (fi, id.v, TmFix (fi, TmAbs (fi, id.v, ty ctx, t1 ctx')), t2 ctx') }
 
-  /* lambda x. x */
-  | fi = LAMBDA; id = LCID; DOT; t = Term
-    { fun ctx ->
-        let ctx' = addname ctx id.v in
-        TmAbs (fi, id.v, None, t ctx') }
-  /* lambda x: Nat. x */
   | fi = LAMBDA; id = LCID; COLON; ty = Type; DOT; t = Term
     { fun ctx ->
         let ctx' = addname ctx id.v in
-        TmAbs (fi, id.v, Some (ty ctx), t ctx') }
-  /* lambda _: Unit. x */
+        TmAbs (fi, id.v, ty ctx, t ctx') }
   | fi = LAMBDA; USCORE; COLON; ty = Type; DOT; t = Term
     { fun ctx ->
         let ctx' = addname ctx "_" in
-        TmAbs(fi, "_", Some (ty ctx), t ctx') }
+        TmAbs(fi, "_", ty ctx, t ctx') }
 
   | app1 = AppTerm; fi = COLONEQ; app2 = AppTerm
     { fun ctx -> TmAssign (fi, app1 ctx, app2 ctx) }
@@ -262,8 +253,7 @@ TermSeq:
   | t = Term
     { t }
   | t = Term; fi = SEMI; seq = TermSeq
-    { fun ctx ->
-        TmApp (fi, TmAbs (fi, "_", Some TyUnit, seq (addname ctx "_")), t ctx) }
+    { fun ctx -> TmApp (fi, TmAbs (fi, "_", TyUnit, seq (addname ctx "_")), t ctx) }
 
 /* Atomic terms are ones that never require extra parentheses */
 ATerm:
