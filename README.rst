@@ -2,8 +2,8 @@ torbreck-lang
 ================
 
 .. image:: https://readthedocs.org/projects/torbreck/badge/?version=latest
-:target: https://torbreck.readthedocs.io/en/latest/?badge=latest
-:alt: Documentation Status
+  :target: https://torbreck.readthedocs.io/en/latest/?badge=latest
+  :alt: Documentation Status
 
 This small language is named after the Torbreck, "the first high-rise and
 mix-use residential development in Queensland, Australia", where I had lots of
