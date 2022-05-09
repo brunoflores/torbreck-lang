@@ -27,3 +27,7 @@ setup.log
 
 # Local OPAM switch
 _opam/
+
+# Documentation
+# Python virtual environment for readthedocs
+docs/.venv/
