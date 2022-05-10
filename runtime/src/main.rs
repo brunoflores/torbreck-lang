@@ -7,6 +7,11 @@ fn usage() -> &'static str {
     "Usage: breckrun filename"
 }
 
+fn crash(msg: &str) -> ! {
+    println!("{}", msg);
+    process::exit(1);
+}
+
 struct Config {
     filename: String,
 }
@@ -25,12 +30,10 @@ impl Config {
 fn main() {
     let args: Vec<String> = env::args().collect();
     let config = Config::new(&args).unwrap_or_else(|usage| {
-        println!("{}", usage);
-        process::exit(1);
+        crash(usage);
     });
     if let Err(e) = run(config) {
-        println!("error: {}", e);
-        process::exit(1);
+        crash(&format!("error: {}", e));
     }
 }
 
