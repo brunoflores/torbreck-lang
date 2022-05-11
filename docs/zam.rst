@@ -37,12 +37,6 @@ Registers for the abstract machine
 Stacks
 ======
 
-.. graphviz::
-
-   digraph stacks {
-     node_stacks [shape=record label="{Argument stack|Return stack}"]
-   }
-
 Krivine's machine split into two stacks:
 
 - The **argument stack**: holds arguments to function calls, that is sequences
@@ -83,3 +77,44 @@ The :math:`Access` instruction has the following semantics:
      - :math:`e`
      - :math:`s`
      - :math:`r`
+
+Application
+===========
+
+.. math::
+
+   \mathcal{T} \textlbrackdbl ( M N_1 \cdots N_k ) \textrbrackdbl =
+   \mathcal{C} \textlbrackdbl N_k \textrbrackdbl ; Push ; \cdots ; \mathcal{C} \textlbrackdbl N_1 \textrbrackdbl ;
+   Push ; \mathcal{C} \textlbrackdbl M \textrbrackdbl ; Appterm
+
+.. math::
+
+   \mathcal{C} \textlbrackdbl ( M N_1 \cdots N_k ) \textrbrackdbl =
+   Pushmark; \mathcal{C} \textlbrackdbl N_k \textrbrackdbl ; Push ; \cdots ; \mathcal{C} \textlbrackdbl N_1 \textrbrackdbl ;
+   Push ; \mathcal{C} \textlbrackdbl M \textrbrackdbl ; Apply
+
+Tail applications are treated as in Krivine's machine, since there is no need to
+allocate a new argument stack by pushing a mark. The :math:`Appterm` instruction
+takes care of consing the first argument with the environment of the closure;
+this way, we do not have to put a :math:`Grab` instruction at the beginning
+of each function. For other applications, we must push a mark on the argument
+stack to separate the "new" arguments and force reduction to weak normal form.
+
+.. |br| raw:: html
+
+   <br />
+
+.. list-table::
+   :header-rows: 1
+
+   * - Code
+     - Accu
+     - Env
+     - Argument stack
+     - Return stack
+
+   * - :math:`Appterm; c_0` |br| :math:`c_1`
+     - :math:`a=(c_1,e_1)` |br| :math:`a`
+     - :math:`e_0` |br| :math:`v.e_1`
+     - :math:`v.s` |br| :math:`s`
+     - :math:`r` |br| :math:`r`
