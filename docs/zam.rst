@@ -24,7 +24,48 @@ standard (leftmost-outermost) strategy. However, it represents
 :math:`\lambda` -terms with closures, hence it does not perform substitutions
 on the fly, but delays them until it reduces variables.
 
-It has but three instructions: :math:`Access`, :math:`Push`, and :math:`Grab`.
+It has but three instructions: :math:`\textbf{Access}`, :math:`\textbf{Push}`,
+and :math:`\textbf{Grab}`. A term in de Bruijn's notation is compiled as follows:
+
+.. math::
+
+   \textlbrackdbl n \textrbrackdbl = \textbf{Access}(n)
+
+.. math::
+
+   \textlbrackdbl (M N) \textrbrackdbl = \textbf{Push} (\textlbrackdbl N \textrbrackdbl) ; \textlbrackdbl M \textrbrackdbl
+
+.. math::
+
+   \textlbrackdbl \lambda M \textrbrackdbl = \textbf{Grab} ; \textlbrackdbl M \textrbrackdbl
+
+The machine is equipped with
+
+- a code pointer,
+- a register holding the current environment (a list of closures, that is,
+  pairs of code pointers and environments), and
+- a stack of closures.
+
+The transition function is as follows:
+
+.. math::
+
+   \begin{array}{|l l l|l l l|}
+   \hline
+     \text{Code} & \text{Env.} & \text{Stack} & \text{Code} & \text{Env.} & \text{Stack} \\
+   \hline
+     \textbf{Access}(0); c & (c_0, e_0) \cdot e & s & c_0 & e_0 & s \\
+     \textbf{Access}(n+1); c & (c_0, e_0) \cdot e & s & \textbf{Access}(n); c & e & s \\
+     \textbf{Push}(c'); c & e & s & c & e & (c', e) \cdot s \\
+     \textbf{Grab}; c & e & (c_0, e_0) \cdot s & c & (c_0, e_0) \cdot e & s \\
+   \hline
+   \end{array}
+
+At all times the stack represents the *spine* of the term being reduced
+(that is, the them whose code is in the code pointer).
+The :math:`\textbf{Push}` instruction performs one step of unrolling, and
+:math:`\textbf{Grab}` corresponds to one step of :math:`\beta` -reduction,
+that is it records the substitution in the environment.
 
 ZAM is:
 
