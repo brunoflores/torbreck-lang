@@ -33,3 +33,20 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     println!("with text:\n{}", contents);
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sane() {
+        let cfg = Config::new(&["prog".to_string(), "filename.txt".to_string()]);
+        assert_eq!("filename.txt", cfg.unwrap().filename);
+    }
+
+    #[test]
+    fn can_fail() {
+        let cfg = Config::new(&["prog".to_string()]);
+        assert!(cfg.is_err());
+    }
+}
