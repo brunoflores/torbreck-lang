@@ -67,7 +67,43 @@ The :math:`\textbf{Push}` instruction performs one step of unrolling, and
 :math:`\textbf{Grab}` corresponds to one step of :math:`\beta` -reduction,
 that is it records the substitution in the environment.
 
-ZAM is:
+Krivine's machine with marks on the stack
+=========================================
+
+To perform strict evaluation with some variant of Krivine's machine,
+we need first to be able to reduce some subterms of a given term to weak head
+normal form. The problem with Krivine's machine is that it does not stop until
+the stack is empty.
+
+What we need is a way to stop reduction even if there are
+arguments available on the stack. To this end, let's put a *mark* on some of the
+closures awaiting in the stack; this mark says "don't put me in the environment,
+stop reducing, and resume another reduction".
+
+The modified Krivine's machine has a fourth instruction,
+:math:`\textbf{Reduce}(c)`, to force reduction of :math:`c` to weak head normal
+form, and a different semantics for :math:`\textbf{Grab}`. In the following,
+marked closures are written :math:`\langle c, e \rangle` instead of :math:`(c, e)`.
+
+.. math::
+
+   \begin{array}{|l l l|l l l|}
+   \hline
+     \text{Code} & \text{Env.} & \text{Stack} & \text{Code} & \text{Env.} & \text{Stack} \\
+   \hline
+     \textbf{Access}(0); c & (c_0, e_0) \cdot e & s & c_0 & e_0 & s \\
+     \textbf{Access}(n+1); c & (c_0, e_0) \cdot e & s & \textbf{Access}(n); c & e & s \\
+     \textbf{Push}(c'); c & e & s & c & e & (c', e) \cdot s \\
+     \textbf{Grab}; c & e & (c_0, e_0) \cdot s & c & (c_0, e_0) \cdot e & s \\
+     \textbf{Grab}; c & e & \langle c_0, e_0 \rangle \cdot s & c_0 & e_0 & (\textbf{Grab}; c, e) \cdot s \\
+     \textbf{Reduce}(c'); c & e & s & c' & e & \langle c, e \rangle \cdot s \\
+   \hline
+   \end{array}
+
+ZAM
+===
+
+The ZAM is
 
 - Krivine's machine with marks specialised to call-by-value only, and
 - Extended to handle constants
@@ -100,7 +136,7 @@ Registers for the abstract machine
 Stacks
 ======
 
-Krivine's machine split into two stacks:
+Krivine's machine split into two stacks,
 
 - The **argument stack**: holds arguments to function calls, that is sequences
   of values, separated by marks
