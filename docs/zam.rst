@@ -37,6 +37,12 @@ Registers for the abstract machine
 Stacks
 ======
 
+.. graphviz::
+
+   digraph stacks {
+     node_stacks [shape=record label="{Argument stack|Return stack}"]
+   }
+
 Krivine's machine split into two stacks:
 
 - The **argument stack**: holds arguments to function calls, that is sequences
