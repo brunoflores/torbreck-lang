@@ -118,3 +118,22 @@ stack to separate the "new" arguments and force reduction to weak normal form.
      - :math:`e_0` |br| :math:`v.e_1`
      - :math:`v.s` |br| :math:`s`
      - :math:`r` |br| :math:`r`
+
+Abstractions
+============
+
+.. math::
+
+   \mathcal{T} \textlbrackdbl \lambda E \textrbrackdbl =
+   Grab ; \mathcal{T} \textlbrackdbl E \textrbrackdbl
+
+.. math::
+
+   \mathcal{C} \textlbrackdbl \lambda E \textrbrackdbl =
+   Cur ( \mathcal{T} \textlbrackdbl E \textrbrackdbl ; Return )
+
+In tail-cal position, the :math:`Grab` instruction simply pops one argument
+from the argument stack, and puts it in front of the environment. If all
+arguments have already been consumed, that is if there is a mark at the
+top of the stack, it builds the closure of the current code with the current
+environment and returns it to the called, while popping the mark.
