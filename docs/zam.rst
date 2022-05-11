@@ -1,7 +1,32 @@
 The ZINC not-so-abstract machine
 ################################
 
-- Krivine's machine with marks specialized to call-by-value only, and
+(Other names are *ZINC environment machine* and *ZAM*.)
+
+We specify the execution model using an abstract machine.
+Examples of abstract machines for strict functional languages are SECD [#]_,
+FAM [#]_ and CAM [#**_.
+
+ZAM, the ZINC abstract machine, has a requirement that multiple application to
+:math:`k` arguments should be efficient, almost as efficient as applying
+a :math:`k` -ary function. This is not the case with the machines referenced
+above , since they build :math:`k` - 1 intermediate closures to evaluate
+this multiple application.
+
+Why care? Maybe this bad behaviour is unavoidable and these closures are the
+price to pay for the additional flexibility of curried functions.
+
+Krivine's machine
+=================
+
+This machine performs reduction to *weak head normal form* following the
+standard (leftmost-outermost) strategy. However, it represents
+:math:`\lambda` -terms with closures, hence it does not perform substitutions
+on the fly, but delays them until it reduces variables.
+
+ZAM is:
+
+- Krivine's machine with marks specialised to call-by-value only, and
 - Extended to handle constants
 
 Stack-based calling convention where functions may not consume all their
@@ -9,30 +34,25 @@ arguments, but then their result must be applied to the remaining
 arguments.
 
 Registers for the abstract machine
-**********************************
+==================================
 
-+-------------+------------------------------------------------+
-| pc          |the code pointer                                |
-+-------------+------------------------------------------------+
-| asp         |the stack pointer for the argument stack (grows |
-|             |downward)                                       |
-+-------------+------------------------------------------------+
-| rsp         |stack pointer for the return stack (grows       |
-|             |downward)                                       |
-+-------------+------------------------------------------------+
-| tp          |pointer to the current trap frame               |
-+-------------+------------------------------------------------+
-| env         |the remaining part (heap-allocated) of the      |
-|             |environment                                     |
-+-------------+------------------------------------------------+
-| cache_size  |number of entries in the volatile part of the   |
-|             |environment                                     |
-+-------------+------------------------------------------------+
-| accu        |the accumulator: this is used to hold           |
-|             |intermediate results                            |
-+-------------+------------------------------------------------+
+.. list-table::
+   :header-rows: 0
 
-"asp" and "rsp" are local copies of the global variables "extern_asp" and "extern_rsp".
+   * - :literal:`pc`
+     - code pointer
+   * - :literal:`asp`
+     - stack pointer for the argument stack (grows downward)
+   * - :literal:`rsp`
+     - stack pointer for the return stack (grows downward)
+   * - :literal:`tp`
+     - pointer to the current trap frame
+   * - :literal:`env`
+     - remaining part (heap-allocated) of the environment
+   * - :literal:`cache_size`
+     - number of entries in the volatile part of the environment
+   * - :literal:`accu`
+     - accumulator to hold intermediate results
 
 Stacks
 ======
@@ -41,8 +61,8 @@ Krivine's machine split into two stacks:
 
 - The **argument stack**: holds arguments to function calls, that is sequences
   of values, separated by marks
-- The **return stack**: holds (unallocated) closures, that is pairs of a code pointer
-  and an environment
+- The **return stack**: holds (unallocated) closures, that is pairs of a code
+  pointer and an environment
 
 Accessing local variables
 =========================
@@ -137,3 +157,9 @@ from the argument stack, and puts it in front of the environment. If all
 arguments have already been consumed, that is if there is a mark at the
 top of the stack, it builds the closure of the current code with the current
 environment and returns it to the called, while popping the mark.
+
+.. rubric:: Footnotes
+
+.. [#]
+.. [#]
+.. [#]
