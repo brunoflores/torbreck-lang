@@ -1,5 +1,5 @@
 The ZINC not-so-abstract machine
-================================
+################################
 
 - Krivine's machine with marks specialized to call-by-value only, and
 - Extended to handle constants
@@ -9,7 +9,7 @@ arguments, but then their result must be applied to the remaining
 arguments.
 
 Registers for the abstract machine
------------------------------------
+**********************************
 
 +-------------+------------------------------------------------+
 | pc          |the code pointer                                |
@@ -35,7 +35,7 @@ Registers for the abstract machine
 "asp" and "rsp" are local copies of the global variables "extern_asp" and "extern_rsp".
 
 Stacks
-~~~~~~
+======
 
 Krivine's machine split into two stacks:
 
@@ -43,3 +43,37 @@ Krivine's machine split into two stacks:
   of values, separated by marks
 - The **return stack**: holds (unallocated) closures, that is pairs of a code pointer
   and an environment
+
+Accessing local variables
+=========================
+
+The compilation scheme for the local variable of index :math:`n` is:
+
+.. math::
+
+   \mathcal{T} \textlbrackdbl n \textrbrackdbl =
+   \mathcal{C} \textlbrackdbl n \textrbrackdbl =
+   Access(n)
+
+The :math:`Access` instruction has the following semantics:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Code
+     - Accu
+     - Env
+     - Argument stack
+     - Return stack
+
+   * - :math:`Access(n); c`
+     - :math:`a`
+     - :math:`e=v_0 \cdots v_n \cdots`
+     - :math:`s`
+     - :math:`r`
+
+   * - :math:`c`
+     - :math:`v_n`
+     - :math:`e`
+     - :math:`s`
+     - :math:`r`

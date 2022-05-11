@@ -27,8 +27,26 @@ author = 'Bruno Flores'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+#
+# See https://www.sphinx-doc.org/en/master/usage/extensions/index.html
 extensions = [
+    'sphinx.ext.mathjax',
+    'sphinx.ext.graphviz'
 ]
+
+# See https://docs.mathjax.org/en/latest/input/tex/extensions.html
+mathjax3_config = {
+    "loader": {
+        "load": ['[tex]/textmacros', '[tex]/textcomp']
+    },
+    "tex": {
+        "packages": {'[+]': ['textmacros']},
+        "autoload": {"textcomp": ["textlbrackdbl", "textrbrackdbl"]}
+    },
+    "textmacros": {
+        "packages": {'[+]': ['textcomp']}
+    }
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
