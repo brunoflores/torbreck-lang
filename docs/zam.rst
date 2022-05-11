@@ -1,2 +1,45 @@
-The ZINC Virtual Machine
-=========================
+The ZINC not-so-abstract machine
+================================
+
+- Krivine's machine with marks specialized to call-by-value only, and
+- Extended to handle constants
+
+Stack-based calling convention where functions may not consume all their
+arguments, but then their result must be applied to the remaining
+arguments.
+
+Registers for the abstract machine
+-----------------------------------
+
++-------------+------------------------------------------------+
+| pc          |the code pointer                                |
++-------------+------------------------------------------------+
+| asp         |the stack pointer for the argument stack (grows |
+|             |downward)                                       |
++-------------+------------------------------------------------+
+| rsp         |stack pointer for the return stack (grows       |
+|             |downward)                                       |
++-------------+------------------------------------------------+
+| tp          |pointer to the current trap frame               |
++-------------+------------------------------------------------+
+| env         |the remaining part (heap-allocated) of the      |
+|             |environment                                     |
++-------------+------------------------------------------------+
+| cache_size  |number of entries in the volatile part of the   |
+|             |environment                                     |
++-------------+------------------------------------------------+
+| accu        |the accumulator: this is used to hold           |
+|             |intermediate results                            |
++-------------+------------------------------------------------+
+
+"asp" and "rsp" are local copies of the global variables "extern_asp" and "extern_rsp".
+
+Stacks
+~~~~~~
+
+Krivine's machine split into two stacks:
+
+- The **argument stack**: holds arguments to function calls, that is sequences
+  of values, separated by marks
+- The **return stack**: holds (unallocated) closures, that is pairs of a code pointer
+  and an environment
