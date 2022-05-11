@@ -5,7 +5,7 @@ The ZINC not-so-abstract machine
 
 We specify the execution model using an abstract machine.
 Examples of abstract machines for strict functional languages are SECD [#]_,
-FAM [#]_ and CAM [#**_.
+FAM [#]_ and CAM [#]_.
 
 ZAM, the ZINC abstract machine, has a requirement that multiple application to
 :math:`k` arguments should be efficient, almost as efficient as applying
@@ -23,6 +23,8 @@ This machine performs reduction to *weak head normal form* following the
 standard (leftmost-outermost) strategy. However, it represents
 :math:`\lambda` -terms with closures, hence it does not perform substitutions
 on the fly, but delays them until it reduces variables.
+
+It has but three instructions: :math:`Access`, :math:`Push`, and :math:`Grab`.
 
 ZAM is:
 
