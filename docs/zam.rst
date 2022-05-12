@@ -100,8 +100,8 @@ marked closures are written :math:`\langle c, e \rangle` instead of :math:`(c, e
    \hline
    \end{array}
 
-ZAM
-===
+The ZINC machine
+================
 
 The ZAM is
 
@@ -112,10 +112,7 @@ Stack-based calling convention where functions may not consume all their
 arguments, but then their result must be applied to the remaining
 arguments.
 
-Registers for the abstract machine
-==================================
-
-.. list-table::
+.. list-table:: Registers for the abstract machine
    :header-rows: 0
 
    * - :literal:`pc`
@@ -133,15 +130,23 @@ Registers for the abstract machine
    * - :literal:`accu`
      - accumulator to hold intermediate results
 
-Stacks
-======
-
 Krivine's machine split into two stacks,
 
 - The **argument stack**: holds arguments to function calls, that is sequences
   of values, separated by marks
 - The **return stack**: holds (unallocated) closures, that is pairs of a code
   pointer and an environment
+
+Two compilation schemes: one, written
+:math:`\mathcal{T} \textlbrackdbl E \textrbrackdbl`, is only valid for
+expressions :math:`E` in tail-call position, that is expressions whose value is
+is the value of the function body being evaluated; the other, written
+:math:`\mathcal{C} \textlbrackdbl E \textrbrackdbl`, is always valid, but
+usually less efficient.
+
+The transitions of the ZAM corresponding to the generated instructions are given
+below. The first line is the state before the transition, the second one is
+the state after the transition.
 
 Accessing local variables
 =========================
@@ -152,30 +157,20 @@ The compilation scheme for the local variable of index :math:`n` is:
 
    \mathcal{T} \textlbrackdbl n \textrbrackdbl =
    \mathcal{C} \textlbrackdbl n \textrbrackdbl =
-   Access(n)
+   \textbf{Access}(n)
 
 The :math:`Access` instruction has the following semantics:
 
-.. list-table::
-   :header-rows: 1
+.. math::
 
-   * - Code
-     - Accu
-     - Env
-     - Argument stack
-     - Return stack
-
-   * - :math:`Access(n); c`
-     - :math:`a`
-     - :math:`e=v_0 \cdots v_n \cdots`
-     - :math:`s`
-     - :math:`r`
-
-   * - :math:`c`
-     - :math:`v_n`
-     - :math:`e`
-     - :math:`s`
-     - :math:`r`
+   \begin{array}{|l|l|l|l|l|}
+   \hline
+     \text{Code} & \text{Accu} & \text{Env.} & \text{Arg. stack} & \text{Return stack} \\
+   \hline
+     \textbf{Access}(n); c & a & e = v_0 \cdots v_n \cdots & s & r \\
+     c & v_n & e & s & r \\
+   \hline
+   \end{array}
 
 Application
 ===========
@@ -183,14 +178,16 @@ Application
 .. math::
 
    \mathcal{T} \textlbrackdbl ( M N_1 \cdots N_k ) \textrbrackdbl =
-   \mathcal{C} \textlbrackdbl N_k \textrbrackdbl ; Push ; \cdots ; \mathcal{C} \textlbrackdbl N_1 \textrbrackdbl ;
-   Push ; \mathcal{C} \textlbrackdbl M \textrbrackdbl ; Appterm
+   \mathcal{C} \textlbrackdbl N_k \textrbrackdbl ; \textbf{Push} ; \cdots ;
+   \mathcal{C} \textlbrackdbl N_1 \textrbrackdbl ;
+   \textbf{Push} ; \mathcal{C} \textlbrackdbl M \textrbrackdbl ; \textbf{Appterm}
 
 .. math::
 
    \mathcal{C} \textlbrackdbl ( M N_1 \cdots N_k ) \textrbrackdbl =
-   Pushmark; \mathcal{C} \textlbrackdbl N_k \textrbrackdbl ; Push ; \cdots ; \mathcal{C} \textlbrackdbl N_1 \textrbrackdbl ;
-   Push ; \mathcal{C} \textlbrackdbl M \textrbrackdbl ; Apply
+   \textbf{Pushmark}; \mathcal{C} \textlbrackdbl N_k \textrbrackdbl ;
+   \textbf{Push} ; \cdots ; \mathcal{C} \textlbrackdbl N_1 \textrbrackdbl ;
+   \textbf{Push} ; \mathcal{C} \textlbrackdbl M \textrbrackdbl ; \textbf{Apply}
 
 Tail applications are treated as in Krivine's machine, since there is no need to
 allocate a new argument stack by pushing a mark. The :math:`Appterm` instruction
@@ -199,24 +196,25 @@ this way, we do not have to put a :math:`Grab` instruction at the beginning
 of each function. For other applications, we must push a mark on the argument
 stack to separate the "new" arguments and force reduction to weak normal form.
 
-.. |br| raw:: html
+.. math::
 
-   <br />
-
-.. list-table::
-   :header-rows: 1
-
-   * - Code
-     - Accu
-     - Env
-     - Argument stack
-     - Return stack
-
-   * - :math:`Appterm; c_0` |br| :math:`c_1`
-     - :math:`a=(c_1,e_1)` |br| :math:`a`
-     - :math:`e_0` |br| :math:`v.e_1`
-     - :math:`v.s` |br| :math:`s`
-     - :math:`r` |br| :math:`r`
+   \begin{array}{|l|l|l|l|l|}
+   \hline
+     \text{Code} & \text{Accu} & \text{Env.} & \text{Arg. stack} & \text{Return stack} \\
+   \hline
+     \textbf{Appterm}; c_0 & a = (c_1, e_1) & e_0 & v.s & r \\
+     c_1 & a & v.e_1 & s & r \\
+   \hline
+     \textbf{Apply}; c_0 & a = (c_1, e_1) & e_0 & v.s & r \\
+     c_1 & a & v.e_1 & s & (c_0, e_0).r \\
+   \hline
+     \textbf{Push}; c_0 & a & e & s & r \\
+     c_0 & a & e & a.s & r \\
+   \hline
+     \textbf{Pushmark}; c_0 & a & e & s & r \\
+     c_0 & a & e & \varepsilon .s & r \\
+   \hline
+   \end{array}
 
 Abstractions
 ============
@@ -224,18 +222,38 @@ Abstractions
 .. math::
 
    \mathcal{T} \textlbrackdbl \lambda E \textrbrackdbl =
-   Grab ; \mathcal{T} \textlbrackdbl E \textrbrackdbl
+   \textbf{Grab} ; \mathcal{T} \textlbrackdbl E \textrbrackdbl
 
 .. math::
 
    \mathcal{C} \textlbrackdbl \lambda E \textrbrackdbl =
-   Cur ( \mathcal{T} \textlbrackdbl E \textrbrackdbl ; Return )
+   \textbf{Cur} ( \mathcal{T} \textlbrackdbl E \textrbrackdbl ;
+   \textbf{Return} )
 
-In tail-cal position, the :math:`Grab` instruction simply pops one argument
+In tail-cal position, the :math:`\textbf{Grab}` instruction simply pops one argument
 from the argument stack, and puts it in front of the environment. If all
 arguments have already been consumed, that is if there is a mark at the
 top of the stack, it builds the closure of the current code with the current
 environment and returns it to the called, while popping the mark.
+
+Otherwise, we could push a mark, to allocate a new argument stack, and then do
+the same thing. Of course, :math:`\textbf{Grab}` would always fail and return
+immediately the desired closure. To save pushing a mark, and then immediately
+test it, we use the cheaper :math:`\textbf{Cur}` instruction, in this case.
+
+The :math:`\textbf{Return}` instruction that terminates the body of a function
+does not simply jump back to the caller. It is actually the symmetric of
+:math:`\textbf{Grab}`: it has to check if the argument stack is "empty"
+(i.e. if the top of stack is a mark). If this is the case, it destroys the mark
+and returns to the caller. But otherwise, it applies the result of the function
+(necessarily a closure, if the original program is well-typed) to the remaining
+arguments. This situation is the converse of partial application: a single
+function is given more argument than it can use. This is the case of the
+identity function in the following example:
+
+.. math::
+
+   ((\lambda x.x) (\lambda y.y + 1) \space 4)
 
 .. rubric:: Footnotes
 
