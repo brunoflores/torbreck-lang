@@ -255,6 +255,29 @@ identity function in the following example:
 
    ((\lambda x.x) (\lambda y.y + 1) \space 4)
 
+.. math::
+
+   \begin{array}{|l|l|l|l|l|}
+   \hline
+     \text{Code} & \text{Accu} & \text{Env.} & \text{Arg. stack} & \text{Return stack} \\
+   \hline
+     \textbf{Cur}(c_1); c_0 & a & e & s & r \\
+     c_0 & (c_1, e) & e & s & r \\
+   \hline
+     \textbf{Grab}; c_0 & a & e_0 & \varepsilon .s & (c_1, e_1).r \\
+     c_1 & (c_0, e_0) & e_1 & s & r \\
+   \hline
+     \textbf{Grab}; c_0 & a & e & \upsilon .s & r \\
+     c & a & \upsilon .e & s & r \\
+   \hline
+     \textbf{Return}; c_0 & a & e_0 & \varepsilon .s & (c_1, e_1).r \\
+     c_1 & a & e_1 & s & r \\
+   \hline
+     \textbf{Return}; c_0 & a = (c_1, e_1) & e_0 & \upsilon .s & r \\
+     c_1 & a & \upsilon .e_1 & s & r \\
+   \hline
+   \end{array}
+
 .. rubric:: Footnotes
 
 .. [#]
