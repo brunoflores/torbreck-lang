@@ -4,8 +4,8 @@ The ZINC not-so-abstract machine
 (Other names are *ZINC environment machine* and *ZAM*.)
 
 We specify the execution model using an abstract machine.
-Examples of abstract machines for strict functional languages are SECD [#]_,
-FAM [#]_ and CAM [#]_.
+Examples of abstract machines for strict functional languages are [SECD]_
+[FAM]_ and [CAM]_.
 
 ZAM, the ZINC abstract machine, has a requirement that multiple application to
 :math:`k` arguments should be efficient, almost as efficient as applying
@@ -313,10 +313,20 @@ is so common that it deserves a faster and simpler compilation scheme than
 actually applying an abstraction. It is enough to evaluate :math:`N` and
 add its value to the environment, using the :math:`\textbf{Let}` instruction,
 then to evaluate :math:`M` in this modified environment; then, the
-:math:`\textbf{Endlet}` instruction restores the original environment, if needed.
+:math:`\textbf{Endlet}` instruction restores the original environment,
+if needed.
+
+For recursive definitions, use the same trick suggested for the [CAM]_:
+first, a dummy value is added to the environment (instruction
+:math:`\textbf{Dummy}`), and :math:`N` is evaluated in this modified
+environment; the dummy value is then physically updated with the actual value of
+:math:`N` (instruction :math:`\textbf{Update}`). This may fail to reach a
+fixpoint, since the physical update may be impossible (in case of an unboxed
+value, an integer for instance). However, it works fine for the most commonly
+used case: when :math:`M` is an abstraction :math:`\lambda .P`.
 
 .. rubric:: Footnotes
 
-.. [#]
-.. [#]
-.. [#]
+.. [CAM]
+.. [FAM]
+.. [SECD]
