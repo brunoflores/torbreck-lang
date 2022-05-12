@@ -1,11 +1,17 @@
 The ZINC not-so-abstract machine
 ################################
 
+.. epigraph::
+
+   The [ZINC]_ machine was specially designed to build less closures.
+
+   -- Xavier Leroy
+
 (Other names are *ZINC environment machine* and *ZAM*.)
 
 We specify the execution model using an abstract machine.
-Examples of abstract machines for strict functional languages are [SECD]_
-[FAM]_ and [CAM]_.
+Examples of abstract machines for strict functional languages are [SECD]_,
+[FAM]_, and [CAM]_.
 
 ZAM, the ZINC abstract machine, has a requirement that multiple application to
 :math:`k` arguments should be efficient, almost as efficient as applying
@@ -354,6 +360,7 @@ arguments in the argument stack, and puts its result in the accumulator.
 
 .. rubric:: Footnotes
 
+.. [ZINC]
 .. [CAM]
 .. [FAM]
 .. [SECD]
