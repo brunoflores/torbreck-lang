@@ -287,6 +287,34 @@ Local declarations
    \texttt{in} \space M \textrbrackdbl = \mathcal{C} \textlbrackdbl N
    \textrbrackdbl ; \textbf{Let} ; \mathcal{T} \textlbrackdbl M \textrbrackdbl
 
+.. math::
+
+   \mathcal{C} \textlbrackdbl \texttt{let} \space \texttt{1} = N \space
+   \texttt{in} \space M \textrbrackdbl = \mathcal{C} \textlbrackdbl N
+   \textrbrackdbl ; \textbf{Let} ; \mathcal{C} \textlbrackdbl M \textrbrackdbl ;
+   \textbf{Endlet}
+
+.. math::
+
+   \mathcal{T} \textlbrackdbl \texttt{let} \space \texttt{rec} \space
+   \texttt{1} = N \space \texttt{in} \space M \textrbrackdbl = \textbf{Dummy} ;
+   \mathcal{C} \textlbrackdbl N \textrbrackdbl ; \textbf{Update} ;
+   \mathcal{T} \textlbrackdbl M \textrbrackdbl
+
+.. math::
+
+   \mathcal{C} \textlbrackdbl \texttt{let} \space \texttt{rec} \space
+   \texttt{1} = N \space \texttt{in} \space M \textrbrackdbl = \textbf{Dummy} ;
+   \mathcal{C} \textlbrackdbl N \textrbrackdbl ; \textbf{Update} ;
+   \mathcal{C} \textlbrackdbl M \textrbrackdbl ; \textbf{Endlet}
+
+The special case of :math:`\texttt{let}`, that is :math:`((\lambda x.M) N)`,
+is so common that it deserves a faster and simpler compilation scheme than
+actually applying an abstraction. It is enough to evaluate :math:`N` and
+add its value to the environment, using the :math:`\textbf{Let}` instruction,
+then to evaluate :math:`M` in this modified environment; then, the
+:math:`\textbf{Endlet}` instruction restores the original environment, if needed.
+
 .. rubric:: Footnotes
 
 .. [#]
