@@ -278,6 +278,15 @@ identity function in the following example:
    \hline
    \end{array}
 
+Local declarations
+==================
+
+.. math::
+
+   \mathcal{T} \textlbrackdbl \texttt{let} \space \texttt{1} = N \space
+   \texttt{in} \space M \textrbrackdbl = \mathcal{C} \textlbrackdbl N
+   \textrbrackdbl ; \textbf{Let} ; \mathcal{T} \textlbrackdbl M \textrbrackdbl
+
 .. rubric:: Footnotes
 
 .. [#]
