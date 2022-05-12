@@ -267,14 +267,14 @@ identity function in the following example:
      \textbf{Grab}; c_0 & a & e_0 & \varepsilon .s & (c_1, e_1).r \\
      c_1 & (c_0, e_0) & e_1 & s & r \\
    \hline
-     \textbf{Grab}; c_0 & a & e & \upsilon .s & r \\
-     c & a & \upsilon .e & s & r \\
+     \textbf{Grab}; c_0 & a & e & v.s & r \\
+     c & a & v.e & s & r \\
    \hline
      \textbf{Return}; c_0 & a & e_0 & \varepsilon .s & (c_1, e_1).r \\
      c_1 & a & e_1 & s & r \\
    \hline
-     \textbf{Return}; c_0 & a = (c_1, e_1) & e_0 & \upsilon .s & r \\
-     c_1 & a & \upsilon .e_1 & s & r \\
+     \textbf{Return}; c_0 & a = (c_1, e_1) & e_0 & v.s & r \\
+     c_1 & a & v.e_1 & s & r \\
    \hline
    \end{array}
 
@@ -324,6 +324,33 @@ environment; the dummy value is then physically updated with the actual value of
 fixpoint, since the physical update may be impossible (in case of an unboxed
 value, an integer for instance). However, it works fine for the most commonly
 used case: when :math:`M` is an abstraction :math:`\lambda .P`.
+
+Primitives
+==========
+
+.. math::
+
+   \mathcal{T} \textlbrackdbl p (M_1, \cdots , \cdots , M_k) \textrbrackdbl = \\
+   \mathcal{C} \textlbrackdbl p (M_1, \cdots , \cdots , M_k) \textrbrackdbl = \\
+   \mathcal{C} \textlbrackdbl M_k \textrbrackdbl ; \textbf{Push} ; \cdots
+   \mathcal{C} \textlbrackdbl M_2 \textrbrackdbl ; \textbf{Push} ;
+   \mathcal{C} \textlbrackdbl M_1 \textrbrackdbl ; \textbf{Prim} (p)
+
+We write :math:`\textbf{Prim} (p)` for the instruction associated with the
+primitive operation :math:`p` (e.g. :math:`+`, :math:`=`, :math:`\texttt{car}`).
+This instruction takes its first argument in the accumulator, the remaining
+arguments in the argument stack, and puts its result in the accumulator.
+
+.. math::
+
+   \begin{array}{|l|l|l|l|l|}
+   \hline
+     \text{Code} & \text{Accu} & \text{Env.} & \text{Arg. stack} & \text{Return stack} \\
+   \hline
+     \textbf{Prim}(p); c & a & e & v_2 \cdots v_k.s & r \\
+     c & p(a, v_2, \cdots , v_k) & e & s & r \\
+   \hline
+   \end{array}
 
 .. rubric:: Footnotes
 
