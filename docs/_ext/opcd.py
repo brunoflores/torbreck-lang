@@ -44,8 +44,7 @@ def opcode_role(role, rawtext, text, lineno, inliner, options=None, content=None
                 op=m.group("op"), arg=m.group("arg"), sub=m.group("sub")
             )
 
-    ops = text.split("; ")
-    node = nodes.math(text="; ".join([parse(op) for op in ops]))
+    node = nodes.math(text="; ".join([parse(op) for op in text.split("; ")]))
     return [node], []
 
 
