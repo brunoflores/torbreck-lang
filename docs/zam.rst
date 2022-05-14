@@ -372,6 +372,62 @@ arguments in the argument stack, and puts its result in the accumulator.
    \hline
    \end{array}
 
+Environment representation
+==========================
+
+The ZINC machine was designed to build less closures. This opens the way for
+less costly (in terms of heap allocation) representations of environments.
+
+When we don't have to build any closures, the current environment does not have
+to survive the evaluation of the current function body. We can store it, or part
+of it, in some volatile location (stack or registers) that will be automatically
+reclaimed when the current function returns. We can go even further: assuming
+few closures are built, a sensible policy is to systematically put values
+being added to the environment in one of these volatile locations, and to copy
+them back to persistent storage (i.e. in the heap) when a closure is built.
+
+In this approach, the environment
+:math:`0 \leftarrow a_0, \cdots , n \leftarrow a_n` is represented by a
+persistent part :math:`a_k, \cdots , a_n`, which is the environment part of
+the closure most recently applied or built, and a volatile part
+:math:`a_0, \cdots , a_{k-1}`, which holds values added to the environment
+since then.
+
+The linker and the runtime system
+=================================
+
+.. list-table:: Kinds of operands
+   :header-rows: 0
+
+   * - :math:`n`
+     - a small integer (the size of an opcode)
+   * - :math:`ofs`
+     - an offset for a relative branch, relative to the address where it is
+       stored; it uses two bytes
+   * - :math:`tag`
+     - the tag of a block (one byte)
+   * - :math:`header`
+     - a well-formed block header (four bytes)
+   * - :math:`int_8`
+     - a small integer constant (one byte)
+   * - :math:`int_{16}`
+     - a medium integer constant (two bytes)
+   * - :math:`int_{32}`
+     - a large integer constant (four bytes)
+   * - :math:`float`
+     - a floating-point number (four, eight or ten bytes, depending on the
+       hardware)
+   * - :math:`string`
+     - a character string, stored as if it was in the heap
+
+.. rubric:: Constants and literals
+
+.. list-table::
+   :header-rows: 0
+
+   * - :math:`\textbf{Constbyte}(int_{8})`
+     - Lorem.
+
 .. rubric:: Footnotes
 
 .. [ZINC]
