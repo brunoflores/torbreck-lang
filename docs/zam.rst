@@ -588,6 +588,26 @@ The linker and the runtime system
      - Compare the accumulator with the constant given as argument,
        and jumps if different (Useful for fast pattern matching).
 
+.. rubric:: Miscellaneous
+
+.. list-table::
+   :header-rows: 0
+   :widths: 40 60
+
+   * - :opcode:`CCall0(n)`, :math:`\cdots`, :opcode:`CCall5(n)`
+     - Call a C function, with 0 to 5 arguments. C functions are put in a
+       special table; :math:`n` is the number of the desired function.
+       The firest argument is the value of the accumulator, the remaining
+       arguments are popped from the argument stack. The result is put in the
+       accumulator.
+   * - :opcode:`StartFun`
+     - Perform various checks such as stack overflow, pending break condition,
+       and so on. Intended to be inserted at the beginning of each function and
+       loop body.
+   * - :opcode:`Nop1`, :opcode:`Nop2`, :opcode:`Nop3`
+     - Do nothing, but skip respectively one, two, and three bytes.
+       Used to align code on 16-bit or 32-bit boundaries.
+
 .. rubric:: Footnotes
 
 .. [ZINC]
