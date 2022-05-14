@@ -12,23 +12,6 @@ op_regex = re.compile(r"(?P<op>\w+)(?P<par>\(.*\))?")
 arg_regex = re.compile(r"(?P<arg>[a-zA-Z01\.]+)(?P<sub>\s{1}[\d+k]+)?(?=,?)")
 
 
-class OpCode(Directive):
-    required_arguments = 1
-    optional_arguments = 0
-    has_content = False
-    node_class = nodes.math
-
-    option_spec = {
-        "op": directives.unchanged_required,
-    }
-
-    def run(self):
-        text = r"\textbf{" + self.arguments[0] + "}(arg_{8})"
-        math_node = self.node_class(text=text)
-        self.state.nested_parse(self.content, self.content_offset, math_node)
-        return [math_node]
-
-
 def opcode_role(role, rawtext, text, lineno, inliner, options=None, content=None):
     def parse_op(op):
         def parse_arg(arg):
@@ -51,8 +34,6 @@ def opcode_role(role, rawtext, text, lineno, inliner, options=None, content=None
 
 
 def setup(app):
-    app.setup_extension("sphinx.ext.mathjax")
-    app.add_directive("opcode", OpCode)
     app.add_role("opcode", opcode_role)
 
     return {
