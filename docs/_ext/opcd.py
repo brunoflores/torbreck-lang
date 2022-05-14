@@ -29,24 +29,26 @@ class OpCode(Directive):
 
 
 def opcode_role(role, rawtext, text, lineno, inliner, options=None, content=None):
-    m = opcode_role_regex.match(text)
-    if not m:
-        return [], []
-    if not m.group("par"):
-        node = nodes.math(text=r"\textbf{{{op}}}".format(op=m.group("op")))
-        return [node], []
-    elif not m.group("sub"):
-        node = nodes.math(
-            text=r"\textbf{{{op}}}({arg})".format(op=m.group("op"), arg=m.group("arg"))
-        )
-        return [node], []
-    else:
-        node = nodes.math(
-            text=r"\textbf{{{op}}}({arg}_{{{sub}}})".format(
-                op=m.group("op"), arg=m.group("arg"), sub=m.group("sub")
+    final = []
+    ops = text.split("; ")
+    for op in ops:
+        m = opcode_role_regex.match(op)
+        if not m:
+            continue
+        if not m.group("par"):
+            final.append(r"\textbf{{{op}}}".format(op=m.group("op")))
+        elif not m.group("sub"):
+            final.append(
+                r"\textbf{{{op}}}({arg})".format(op=m.group("op"), arg=m.group("arg"))
             )
-        )
-        return [node], []
+        else:
+            final.append(
+                r"\textbf{{{op}}}({arg}_{{{sub}}})".format(
+                    op=m.group("op"), arg=m.group("arg"), sub=m.group("sub")
+                )
+            )
+    node = nodes.math(text="; ".join(final))
+    return [node], []
 
 
 def setup(app):

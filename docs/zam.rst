@@ -424,8 +424,7 @@ The linker and the runtime system
 
 .. list-table::
    :header-rows: 0
-   :align: left
-   :widths: 100 100
+   :widths: 40 60
 
    * - :opcode:`Constbyte(int8)`, :opcode:`Constshort(int16)`,
        :opcode:`Constlong(int32)`
@@ -436,7 +435,44 @@ The linker and the runtime system
        accumulator.
    * - :opcode:`GetGlobal(int16)`, :opcode:`SetGlobal(int16)`
      - Load (resp. store) the accumulator from the global variable number
-       :math:`int_{16}`
+       :math:`int_{16}`.
+
+.. rubric:: Function handling
+
+.. list-table::
+   :header-rows: 0
+   :widths: 40 60
+
+   * - :opcode:`Push`, :opcode:`Pushmark`
+     - Push the accumulator (resp. a mark) on the argument stack.
+   * - :opcode:`Apply`, :opcode:`Appterm`
+     - Call (resp. jump to) the closure contained in the accumulator.
+   * - :opcode:`Return`
+     - If there is a mark on top of the argument stack, pop it and return to
+       the caller; otherwise, jump to the closure contained in the accumulator.
+
+.. rubric:: Environment handling
+
+.. list-table::
+   :header-rows: 0
+   :widths: 40 60
+
+   * - :opcode:`Access(n)`, :opcode:`Access0`, :math:`\cdots`, :opcode:`Access5`
+     - Fetch the :math:`n^{th}` slot of the environment, and put it in the
+       accumulator.
+   * - :opcode:`Let`
+     - Put the value of the accumulator in front of the environment.
+   * - :opcode:`Endlet(n)`, :opcode:`Endlet1`
+     - Throw away the first :math:`n` local variables from the environment.
+   * - :opcode:`Dummies(n)`
+     - Put :math:`n` dummy closures in front of the environment.
+   * - :opcode:`Update(n)`
+     - Physically update the :math:`n^{th}` slot of the environment with
+       the value of the accumulator.
+   * - :opcode:`Letrec1(ofs)`
+     - Same as :opcode:`Dummies(1); Closure(ofs); Update(0)`, a very frequent
+       sequence, corresponding to
+       :math:`\texttt{let rec f = function ... in ...}`
 
 .. rubric:: Footnotes
 
