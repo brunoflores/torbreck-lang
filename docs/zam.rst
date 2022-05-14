@@ -424,12 +424,19 @@ The linker and the runtime system
 
 .. list-table::
    :header-rows: 0
+   :align: left
+   :widths: 100 100
 
    * - :opcode:`Constbyte(int8)`, :opcode:`Constshort(int16)`,
        :opcode:`Constlong(int32)`
-     - Put an integer constant
-   * - :opcode:`Atom(n)`, :opcode:`Atom0`
-     - Lorem.
+     - Put an integer constant in the accumulator. :opcode:`Constlong` allows
+       loading any constant, as long as it is not a pointer in the heap.
+   * - :opcode:`Atom(n)`, :opcode:`Atom0`, :math:`\cdots`, :opcode:`Atom9`
+     - Put a pointer to a zero-sized block tagged :math:`n` in the
+       accumulator.
+   * - :opcode:`GetGlobal(int16)`, :opcode:`SetGlobal(int16)`
+     - Load (resp. store) the accumulator from the global variable number
+       :math:`int_{16}`
 
 .. rubric:: Footnotes
 
