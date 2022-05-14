@@ -1,3 +1,10 @@
+import os
+import sys
+
+# Add the _ext directory to the Python path. This is for custom extensions.
+# https://www.sphinx-doc.org/en/master/development/tutorials/helloworld.html
+sys.path.append(os.path.abspath("./_ext"))
+
 # Configuration file for the Sphinx documentation builder.
 #
 # This file only contains a selection of the most common options. For a full
