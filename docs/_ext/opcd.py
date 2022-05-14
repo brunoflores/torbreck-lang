@@ -7,7 +7,7 @@ import re
 
 # Pre-compile.
 opcode_role_regex = re.compile(
-    "(?P<op>\w+)(?P<par>\((?P<arg>[a-zA-Z]+)(?P<sub>\d+)?\))?"
+    "(?P<op>\w+)(?P<par>\((?P<arg>[a-zA-Z01]+)(?P<sub>\s{1}\d+)?\))?"
 )
 
 

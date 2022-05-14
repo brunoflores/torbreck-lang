@@ -426,14 +426,14 @@ The linker and the runtime system
    :header-rows: 0
    :widths: 40 60
 
-   * - :opcode:`Constbyte(int8)`, :opcode:`Constshort(int16)`,
-       :opcode:`Constlong(int32)`
+   * - :opcode:`Constbyte(int 8)`, :opcode:`Constshort(int 16)`,
+       :opcode:`Constlong(int 32)`
      - Put an integer constant in the accumulator. :opcode:`Constlong` allows
        loading any constant, as long as it is not a pointer in the heap.
    * - :opcode:`Atom(n)`, :opcode:`Atom0`, :math:`\cdots`, :opcode:`Atom9`
      - Put a pointer to a zero-sized block tagged :math:`n` in the
        accumulator.
-   * - :opcode:`GetGlobal(int16)`, :opcode:`SetGlobal(int16)`
+   * - :opcode:`GetGlobal(int 16)`, :opcode:`SetGlobal(int 16)`
      - Load (resp. store) the accumulator from the global variable number
        :math:`int_{16}`.
 
@@ -473,6 +473,38 @@ The linker and the runtime system
      - Same as :opcode:`Dummies(1); Closure(ofs); Update(0)`, a very frequent
        sequence, corresponding to
        :math:`\texttt{let rec f = function ... in ...}`
+
+.. rubric:: Building and deconstructing block
+
+.. list-table::
+   :header-rows: 0
+   :widths: 40 60
+
+   * - :opcode:`Makeblock(header)`, :opcode:`Makeblock1(tag)`, :math:`\cdots`,
+       :opcode:`Makeblock4(tag)`
+     - Allocate a block with a given header, initialise field 0 with the
+       accumulator, and the remaining fields with values taken from the
+       argument stack.
+   * - :opcode:`Getfield(n)`, :opcode:`Getfield0`, :math:`\cdots`,
+       :opcode:`Getfield3`
+     - Access the :math:`n^{th}` field of the block pointed to by the
+       accumulator.
+   * - :opcode:`Setfield(n)`, :opcode:`Setfield0`, :math:`\cdots`,
+       :opcode:`Setfield3`
+     - Physically replace the :math:`n^{th}` field of the block pointed to
+       by the accumulator with the value popped from the argument stack.
+
+.. rubric:: Integers
+
+.. list-table::
+   :header-rows: 0
+   :widths: 40 60
+
+   * - :opcode:`SuccInt`, :opcode:`PredInt`, :opcode:`NegInt`,
+       :opcode:`AddInt`, :opcode:`SubInt`, :opcode:`MulInt`, :opcode:`DivInt`,
+       :opcode:`ModInt`, :opcode:`AndInt`, :opcode:`OrInt`, :opcode:`XorInt`,
+       :opcode:`ShiftLeftInt`, :opcode:`ShiftRightInt`
+     - Usual arithmetic operations on integers.
 
 .. rubric:: Footnotes
 
