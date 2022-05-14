@@ -506,6 +506,88 @@ The linker and the runtime system
        :opcode:`ShiftLeftInt`, :opcode:`ShiftRightInt`
      - Usual arithmetic operations on integers.
 
+.. rubric:: Floating-point numbers
+
+.. list-table::
+   :header-rows: 0
+   :widths: 40 60
+
+   * - :opcode:`Floatop(n)`
+     - Allocates room for one floating point result, and executes the
+       sub-instruction :math:`n`, one of :opcode:`AddFloat`, :opcode:`SubFloat`,
+       :opcode:`MulFloat`, :opcode:`DivFloat`, and the usual transcendental
+       functions.
+   * - :opcode:`FloatOfInt`, :opcode:`IntOfFloat`
+     - Conversion from and integer, and truncation to an integer.
+
+.. rubric:: Strings
+
+.. list-table::
+   :header-rows: 0
+   :widths: 40 60
+
+   * - :opcode:`Makestring`
+     - Allocates a string of given length (in the accumulator).
+   * - :opcode:`StringLength`
+     - Length of the string contained in the accumulator.
+   * - :opcode:`GetChar`, :opcode:`SetChar`
+     - Read or modify one char in a string.
+   * - :opcode:`FillString`, :opcode:`BlitString`
+     - Fill a substring with a given character, or copy one substring into
+       another.
+
+.. rubric:: Predicates
+
+.. list-table::
+   :header-rows: 0
+   :widths: 40 60
+
+   * - :opcode:`Boolnot`
+     - Negation: returns "true" (the zero-sized block tagged 1) if the block
+       in the accumulator is tagged 0, and "false" (the zero-sized block
+       tagged 0) otherwise.
+   * - :opcode:`Ed`, :opcode:`Equal`
+     - Pointer equality (resp. structural equality) between the accumulator
+       and the top of the stack.
+   * - :opcode:`EqInt`, :opcode:`NeqInt`, :opcode:`LtInt`, :opcode:`GtInt`,
+       :opcode:`LeInt`, :opcode:`GeInt`
+     - Usual comparison predicates on integers.
+   * - :opcode:`EqFloat`, :opcode:`NeqFloat`, :opcode:`LtFloat`,
+       :opcode:`GtFloat`, :opcode:`LeFloat`, :opcode:`GeFloat`
+     - Usual comparison predicates on floating-point numbers.
+   * - :opcode:`EqString`, :opcode:`NeqString`, :opcode:`LtString`,
+       :opcode:`GtString`, :opcode:`LeString`, :opcode:`GeString`
+     - Usual comparison predicates on strings.
+
+.. rubric:: Branches and conditional branches
+
+.. list-table::
+   :header-rows: 0
+   :widths: 40 60
+
+   * - :opcode:`Branch(ofs)`
+     - Unconditional relative jump.
+   * - :opcode:`BranchIf(ofs)`, :opcode:`Branchifnot(ofs)`,
+       :opcode:`Branchifeqtag(tag,ofs)`, :opcode:`Branchifneqtag(tag,ofs)`
+     - Conditional branches on the tag :math:`t` of the block pointed to
+       by the accumulator: :opcode:`Branchif` jumps if :math:`t \ne 0`,
+       :opcode:`Branchifnot` jumps if :math:`t = 0`, :opcode:`Branchifeqtag`
+       jumps if :math:`t = tag`, :opcode:`Branchifneqtag` jumps if
+       :math:`t \ne tag`.
+   * - :opcode:`Switch(ofs 0, ...,ofs k)`
+     - Jumps to the offset :math:`ofs_t`, where :math:`t` is the tag :math:`t`
+       of the block contained in the accumulator.
+   * - :opcode:`BranchifEq(ofs)`, :opcode:`BranchifNeq(ofs)`,
+       :opcode:`BranchifEqual(ofs)`, :opcode:`BranchifNequal(ofs)`,
+       :opcode:`BranchifLtInt(ofs)`, :math:`\cdots`,
+       :opcode:`BranchifGetString(ofs)`
+     - Conditional branches corresponding to the binary predicates above.
+   * - :opcode:`BranchIfNeqImmInt(int 32,ofs)`,
+       :opcode:`BranchifNeqImmFloat(float,ofs)`,
+       :opcode:`BranchIfNeqImmString(string,ofs)`
+     - Compare the accumulator with the constant given as argument,
+       and jumps if different (Useful for fast pattern matching).
+
 .. rubric:: Footnotes
 
 .. [ZINC]

@@ -5,10 +5,11 @@ from docutils.parsers.rst import Directive
 
 import re
 
-# Pre-compile.
-opcode_role_regex = re.compile(
-    "(?P<op>\w+)(?P<par>\((?P<arg>[a-zA-Z01]+)(?P<sub>\s{1}\d+)?\))?"
-)
+# An op code with an optional argument in brackets.
+op_regex = re.compile(r"(?P<op>\w+)(?P<par>\(.*\))?")
+# An argument with an optional subscript looking ahead for an
+# optional comma (the separator).
+arg_regex = re.compile(r"(?P<arg>[a-zA-Z01\.]+)(?P<sub>\s{1}[\d+k]+)?(?=,?)")
 
 
 class OpCode(Directive):
@@ -29,22 +30,23 @@ class OpCode(Directive):
 
 
 def opcode_role(role, rawtext, text, lineno, inliner, options=None, content=None):
-    def parse(op):
-        m = opcode_role_regex.match(op)
+    def parse_op(op):
+        def parse_arg(arg):
+            if not arg.group("sub"):
+                return arg.group("arg")
+            else:
+                return "%s_{%s}" % (arg.group("arg"), arg.group("sub"))
+
+        m = op_regex.match(op)
         if not m:
             return ""
         if not m.group("par"):
-            return r"\textbf{{{op}}}".format(op=m.group("op"))
-        elif not m.group("sub"):
-            return r"\textbf{{{op}}}({arg})".format(
-                op=m.group("op"), arg=m.group("arg")
-            )
+            return r"\textbf{%s}" % m.group("op")
         else:
-            return r"\textbf{{{op}}}({arg}_{{{sub}}})".format(
-                op=m.group("op"), arg=m.group("arg"), sub=m.group("sub")
-            )
+            args = [parse_arg(arg) for arg in re.finditer(arg_regex, m.group("par"))]
+            return r"\textbf{%s}(%s)" % (m.group("op"), ", \space ".join(args))
 
-    node = nodes.math(text="; ".join([parse(op) for op in text.split("; ")]))
+    node = nodes.math(text="; \space".join([parse_op(op) for op in text.split("; ")]))
     return [node], []
 
 
