@@ -574,7 +574,7 @@ The linker and the runtime system
        :opcode:`Branchifnot` jumps if :math:`t = 0`, :opcode:`Branchifeqtag`
        jumps if :math:`t = tag`, :opcode:`Branchifneqtag` jumps if
        :math:`t \ne tag`.
-   * - :opcode:`Switch(ofs 0, ...,ofs k)`
+   * - :opcode:`Switch(ofs 0,...,ofs k)`
      - Jumps to the offset :math:`ofs_t`, where :math:`t` is the tag :math:`t`
        of the block contained in the accumulator.
    * - :opcode:`BranchifEq(ofs)`, :opcode:`BranchifNeq(ofs)`,
