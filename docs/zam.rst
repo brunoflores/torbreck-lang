@@ -425,7 +425,10 @@ The linker and the runtime system
 .. list-table::
    :header-rows: 0
 
-   * - :math:`\textbf{Constbyte}(int_{8})`
+   * - :opcode:`Constbyte(int8)`, :opcode:`Constshort(int16)`,
+       :opcode:`Constlong(int32)`
+     - Put an integer constant
+   * - :opcode:`Atom(n)`, :opcode:`Atom0`
      - Lorem.
 
 .. rubric:: Footnotes

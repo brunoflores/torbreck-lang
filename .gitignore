@@ -31,3 +31,4 @@ _opam/
 # Documentation
 # Python virtual environment for readthedocs
 docs/.venv/
+**/__pycache__/

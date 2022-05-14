@@ -36,7 +36,7 @@ author = "Bruno Flores"
 # ones.
 #
 # See https://www.sphinx-doc.org/en/master/usage/extensions/index.html
-extensions = ["sphinx.ext.mathjax", "sphinx.ext.graphviz"]
+extensions = ["sphinx.ext.mathjax", "sphinx.ext.graphviz", "opcd"]
 
 # See https://docs.mathjax.org/en/latest/input/tex/extensions.html
 mathjax3_config = {
