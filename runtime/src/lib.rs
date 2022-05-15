@@ -46,6 +46,12 @@ struct Machine {
     rsp: u8,
     accu: Accu,
     first_atoms: [gc::Header; 256],
+
+    // ZINC Experiment: page 84,
+    //   The values of initialized globals, that is a sequence of one integer
+    //   (the slot number of the global) and one ZINC value (in prefix form).
+    //   The integer -1 terminates this list.
+    globals: Vec<u8>,
 }
 
 fn init_atoms() -> [gc::Header; 256] {
@@ -65,6 +71,7 @@ impl Machine {
             asp: 0,
             rsp: 0,
             first_atoms: init_atoms(),
+            globals: vec![0], // TODO
         }
     }
 
@@ -79,7 +86,9 @@ impl Machine {
                     let valofpc = self.mem[self.pc as usize];
                     self.accu = Accu::Byte(self.mem[valofpc as usize]);
                 }
-                Instruction::Constshort => panic!("Constshort not implemented"),
+                Instruction::Constshort => {
+                    panic!("Constshort not implemented"); // TODO
+                }
                 Instruction::Atom0 => {
                     self.accu = Accu::Header(self.first_atoms[0])
                 }
@@ -116,7 +125,26 @@ impl Machine {
                     self.accu =
                         Accu::Header(self.first_atoms[valofpc as usize]);
                 }
-                _ => panic!("not implemented"),
+                Instruction::Getglobal => {
+                    // I'm not so sure about this one looking at the sources.
+                    // TODO
+                    self.step(None);
+                    let valofpc = self.mem[self.pc as usize];
+                    self.accu = Accu::Byte(self.globals[valofpc as usize]);
+                }
+                Instruction::Setglobal => {
+                    // I'm not so sure about this one looking at the sources.
+                    // TODO
+                    self.step(None);
+                    let valofpc = self.mem[self.pc as usize];
+                    self.globals[valofpc as usize] = match self.accu {
+                        Accu::Byte(n) => n,
+                        _ => panic!(
+                            "don't know how to update a global with a header"
+                        ),
+                    }
+                }
+                _ => panic!("not implemented"), // TODO
             };
             self.step(None);
         }
@@ -141,10 +169,10 @@ impl Machine {
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let contents = fs::read(config.filename)?;
 
-    // println!("with bytes: {:?}", contents);
-    // println!("first instruction: {:?}", opcodes::decode(contents[0]));
+    println!("with bytes: {:?}", contents);
+    println!("number of global variables: {}", contents[0]);
 
-    let mut machine = Machine::new(contents);
+    let mut machine = Machine::new(contents[1..].to_owned());
     machine.interpret();
     println!("accumulator is: {:?}", machine.accu());
     Ok(())
