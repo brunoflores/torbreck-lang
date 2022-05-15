@@ -5,6 +5,8 @@ use std::fs;
 mod opcodes;
 use opcodes::Instruction;
 
+mod gc;
+
 #[derive(Debug)]
 pub struct ConfigError;
 
@@ -31,12 +33,27 @@ impl Config {
     }
 }
 
+#[derive(Debug)]
+enum Accu {
+    Byte(u8),
+    Header(gc::Header),
+}
+
 struct Machine {
     mem: Vec<u8>,
     pc: u8,
     asp: u8,
     rsp: u8,
-    accu: u8,
+    accu: Accu,
+    first_atoms: [gc::Header; 256],
+}
+
+fn init_atoms() -> [gc::Header; 256] {
+    let mut arr = [gc::Header::new(); 256];
+    for (n, h) in arr.iter_mut().enumerate() {
+        *h = gc::Header::newtag(n);
+    }
+    arr
 }
 
 impl Machine {
@@ -44,24 +61,64 @@ impl Machine {
         Machine {
             mem,
             pc: 0,
-            accu: 0,
+            accu: Accu::Byte(0),
             asp: 0,
             rsp: 0,
+            first_atoms: init_atoms(),
         }
     }
 
     pub fn interpret(&mut self) {
+        // Will loop until an explicit break - probably from a Stop instruction.
         loop {
+            // PC is always incremented by one after this.
             match self.decode() {
                 Instruction::Stop => break,
                 Instruction::Constbyte => {
                     self.step(None);
                     let valofpc = self.mem[self.pc as usize];
-                    self.accu = self.mem[valofpc as usize];
+                    self.accu = Accu::Byte(self.mem[valofpc as usize]);
+                }
+                Instruction::Constshort => panic!("Constshort not implemented"),
+                Instruction::Atom0 => {
+                    self.accu = Accu::Header(self.first_atoms[0])
+                }
+                Instruction::Atom1 => {
+                    self.accu = Accu::Header(self.first_atoms[1])
+                }
+                Instruction::Atom2 => {
+                    self.accu = Accu::Header(self.first_atoms[2])
+                }
+                Instruction::Atom3 => {
+                    self.accu = Accu::Header(self.first_atoms[3])
+                }
+                Instruction::Atom4 => {
+                    self.accu = Accu::Header(self.first_atoms[4])
+                }
+                Instruction::Atom5 => {
+                    self.accu = Accu::Header(self.first_atoms[5])
+                }
+                Instruction::Atom6 => {
+                    self.accu = Accu::Header(self.first_atoms[6])
+                }
+                Instruction::Atom7 => {
+                    self.accu = Accu::Header(self.first_atoms[7])
+                }
+                Instruction::Atom8 => {
+                    self.accu = Accu::Header(self.first_atoms[8])
+                }
+                Instruction::Atom9 => {
+                    self.accu = Accu::Header(self.first_atoms[9])
+                }
+                Instruction::Atom => {
                     self.step(None);
+                    let valofpc = self.mem[self.pc as usize];
+                    self.accu =
+                        Accu::Header(self.first_atoms[valofpc as usize]);
                 }
                 _ => panic!("not implemented"),
-            }
+            };
+            self.step(None);
         }
     }
 
@@ -72,8 +129,8 @@ impl Machine {
         }
     }
 
-    pub fn accu(&self) -> u8 {
-        self.accu
+    pub fn accu(&self) -> &Accu {
+        &self.accu
     }
 
     fn decode(&self) -> Instruction {
@@ -89,7 +146,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 
     let mut machine = Machine::new(contents);
     machine.interpret();
-    println!("accumulator is: {}", machine.accu());
+    println!("accumulator is: {:?}", machine.accu());
     Ok(())
 }
 
@@ -99,7 +156,8 @@ mod tests {
 
     #[test]
     fn sane() {
-        let cfg = Config::new(&["prog".to_string(), "filename.txt".to_string()]);
+        let cfg =
+            Config::new(&["prog".to_string(), "filename.txt".to_string()]);
         assert_eq!("filename.txt", cfg.unwrap().filename);
     }
 
