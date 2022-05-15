@@ -33,7 +33,7 @@ impl Config {
 
 struct Machine {
     mem: Vec<u8>,
-    pc: usize,
+    pc: u8,
     asp: u8,
     rsp: u8,
     accu: u8,
@@ -54,8 +54,21 @@ impl Machine {
         loop {
             match self.decode() {
                 Instruction::Stop => break,
+                Instruction::Constbyte => {
+                    self.step(None);
+                    let valofpc = self.mem[self.pc as usize];
+                    self.accu = self.mem[valofpc as usize];
+                    self.step(None);
+                }
                 _ => panic!("not implemented"),
             }
+        }
+    }
+
+    fn step(&mut self, n: Option<u8>) {
+        match n {
+            Some(n) => self.pc += n,
+            None => self.pc += 1,
         }
     }
 
@@ -64,14 +77,14 @@ impl Machine {
     }
 
     fn decode(&self) -> Instruction {
-        opcodes::decode(self.mem[self.pc])
+        opcodes::decode(self.mem[self.pc as usize])
     }
 }
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let contents = fs::read(config.filename)?;
 
-    // println!("with bytes:\n{:?}", contents);
+    // println!("with bytes: {:?}", contents);
     // println!("first instruction: {:?}", opcodes::decode(contents[0]));
 
     let mut machine = Machine::new(contents);
