@@ -33,7 +33,9 @@ impl Config {
     }
 }
 
-#[derive(Debug)]
+// Derive Copy and Clone for cases such as copying the accumulator to the
+// argument stack.
+#[derive(Debug, Copy, Clone)]
 enum Accu {
     Byte(u8),
     Header(gc::Header),
@@ -42,9 +44,11 @@ enum Accu {
 struct Machine {
     mem: Vec<u8>,
     pc: u8,
-    asp: u8,
-    rsp: u8,
+    asp: Vec<Accu>,
+    rsp: Vec<Accu>,
     accu: Accu,
+
+    // Allocated once and for all.
     first_atoms: [gc::Header; 256],
 
     // ZINC Experiment: page 84,
@@ -68,8 +72,8 @@ impl Machine {
             mem,
             pc: 0,
             accu: Accu::Byte(0),
-            asp: 0,
-            rsp: 0,
+            asp: vec![Accu::Byte(0)],
+            rsp: vec![Accu::Byte(0)],
             first_atoms: init_atoms(),
             globals: vec![0], // TODO
         }
@@ -87,7 +91,7 @@ impl Machine {
                     self.accu = Accu::Byte(self.mem[valofpc as usize]);
                 }
                 Instruction::Constshort => {
-                    panic!("Constshort not implemented"); // TODO
+                    self.panic_pc("Constshort not implemented"); // TODO
                 }
                 Instruction::Atom0 => {
                     self.accu = Accu::Header(self.first_atoms[0])
@@ -139,12 +143,23 @@ impl Machine {
                     let valofpc = self.mem[self.pc as usize];
                     self.globals[valofpc as usize] = match self.accu {
                         Accu::Byte(n) => n,
-                        _ => panic!(
-                            "don't know how to update a global with a header"
+                        _ => self.panic_pc(
+                            "don't know how to update a global with a header",
                         ),
                     }
                 }
-                _ => panic!("not implemented"), // TODO
+                Instruction::Push => {
+                    self.asp.push(self.accu);
+                }
+                Instruction::Pop => {
+                    self.accu = match self.asp.pop() {
+                        Some(value) => value,
+                        None => {
+                            self.panic_pc("popping an empty argument stack")
+                        }
+                    }
+                }
+                _ => self.panic_pc("not implemented"), // TODO
             };
             self.step(None);
         }
@@ -163,6 +178,10 @@ impl Machine {
 
     fn decode(&self) -> Instruction {
         opcodes::decode(self.mem[self.pc as usize])
+    }
+
+    fn panic_pc(&self, msg: &str) -> ! {
+        panic!("pc: {}\t{}", self.pc, msg);
     }
 }
 
