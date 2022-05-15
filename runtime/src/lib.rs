@@ -36,17 +36,18 @@ impl Config {
 // Derive Copy and Clone for cases such as copying the accumulator to the
 // argument stack.
 #[derive(Debug, Copy, Clone)]
-enum Accu {
+enum Value {
     Byte(u8),
     Header(gc::Header),
+    Mark,
 }
 
 struct Machine {
     mem: Vec<u8>,
     pc: u8,
-    asp: Vec<Accu>,
-    rsp: Vec<Accu>,
-    accu: Accu,
+    asp: Vec<Value>,
+    rsp: Vec<Value>,
+    accu: Value,
 
     // Allocated once and for all.
     first_atoms: [gc::Header; 256],
@@ -71,9 +72,9 @@ impl Machine {
         Machine {
             mem,
             pc: 0,
-            accu: Accu::Byte(0),
-            asp: vec![Accu::Byte(0)],
-            rsp: vec![Accu::Byte(0)],
+            accu: Value::Byte(0),
+            asp: vec![Value::Byte(0)],
+            rsp: vec![Value::Byte(0)],
             first_atoms: init_atoms(),
             globals: vec![0], // TODO
         }
@@ -88,53 +89,53 @@ impl Machine {
                 Instruction::Constbyte => {
                     self.step(None);
                     let valofpc = self.mem[self.pc as usize];
-                    self.accu = Accu::Byte(self.mem[valofpc as usize]);
+                    self.accu = Value::Byte(self.mem[valofpc as usize]);
                 }
                 Instruction::Constshort => {
                     self.panic_pc("Constshort not implemented"); // TODO
                 }
                 Instruction::Atom0 => {
-                    self.accu = Accu::Header(self.first_atoms[0])
+                    self.accu = Value::Header(self.first_atoms[0])
                 }
                 Instruction::Atom1 => {
-                    self.accu = Accu::Header(self.first_atoms[1])
+                    self.accu = Value::Header(self.first_atoms[1])
                 }
                 Instruction::Atom2 => {
-                    self.accu = Accu::Header(self.first_atoms[2])
+                    self.accu = Value::Header(self.first_atoms[2])
                 }
                 Instruction::Atom3 => {
-                    self.accu = Accu::Header(self.first_atoms[3])
+                    self.accu = Value::Header(self.first_atoms[3])
                 }
                 Instruction::Atom4 => {
-                    self.accu = Accu::Header(self.first_atoms[4])
+                    self.accu = Value::Header(self.first_atoms[4])
                 }
                 Instruction::Atom5 => {
-                    self.accu = Accu::Header(self.first_atoms[5])
+                    self.accu = Value::Header(self.first_atoms[5])
                 }
                 Instruction::Atom6 => {
-                    self.accu = Accu::Header(self.first_atoms[6])
+                    self.accu = Value::Header(self.first_atoms[6])
                 }
                 Instruction::Atom7 => {
-                    self.accu = Accu::Header(self.first_atoms[7])
+                    self.accu = Value::Header(self.first_atoms[7])
                 }
                 Instruction::Atom8 => {
-                    self.accu = Accu::Header(self.first_atoms[8])
+                    self.accu = Value::Header(self.first_atoms[8])
                 }
                 Instruction::Atom9 => {
-                    self.accu = Accu::Header(self.first_atoms[9])
+                    self.accu = Value::Header(self.first_atoms[9])
                 }
                 Instruction::Atom => {
                     self.step(None);
                     let valofpc = self.mem[self.pc as usize];
                     self.accu =
-                        Accu::Header(self.first_atoms[valofpc as usize]);
+                        Value::Header(self.first_atoms[valofpc as usize]);
                 }
                 Instruction::Getglobal => {
                     // I'm not so sure about this one looking at the sources.
                     // TODO
                     self.step(None);
                     let valofpc = self.mem[self.pc as usize];
-                    self.accu = Accu::Byte(self.globals[valofpc as usize]);
+                    self.accu = Value::Byte(self.globals[valofpc as usize]);
                 }
                 Instruction::Setglobal => {
                     // I'm not so sure about this one looking at the sources.
@@ -142,7 +143,7 @@ impl Machine {
                     self.step(None);
                     let valofpc = self.mem[self.pc as usize];
                     self.globals[valofpc as usize] = match self.accu {
-                        Accu::Byte(n) => n,
+                        Value::Byte(n) => n,
                         _ => self.panic_pc(
                             "don't know how to update a global with a header",
                         ),
@@ -172,7 +173,7 @@ impl Machine {
         }
     }
 
-    pub fn accu(&self) -> &Accu {
+    pub fn accu(&self) -> &Value {
         &self.accu
     }
 
