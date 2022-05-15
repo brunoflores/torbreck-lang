@@ -149,9 +149,7 @@ impl Machine {
                         ),
                     }
                 }
-                Instruction::Push => {
-                    self.asp.push(self.accu);
-                }
+                Instruction::Push => self.asp.push(self.accu),
                 Instruction::Pop => {
                     self.accu = match self.asp.pop() {
                         Some(value) => value,
@@ -160,6 +158,7 @@ impl Machine {
                         }
                     }
                 }
+                Instruction::Pushmark => self.asp.push(Value::Mark),
                 _ => self.panic_pc("not implemented"), // TODO
             };
             self.step(None);
