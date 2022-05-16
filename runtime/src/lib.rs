@@ -152,7 +152,7 @@ impl<'a> Machine<'a> {
   }
 
   fn panic_pc(&self, msg: &str) -> ! {
-    panic!("pc: {}\t{}", self.pc, msg);
+    panic!("pc: {}: {}", self.pc, msg);
   }
 }
 
