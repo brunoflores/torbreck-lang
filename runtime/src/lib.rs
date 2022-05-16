@@ -18,7 +18,11 @@ struct Boxed {
 
 #[derive(Debug, Copy, Clone)]
 enum Value<'a> {
+  // An unboxed integer.
   Int(u8),
+
+  // Pointer to Header here can point to the heap or
+  // to some other statically allocated region.
   Hd(&'a Header),
 }
 
@@ -141,10 +145,6 @@ impl<'a> Machine<'a> {
       Some(n) => self.pc += n,
       None => self.pc += 1,
     }
-  }
-
-  pub fn accu(&self) -> Value {
-    self.accu
   }
 
   fn decode(&self) -> Instruction {
