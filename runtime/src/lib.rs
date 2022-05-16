@@ -49,7 +49,7 @@ struct Machine<'a> {
   rsp: Vec<RspValue<'a>>,
 
   // Allocated statically once and for all.
-  first_atoms: &'static [gc::Header; 256],
+  first_atoms: &'static [Header; 256],
 
   // The ZINC Experiment: page 84,
   //   The values of initialized globals, that is a sequence of one integer
