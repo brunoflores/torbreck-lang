@@ -80,7 +80,8 @@ impl<'a> Machine<'a> {
     loop {
       // PC is always incremented by one after this.
       // TODO might not apply to every instruction.
-      match self.decode() {
+      let instr = self.decode();
+      match instr {
         Instruction::Stop => return self.accu.clone(), // TODO why if it's there?
         Instruction::Constbyte => {
           self.step(None);
@@ -88,7 +89,7 @@ impl<'a> Machine<'a> {
           self.accu = Value::Int(self.mem[valofpc as usize]);
         }
         Instruction::Constshort => {
-          self.panic_pc("Constshort not implemented"); // TODO
+          self.panic_pc("Constshort not implemented", instr); // TODO
         }
         Instruction::Atom0 => self.accu = Value::Hd(&self.first_atoms[0]),
         Instruction::Atom1 => self.accu = Value::Hd(&self.first_atoms[1]),
@@ -122,7 +123,10 @@ impl<'a> Machine<'a> {
             Value::Int(n) => n,
             _ => {
               // TODO
-              self.panic_pc("don't know how to update a global with a header")
+              self.panic_pc(
+                "don't know how to update a global with a header",
+                instr,
+              )
             }
           }
         }
@@ -130,8 +134,8 @@ impl<'a> Machine<'a> {
         Instruction::Pop => {
           self.accu = match self.asp.pop() {
             Some(AspValue::Val(value)) => value,
-            Some(AspValue::Mark) => self.panic_pc("popping a mark"),
-            None => self.panic_pc("popping an empty argument stack"),
+            Some(AspValue::Mark) => self.panic_pc("popping a mark", instr),
+            None => self.panic_pc("popping an empty argument stack", instr),
           }
         }
         Instruction::Pushmark => self.asp.push(AspValue::Mark),
@@ -145,7 +149,10 @@ impl<'a> Machine<'a> {
             self.rsp.push(RspValue::Val(v));
           } else {
             // TODO
-            self.panic_pc("got something else - don't know what to do with it");
+            self.panic_pc(
+              "got something else - don't know what to do with it",
+              instr,
+            );
           }
           self.cache_size = 1;
           if let Value::Closure { code, env } = &self.accu {
@@ -153,10 +160,29 @@ impl<'a> Machine<'a> {
             self.env = *env.clone();
           } else {
             // TODO
-            self.panic_pc("didn't get a closure in the accumulator");
+            self.panic_pc("didn't get a closure in the accumulator", instr);
           }
         }
-        _ => self.panic_pc("not implemented"), // TODO
+        Instruction::Appterm => {
+          if let Some(AspValue::Val(v)) = self.asp.pop() {
+            self.rsp.push(RspValue::Val(v));
+          } else {
+            // TODO
+            self.panic_pc(
+              "got something else - don't know what to do with it",
+              instr,
+            );
+          }
+          self.cache_size = 1;
+          if let Value::Closure { code, env } = &self.accu {
+            self.pc = *code;
+            self.env = *env.clone();
+          } else {
+            // TODO
+            self.panic_pc("didn't get a closure in the accumulator", instr);
+          }
+        }
+        _ => self.panic_pc("not implemented", instr), // TODO
       };
       self.step(None);
     }
@@ -177,8 +203,8 @@ impl<'a> Machine<'a> {
     }
   }
 
-  fn panic_pc(&self, msg: &str) -> ! {
-    panic!("pc: {}: {}", self.pc, msg);
+  fn panic_pc(&self, msg: &str, instr: Instruction) -> ! {
+    panic!("pc: {}: {}: {}", self.pc, instr, msg);
   }
 }
 
