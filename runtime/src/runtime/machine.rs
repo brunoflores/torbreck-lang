@@ -178,11 +178,7 @@ impl<'a> Machine<'a> {
           self.step(None);
         }
         Instruction::Apply => {
-          self.rsp.push(RspValue::RetFrame(ReturnFrame {
-            pc: self.pc,
-            env: self.accu.clone(), // TODO
-            cache_size: self.cache_size,
-          }));
+          self.push_ret_frame();
           if let Some(AspValue::Val(v)) = self.asp.pop() {
             self.rsp.push(RspValue::Val(v));
           } else {
@@ -220,9 +216,50 @@ impl<'a> Machine<'a> {
             self.panic_pc("didn't get a closure in the accumulator", instr);
           }
         }
+        Instruction::Return => {
+          // Page 80:
+          //
+          // If there is a mark on top of the stack, pop it and return to
+          // the caller.
+          //
+          // Otherwise, jump to the closure contained in the accumulator.
+          //
+          if let Some(AspValue::Mark) = self.asp.pop() {
+            // Peek at the return stack.
+            if let Some(RspValue::RetFrame(ReturnFrame {
+              pc,
+              env,
+              cache_size,
+            })) = self.rsp.last()
+            {
+              self.pc = *pc; // Go here next.
+              self.env = env.clone(); // TODO
+              self.cache_size = *cache_size;
+            }
+            self.pop_ret_frame();
+            // Proceed to instruction pointed at above.
+          } else {
+            // TODO Anything to do here?
+            // https://github.com/brunoflores/camllight/blob/master/sources/src/runtime/interp.c#L292
+          }
+        }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
     }
+  }
+
+  fn push_ret_frame(&mut self) {
+    self.rsp.push(RspValue::RetFrame(ReturnFrame {
+      pc: self.pc,
+      env: self.accu.clone(), // TODO
+      cache_size: self.cache_size,
+    }));
+  }
+
+  fn pop_ret_frame(&mut self) {
+    // Assume the caller has already checked whether rsp.last() is
+    // a return frame.
+    let _ = self.rsp.pop();
   }
 
   fn step(&mut self, n: Option<u8>) {
@@ -236,7 +273,7 @@ impl<'a> Machine<'a> {
     if let Some(i) = self.mem.get(self.pc as usize) {
       opcodes::decode(*i)
     } else {
-      panic!("instruction out of bounds");
+      panic!("pc: {}: instruction out of bounds", self.pc);
     }
   }
 
