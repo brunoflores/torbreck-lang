@@ -1,13 +1,8 @@
-use std::error::Error;
-use std::fmt;
-use std::fs;
+use crate::runtime::opcodes;
+use crate::runtime::opcodes::Instruction;
 
-mod opcodes;
-use opcodes::Instruction;
-
-mod gc;
-use gc::Header;
-use gc::FIRST_ATOMS;
+use crate::runtime::gc::Header;
+use crate::runtime::gc::FIRST_ATOMS;
 
 // A something in the heap.
 #[derive(Debug)]
@@ -17,7 +12,7 @@ struct Boxed {
 }
 
 #[derive(Debug, Copy, Clone)]
-enum Value<'a> {
+pub enum Value<'a> {
   // An unboxed integer.
   Int(u8),
 
@@ -45,7 +40,7 @@ enum RspValue<'a> {
 }
 
 #[derive(Debug)]
-struct Machine<'a> {
+pub struct Machine<'a> {
   pc: u8,
   accu: Value<'a>,
   mem: Vec<u8>,
@@ -102,7 +97,7 @@ impl<'a> Machine<'a> {
         Instruction::Atom => {
           self.step(None);
           let valofpc = self.mem[self.pc as usize];
-          // TODO: I think the following index can panic at run-time:
+          // TODO: I think the following index can be out of bounds at run-time:
           self.accu = Value::Hd(&self.first_atoms[valofpc as usize]);
         }
         Instruction::Getglobal => {
@@ -148,7 +143,11 @@ impl<'a> Machine<'a> {
   }
 
   fn decode(&self) -> Instruction {
-    opcodes::decode(self.mem[self.pc as usize])
+    if let Some(i) = self.mem.get(self.pc as usize) {
+      opcodes::decode(*i)
+    } else {
+      panic!("instruction out of bounds");
+    }
   }
 
   fn panic_pc(&self, msg: &str) -> ! {
@@ -156,58 +155,19 @@ impl<'a> Machine<'a> {
   }
 }
 
-#[derive(Debug)]
-pub struct ConfigError;
-
-impl fmt::Display for ConfigError {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(f, "End of Stream")
-  }
-}
-
-impl std::error::Error for ConfigError {}
-
-pub struct Config {
-  pub filename: String,
-}
-
-impl Config {
-  pub fn new(args: &[String]) -> Result<Config, ConfigError> {
-    if args.len() != 2 {
-      return Err(ConfigError);
-    }
-
-    let filename = args[1].clone();
-    Ok(Config { filename })
-  }
-}
-
-pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
-  let contents = fs::read(config.filename)?;
-
-  println!("with bytes: {:?}", contents);
-  println!("number of global variables: {}", contents[0]);
-
-  let mut machine = Machine::new(contents[1..].to_owned());
-  println!("starting interpretation - we might never return");
-  let accu = machine.interpret();
-  println!("returned - accumulator is: {:?}", accu);
-  Ok(())
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
 
   #[test]
-  fn sane() {
-    let cfg = Config::new(&["prog".to_string(), "filename.txt".to_string()]);
-    assert_eq!("filename.txt", cfg.unwrap().filename);
-  }
-
-  #[test]
-  fn can_fail() {
-    let cfg = Config::new(&["prog".to_string()]);
-    assert!(cfg.is_err());
+  fn machine_halts() {
+    let code = vec![1, 0, 59];
+    let mut machine = Machine::new(code);
+    let accu = machine.interpret();
+    if let Value::Int(int) = accu {
+      assert_eq!(int, 1);
+    } else {
+      assert!(false);
+    }
   }
 }
