@@ -1,5 +1,2 @@
-pub mod mlvalues {
-  struct Value {}
-
-  struct Header {}
-}
+struct Value {}
+struct Header {}

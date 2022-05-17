@@ -3,15 +3,8 @@ use crate::runtime::opcodes::Instruction;
 
 use crate::runtime::alloc;
 
-// A something in the heap.
-#[derive(Debug)]
-struct Boxed {
-  header: alloc::Header,
-  fields: Vec<u8>,
-}
-
 // TODO I don't like Value being public.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum Value<'a> {
   // An unboxed integer.
   Int(u8),
@@ -19,6 +12,9 @@ pub enum Value<'a> {
   // Pointer to Header here can point to the heap or
   // to some other statically allocated region.
   Hd(&'a alloc::Header),
+
+  Tuple { fields: Vec<u8> },
+  Closure { code: u8, env: Box<Value<'a>> },
 }
 
 #[derive(Debug)]
@@ -85,7 +81,7 @@ impl<'a> Machine<'a> {
       // PC is always incremented by one after this.
       // TODO might not apply to every instruction.
       match self.decode() {
-        Instruction::Stop => return self.accu,
+        Instruction::Stop => return self.accu.clone(), // TODO why if it's there?
         Instruction::Constbyte => {
           self.step(None);
           let valofpc = self.mem[self.pc as usize];
@@ -130,7 +126,7 @@ impl<'a> Machine<'a> {
             }
           }
         }
-        Instruction::Push => self.asp.push(AspValue::Val(self.accu)),
+        Instruction::Push => self.asp.push(AspValue::Val(self.accu.clone())), // TODO
         Instruction::Pop => {
           self.accu = match self.asp.pop() {
             Some(AspValue::Val(value)) => value,
@@ -142,7 +138,7 @@ impl<'a> Machine<'a> {
         Instruction::Apply => {
           self.rsp.push(RspValue::RetFrame(ReturnFrame {
             pc: self.pc,
-            env: self.accu,
+            env: self.accu.clone(), // TODO
             cache_size: self.cache_size,
           }));
           if let Some(AspValue::Val(v)) = self.asp.pop() {
@@ -152,6 +148,13 @@ impl<'a> Machine<'a> {
             self.panic_pc("got something else - don't know what to do with it");
           }
           self.cache_size = 1;
+          if let Value::Closure { code, env } = &self.accu {
+            self.pc = *code;
+            self.env = *env.clone();
+          } else {
+            // TODO
+            self.panic_pc("didn't get a closure in the accumulator");
+          }
         }
         _ => self.panic_pc("not implemented"), // TODO
       };
