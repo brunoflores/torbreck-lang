@@ -76,10 +76,7 @@ impl<'a> Machine<'a> {
   }
 
   pub fn interpret(&'a mut self) -> Value {
-    // Will loop until an explicit break - probably from a Stop instruction.
     loop {
-      // PC is always incremented by one after this.
-      // TODO might not apply to every instruction.
       let instr = self.decode();
       match instr {
         Instruction::Stop => return self.accu.clone(), // TODO why if it's there?
@@ -87,25 +84,57 @@ impl<'a> Machine<'a> {
           self.step(None);
           let valofpc = self.mem[self.pc as usize];
           self.accu = Value::Int(self.mem[valofpc as usize]);
+          self.step(None);
         }
         Instruction::Constshort => {
           self.panic_pc("Constshort not implemented", instr); // TODO
         }
-        Instruction::Atom0 => self.accu = Value::Hd(&self.first_atoms[0]),
-        Instruction::Atom1 => self.accu = Value::Hd(&self.first_atoms[1]),
-        Instruction::Atom2 => self.accu = Value::Hd(&self.first_atoms[2]),
-        Instruction::Atom3 => self.accu = Value::Hd(&self.first_atoms[3]),
-        Instruction::Atom4 => self.accu = Value::Hd(&self.first_atoms[4]),
-        Instruction::Atom5 => self.accu = Value::Hd(&self.first_atoms[5]),
-        Instruction::Atom6 => self.accu = Value::Hd(&self.first_atoms[6]),
-        Instruction::Atom7 => self.accu = Value::Hd(&self.first_atoms[7]),
-        Instruction::Atom8 => self.accu = Value::Hd(&self.first_atoms[8]),
-        Instruction::Atom9 => self.accu = Value::Hd(&self.first_atoms[9]),
+        Instruction::Atom0 => {
+          self.accu = Value::Hd(&self.first_atoms[0]);
+          self.step(None);
+        }
+        Instruction::Atom1 => {
+          self.accu = Value::Hd(&self.first_atoms[1]);
+          self.step(None);
+        }
+        Instruction::Atom2 => {
+          self.accu = Value::Hd(&self.first_atoms[2]);
+          self.step(None);
+        }
+        Instruction::Atom3 => {
+          self.accu = Value::Hd(&self.first_atoms[3]);
+          self.step(None);
+        }
+        Instruction::Atom4 => {
+          self.accu = Value::Hd(&self.first_atoms[4]);
+          self.step(None);
+        }
+        Instruction::Atom5 => {
+          self.accu = Value::Hd(&self.first_atoms[5]);
+          self.step(None);
+        }
+        Instruction::Atom6 => {
+          self.accu = Value::Hd(&self.first_atoms[6]);
+          self.step(None);
+        }
+        Instruction::Atom7 => {
+          self.accu = Value::Hd(&self.first_atoms[7]);
+          self.step(None);
+        }
+        Instruction::Atom8 => {
+          self.accu = Value::Hd(&self.first_atoms[8]);
+          self.step(None);
+        }
+        Instruction::Atom9 => {
+          self.accu = Value::Hd(&self.first_atoms[9]);
+          self.step(None);
+        }
         Instruction::Atom => {
           self.step(None);
           let valofpc = self.mem[self.pc as usize];
           // TODO: I think the following index can be out of bounds at run-time:
           self.accu = Value::Hd(&self.first_atoms[valofpc as usize]);
+          self.step(None);
         }
         Instruction::Getglobal => {
           // I'm not so sure about this one looking at the sources.
@@ -113,6 +142,7 @@ impl<'a> Machine<'a> {
           self.step(None);
           let valofpc = self.mem[self.pc as usize];
           self.accu = Value::Int(self.globals[valofpc as usize]);
+          self.step(None);
         }
         Instruction::Setglobal => {
           // I'm not so sure about this one looking at the sources.
@@ -128,17 +158,25 @@ impl<'a> Machine<'a> {
                 instr,
               )
             }
-          }
+          };
+          self.step(None);
         }
-        Instruction::Push => self.asp.push(AspValue::Val(self.accu.clone())), // TODO
+        Instruction::Push => {
+          self.asp.push(AspValue::Val(self.accu.clone())); // TODO
+          self.step(None);
+        }
         Instruction::Pop => {
           self.accu = match self.asp.pop() {
             Some(AspValue::Val(value)) => value,
             Some(AspValue::Mark) => self.panic_pc("popping a mark", instr),
             None => self.panic_pc("popping an empty argument stack", instr),
-          }
+          };
+          self.step(None);
         }
-        Instruction::Pushmark => self.asp.push(AspValue::Mark),
+        Instruction::Pushmark => {
+          self.asp.push(AspValue::Mark);
+          self.step(None);
+        }
         Instruction::Apply => {
           self.rsp.push(RspValue::RetFrame(ReturnFrame {
             pc: self.pc,
@@ -184,7 +222,6 @@ impl<'a> Machine<'a> {
         }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
-      self.step(None);
     }
   }
 
