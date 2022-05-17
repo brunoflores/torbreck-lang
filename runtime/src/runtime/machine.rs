@@ -1,16 +1,16 @@
 use crate::runtime::opcodes;
 use crate::runtime::opcodes::Instruction;
 
-use crate::runtime::gc::Header;
-use crate::runtime::gc::FIRST_ATOMS;
+use crate::runtime::alloc;
 
 // A something in the heap.
 #[derive(Debug)]
 struct Boxed {
-  header: Header,
+  header: alloc::Header,
   fields: Vec<u8>,
 }
 
+// TODO I don't like Value being public.
 #[derive(Debug, Copy, Clone)]
 pub enum Value<'a> {
   // An unboxed integer.
@@ -18,7 +18,7 @@ pub enum Value<'a> {
 
   // Pointer to Header here can point to the heap or
   // to some other statically allocated region.
-  Hd(&'a Header),
+  Hd(&'a alloc::Header),
 }
 
 #[derive(Debug)]
@@ -29,6 +29,9 @@ struct ReturnFrame<'a> {
 }
 
 #[derive(Debug)]
+struct TrapFrame {}
+
+#[derive(Debug)]
 enum AspValue<'a> {
   Val(Value<'a>),
   Mark,
@@ -36,19 +39,23 @@ enum AspValue<'a> {
 
 #[derive(Debug)]
 enum RspValue<'a> {
+  Val(Value<'a>),
   RetFrame(ReturnFrame<'a>),
+  TrapFrame(TrapFrame),
 }
 
 #[derive(Debug)]
 pub struct Machine<'a> {
   pc: u8,
   accu: Value<'a>,
+  env: Value<'a>,
   mem: Vec<u8>,
   asp: Vec<AspValue<'a>>,
   rsp: Vec<RspValue<'a>>,
+  cache_size: u8,
 
   // Allocated statically once and for all.
-  first_atoms: &'static [Header; 256],
+  first_atoms: &'static [alloc::Header; 256],
 
   // The ZINC Experiment: page 84,
   //   The values of initialized globals, that is a sequence of one integer
@@ -63,10 +70,12 @@ impl<'a> Machine<'a> {
       mem,
       pc: 0,
       accu: Value::Int(0),
+      env: Value::Int(0),
       asp: vec![],
       rsp: vec![],
-      first_atoms: &FIRST_ATOMS,
+      first_atoms: &alloc::FIRST_ATOMS,
       globals: vec![0], // TODO
+      cache_size: 0,
     }
   }
 
@@ -74,6 +83,7 @@ impl<'a> Machine<'a> {
     // Will loop until an explicit break - probably from a Stop instruction.
     loop {
       // PC is always incremented by one after this.
+      // TODO might not apply to every instruction.
       match self.decode() {
         Instruction::Stop => return self.accu,
         Instruction::Constbyte => {
@@ -115,6 +125,7 @@ impl<'a> Machine<'a> {
           self.globals[valofpc as usize] = match self.accu {
             Value::Int(n) => n,
             _ => {
+              // TODO
               self.panic_pc("don't know how to update a global with a header")
             }
           }
@@ -128,7 +139,20 @@ impl<'a> Machine<'a> {
           }
         }
         Instruction::Pushmark => self.asp.push(AspValue::Mark),
-        Instruction::Apply => {}
+        Instruction::Apply => {
+          self.rsp.push(RspValue::RetFrame(ReturnFrame {
+            pc: self.pc,
+            env: self.accu,
+            cache_size: self.cache_size,
+          }));
+          if let Some(AspValue::Val(v)) = self.asp.pop() {
+            self.rsp.push(RspValue::Val(v));
+          } else {
+            // TODO
+            self.panic_pc("got something else - don't know what to do with it");
+          }
+          self.cache_size = 1;
+        }
         _ => self.panic_pc("not implemented"), // TODO
       };
       self.step(None);

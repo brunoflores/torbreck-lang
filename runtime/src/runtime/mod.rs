@@ -1,5 +1,5 @@
 pub mod machine;
 
-mod gc;
+mod alloc;
 mod mlvalues;
 mod opcodes;

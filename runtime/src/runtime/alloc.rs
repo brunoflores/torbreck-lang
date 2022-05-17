@@ -9,22 +9,6 @@ pub enum Color {
   White,
 }
 
-impl Header {
-  pub fn new() -> Self {
-    Header {
-      tag: 0,
-      color: Color::White,
-    }
-  }
-
-  pub fn newtag(t: usize) -> Self {
-    Header {
-      tag: t,
-      color: Color::White,
-    }
-  }
-}
-
 // In Fish:
 // for i in (seq 0 255);
 //   echo "Header {
