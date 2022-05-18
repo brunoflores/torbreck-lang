@@ -89,7 +89,7 @@ impl<'a> Machine<'a> {
       mem,
       pc: 0,
       accu: Value::Int(0),
-      env: vec![],
+      env: vec![], // TODO Consider Vec::with_capacity
       asp: vec![],
       rsp: vec![],
       first_atoms: &FIRST_ATOMS,
@@ -341,6 +341,40 @@ impl<'a> Machine<'a> {
           // Put the value of the accumulator in front of the environment.
           self.rsp.push(RspValue::Val(self.accu.clone()));
           self.cache_size += 1;
+          self.step(None);
+        }
+        Instruction::Endlet1 => {
+          if self.cache_size > 0 {
+            self.cache_size -= 1;
+            let _ = self.rsp.pop();
+          } else {
+            let _ = self.env.pop();
+          }
+          self.step(None);
+        }
+        Instruction::Endlet => {
+          // Throw away the first n local variables from the environment.
+          self.step(None);
+          let valofpc = self.mem[self.pc as usize];
+          if self.cache_size >= valofpc {
+            self.cache_size -= valofpc;
+            for _ in 0..valofpc {
+              let _ = self.rsp.pop();
+            }
+            // TODO Consider shrink_to_fit
+          } else {
+            for _ in 0..(valofpc - self.cache_size) {
+              // Pop, discard and de-allocates the respective boxed values
+              // from our heap.
+              let _ = self.env.pop();
+              // TODO Consider shrink_to_fit
+            }
+            for _ in 0..self.cache_size {
+              let _ = self.rsp.pop();
+              // TODO Consider shrink_to_fit
+            }
+            self.cache_size = 0;
+          }
           self.step(None);
         }
         _ => self.panic_pc("not implemented", instr), // TODO
