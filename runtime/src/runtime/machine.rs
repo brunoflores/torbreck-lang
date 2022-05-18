@@ -337,6 +337,12 @@ impl<'a> Machine<'a> {
           self.accu = self.access(self.mem[self.pc as usize]);
           self.step(None);
         }
+        Instruction::Let => {
+          // Put the value of the accumulator in front of the environment.
+          self.rsp.push(RspValue::Val(self.accu.clone()));
+          self.cache_size += 1;
+          self.step(None);
+        }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
     }
