@@ -13,7 +13,7 @@ pub enum Value<'a> {
   // to some other statically allocated region.
   Hd(&'a Value<'a>),
 
-  Tuple { fields: &'a [u8] },
+  Tuple { fields: &'a [Value<'a>] },
   Closure { code: u8, env: Vec<Value<'a>> },
 
   Atom0,
@@ -309,10 +309,44 @@ impl<'a> Machine<'a> {
           self.step(None);
         }
         Instruction::Acc0 => {
+          self.accu = self.access(0);
+          self.step(None);
+        }
+        Instruction::Acc1 => {
+          self.accu = self.access(1);
+          self.step(None);
+        }
+        Instruction::Acc2 => {
+          self.accu = self.access(2);
+          self.step(None);
+        }
+        Instruction::Acc3 => {
+          self.accu = self.access(3);
+          self.step(None);
+        }
+        Instruction::Acc4 => {
+          self.accu = self.access(4);
+          self.step(None);
+        }
+        Instruction::Acc5 => {
+          self.accu = self.access(5);
+          self.step(None);
+        }
+        Instruction::Access => {
+          self.step(None);
+          self.accu = self.access(self.mem[self.pc as usize]);
           self.step(None);
         }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
+    }
+  }
+
+  fn access(&self, i: u8) -> Value<'a> {
+    if let Value::Tuple { fields } = self.accu {
+      fields[i as usize].clone()
+    } else {
+      panic!("value does not have fields");
     }
   }
 
