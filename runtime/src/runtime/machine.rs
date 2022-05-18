@@ -1,20 +1,31 @@
 use crate::runtime::opcodes;
 use crate::runtime::opcodes::Instruction;
 
-use crate::runtime::alloc;
+// use crate::runtime::alloc;
 
 // TODO I don't like Value being public.
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub enum Value<'a> {
   // An unboxed integer.
   Int(u8),
 
   // Pointer to Header here can point to the heap or
   // to some other statically allocated region.
-  Hd(&'a alloc::Header),
+  Hd(&'a Value<'a>),
 
-  Tuple { fields: Vec<u8> },
-  Closure { code: u8, env: Box<Value<'a>> },
+  Tuple { fields: &'a [u8] },
+  Closure { code: u8, env: &'a Value<'a> },
+
+  Atom0,
+  Atom1,
+  Atom2,
+  Atom3,
+  Atom4,
+  Atom5,
+  Atom6,
+  Atom7,
+  Atom8,
+  Atom9,
 }
 
 #[derive(Debug)]
@@ -40,6 +51,19 @@ enum RspValue<'a> {
   TrapFrame(TrapFrame),
 }
 
+pub static FIRST_ATOMS: [Value; 10] = [
+  Value::Atom0,
+  Value::Atom1,
+  Value::Atom2,
+  Value::Atom3,
+  Value::Atom4,
+  Value::Atom5,
+  Value::Atom6,
+  Value::Atom7,
+  Value::Atom8,
+  Value::Atom9,
+];
+
 #[derive(Debug)]
 pub struct Machine<'a> {
   pc: u8,
@@ -49,14 +73,13 @@ pub struct Machine<'a> {
   asp: Vec<AspValue<'a>>,
   rsp: Vec<RspValue<'a>>,
   cache_size: u8,
-
-  // Allocated statically once and for all.
-  first_atoms: &'static [alloc::Header; 256],
+  first_atoms: &'a [Value<'a>; 10],
 
   // The ZINC Experiment: page 84,
   //   The values of initialized globals, that is a sequence of one integer
   //   (the slot number of the global) and one ZINC value (in prefix form).
   //   The integer -1 terminates this list.
+  // TODO
   globals: Vec<u8>,
 }
 
@@ -69,7 +92,7 @@ impl<'a> Machine<'a> {
       env: Value::Int(0),
       asp: vec![],
       rsp: vec![],
-      first_atoms: &alloc::FIRST_ATOMS,
+      first_atoms: &FIRST_ATOMS,
       globals: vec![0], // TODO
       cache_size: 0,
     }
@@ -79,7 +102,7 @@ impl<'a> Machine<'a> {
     loop {
       let instr = self.decode();
       match instr {
-        Instruction::Stop => return self.accu.clone(), // TODO why if it's there?
+        Instruction::Stop => return self.accu,
         Instruction::Constbyte => {
           self.step(None);
           let valofpc = self.mem[self.pc as usize];
@@ -162,7 +185,7 @@ impl<'a> Machine<'a> {
           self.step(None);
         }
         Instruction::Push => {
-          self.asp.push(AspValue::Val(self.accu.clone())); // TODO
+          self.asp.push(AspValue::Val(self.accu));
           self.step(None);
         }
         Instruction::Pop => {
@@ -191,7 +214,7 @@ impl<'a> Machine<'a> {
           self.cache_size = 1;
           if let Value::Closure { code, env } = &self.accu {
             self.pc = *code;
-            self.env = *env.clone();
+            self.env = **env;
           } else {
             // TODO
             self.panic_pc("didn't get a closure in the accumulator", instr);
@@ -210,7 +233,7 @@ impl<'a> Machine<'a> {
           self.cache_size = 1;
           if let Value::Closure { code, env } = &self.accu {
             self.pc = *code;
-            self.env = *env.clone();
+            self.env = **env;
           } else {
             // TODO
             self.panic_pc("didn't get a closure in the accumulator", instr);
@@ -233,13 +256,13 @@ impl<'a> Machine<'a> {
             })) = self.rsp.last()
             {
               self.pc = *pc; // Go here next.
-              self.env = env.clone(); // TODO
+              self.env = *env;
               self.cache_size = *cache_size;
             }
             self.pop_ret_frame();
             // Proceed to instruction pointed at above.
           } else {
-            // TODO Anything to do here?
+            // TODO Anything to do here? Assume next instruction is Appterm?
             // https://github.com/brunoflores/camllight/blob/master/sources/src/runtime/interp.c#L292
           }
         }
@@ -251,7 +274,7 @@ impl<'a> Machine<'a> {
   fn push_ret_frame(&mut self) {
     self.rsp.push(RspValue::RetFrame(ReturnFrame {
       pc: self.pc,
-      env: self.accu.clone(), // TODO
+      env: self.accu,
       cache_size: self.cache_size,
     }));
   }
