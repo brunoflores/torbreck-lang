@@ -299,6 +299,15 @@ impl<'a> Machine<'a> {
             _ => self.panic_pc("don't know what to do", instr),
           }
         }
+        Instruction::Cur => {
+          self.heapify_env();
+          self.step(None);
+          self.accu = Value::Closure {
+            code: self.pc,
+            env: Box::new(self.env.clone()),
+          };
+          self.step(None);
+        }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
     }
