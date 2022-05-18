@@ -14,7 +14,7 @@ pub enum Value<'a> {
   Hd(&'a Value<'a>),
 
   Tuple { fields: &'a [u8] },
-  Closure { code: u8, env: Box<Value<'a>> },
+  Closure { code: u8, env: Vec<Value<'a>> },
 
   Atom0,
   Atom1,
@@ -31,7 +31,7 @@ pub enum Value<'a> {
 #[derive(Debug)]
 struct ReturnFrame<'a> {
   pc: u8,
-  env: Value<'a>,
+  env: Vec<Value<'a>>,
   cache_size: u8,
 }
 
@@ -68,11 +68,11 @@ pub static FIRST_ATOMS: [Value; 10] = [
 pub struct Machine<'a> {
   pc: u8,
   accu: Value<'a>,
-  env: Value<'a>,
   mem: Vec<u8>,
   asp: Vec<AspValue<'a>>,
   rsp: Vec<RspValue<'a>>,
-  cache_size: u8,
+  env: Vec<Value<'a>>, // A stack of pointers to our heap.
+  cache_size: u8,      // The number of entries in the volatile part of the env.
   first_atoms: &'a [Value<'a>; 10],
 
   // The ZINC Experiment: page 84,
@@ -89,7 +89,7 @@ impl<'a> Machine<'a> {
       mem,
       pc: 0,
       accu: Value::Int(0),
-      env: Value::Int(0),
+      env: vec![],
       asp: vec![],
       rsp: vec![],
       first_atoms: &FIRST_ATOMS,
@@ -214,7 +214,7 @@ impl<'a> Machine<'a> {
           self.cache_size = 1;
           if let Value::Closure { code, env } = &self.accu {
             self.pc = *code;
-            self.env = *env.clone();
+            self.env = env.clone();
           } else {
             // TODO
             self.panic_pc("didn't get a closure in the accumulator", instr);
@@ -233,7 +233,7 @@ impl<'a> Machine<'a> {
           self.cache_size = 1;
           if let Value::Closure { code, env } = &self.accu {
             self.pc = *code;
-            self.env = *env.clone();
+            self.env = env.clone();
           } else {
             // TODO
             self.panic_pc("didn't get a closure in the accumulator", instr);
@@ -274,7 +274,7 @@ impl<'a> Machine<'a> {
               self.heapify_env();
               self.accu = Value::Closure {
                 code: self.pc,
-                env: Box::new(self.env.clone()),
+                env: self.env.clone(),
               };
               // Peek at the return stack, then pop.
               // TODO No sure it's needed.
@@ -304,8 +304,11 @@ impl<'a> Machine<'a> {
           self.step(None);
           self.accu = Value::Closure {
             code: self.pc,
-            env: Box::new(self.env.clone()),
+            env: self.env.clone(),
           };
+          self.step(None);
+        }
+        Instruction::Acc0 => {
           self.step(None);
         }
         _ => self.panic_pc("not implemented", instr), // TODO
@@ -318,7 +321,7 @@ impl<'a> Machine<'a> {
   fn push_ret_frame(&mut self) {
     self.rsp.push(RspValue::RetFrame(ReturnFrame {
       pc: self.pc,
-      env: self.accu.clone(),
+      env: self.env.clone(),
       cache_size: self.cache_size,
     }));
   }
