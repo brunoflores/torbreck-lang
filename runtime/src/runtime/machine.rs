@@ -4,7 +4,7 @@ use crate::runtime::opcodes::Instruction;
 // use crate::runtime::alloc;
 
 // TODO I don't like Value being public.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum Value<'a> {
   // An unboxed integer.
   Int(u8),
@@ -14,7 +14,7 @@ pub enum Value<'a> {
   Hd(&'a Value<'a>),
 
   Tuple { fields: &'a [u8] },
-  Closure { code: u8, env: &'a Value<'a> },
+  Closure { code: u8, env: Box<Value<'a>> },
 
   Atom0,
   Atom1,
@@ -102,7 +102,7 @@ impl<'a> Machine<'a> {
     loop {
       let instr = self.decode();
       match instr {
-        Instruction::Stop => return self.accu,
+        Instruction::Stop => return self.accu.clone(),
         Instruction::Constbyte => {
           self.step(None);
           let valofpc = self.mem[self.pc as usize];
@@ -185,7 +185,7 @@ impl<'a> Machine<'a> {
           self.step(None);
         }
         Instruction::Push => {
-          self.asp.push(AspValue::Val(self.accu));
+          self.asp.push(AspValue::Val(self.accu.clone()));
           self.step(None);
         }
         Instruction::Pop => {
@@ -214,7 +214,7 @@ impl<'a> Machine<'a> {
           self.cache_size = 1;
           if let Value::Closure { code, env } = &self.accu {
             self.pc = *code;
-            self.env = **env;
+            self.env = *env.clone();
           } else {
             // TODO
             self.panic_pc("didn't get a closure in the accumulator", instr);
@@ -233,7 +233,7 @@ impl<'a> Machine<'a> {
           self.cache_size = 1;
           if let Value::Closure { code, env } = &self.accu {
             self.pc = *code;
-            self.env = **env;
+            self.env = *env.clone();
           } else {
             // TODO
             self.panic_pc("didn't get a closure in the accumulator", instr);
@@ -248,7 +248,8 @@ impl<'a> Machine<'a> {
           // Otherwise, jump to the closure contained in the accumulator.
           //
           if let Some(AspValue::Mark) = self.asp.pop() {
-            // Peek at the return stack.
+            // Peek at the return stack, then pop.
+            // TODO No sure it's needed.
             if let Some(RspValue::RetFrame(ReturnFrame {
               pc,
               env,
@@ -256,7 +257,7 @@ impl<'a> Machine<'a> {
             })) = self.rsp.last()
             {
               self.pc = *pc; // Go here next.
-              self.env = *env;
+              self.env = env.clone();
               self.cache_size = *cache_size;
             }
             self.pop_ret_frame();
@@ -266,15 +267,49 @@ impl<'a> Machine<'a> {
             // https://github.com/brunoflores/camllight/blob/master/sources/src/runtime/interp.c#L292
           }
         }
+        Instruction::Grab => {
+          match self.asp.pop() {
+            Some(AspValue::Mark) => {
+              // Build a closure and return it to the caller.
+              self.heapify_env();
+              self.accu = Value::Closure {
+                code: self.pc,
+                env: Box::new(self.env.clone()),
+              };
+              // Peek at the return stack, then pop.
+              // TODO No sure it's needed.
+              if let Some(RspValue::RetFrame(ReturnFrame {
+                pc,
+                env,
+                cache_size,
+              })) = self.rsp.last()
+              {
+                self.pc = *pc; // Go here next.
+                self.env = env.clone();
+                self.cache_size = *cache_size;
+              } else {
+                self.panic_pc("not a return frame", instr);
+              }
+              self.pop_ret_frame();
+            }
+            Some(AspValue::Val(v)) => {
+              self.rsp.push(RspValue::Val(v));
+              self.cache_size += 1;
+            }
+            _ => self.panic_pc("don't know what to do", instr),
+          }
+        }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
     }
   }
 
+  fn heapify_env(&mut self) {}
+
   fn push_ret_frame(&mut self) {
     self.rsp.push(RspValue::RetFrame(ReturnFrame {
       pc: self.pc,
-      env: self.accu,
+      env: self.accu.clone(),
       cache_size: self.cache_size,
     }));
   }
