@@ -50,7 +50,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
   println!("with bytes: {:?}", contents);
   println!("number of global variables: {}", contents[0]);
 
-  let mut machine = Machine::new(contents[1..].to_owned());
+  let mut machine = Machine::new(&contents[1..]);
   println!("starting interpretation - we might never return");
   let accu = machine.interpret();
   println!("returned - accumulator is: {:?}", accu);

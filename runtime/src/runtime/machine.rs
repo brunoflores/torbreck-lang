@@ -1,31 +1,20 @@
 use crate::runtime::opcodes;
 use crate::runtime::opcodes::Instruction;
 
-// use crate::runtime::alloc;
-
-// TODO I don't like Value being public.
+// TODO Public?
 #[derive(Debug, Clone)]
 pub enum Value<'a> {
-  // An unboxed integer.
   Int(u8),
-
-  // Pointer to Header here can point to the heap or
-  // to some other statically allocated region.
-  Hd(&'a Value<'a>),
-
-  Tuple { fields: &'a [Value<'a>] },
-  Closure { code: u8, env: Vec<Value<'a>> },
-
-  Atom0,
-  Atom1,
-  Atom2,
-  Atom3,
-  Atom4,
-  Atom5,
-  Atom6,
-  Atom7,
-  Atom8,
-  Atom9,
+  Closure {
+    code: u8, // A code pointer.
+    env: Vec<Value<'a>>,
+  },
+  ConcreteTy {
+    // Constant constructors are a zero-length slice.
+    constructors: &'a [Value<'a>],
+  },
+  Record, // TODO
+  Unit,
 }
 
 #[derive(Debug)]
@@ -51,29 +40,19 @@ enum RspValue<'a> {
   TrapFrame(TrapFrame),
 }
 
-pub static FIRST_ATOMS: [Value; 10] = [
-  Value::Atom0,
-  Value::Atom1,
-  Value::Atom2,
-  Value::Atom3,
-  Value::Atom4,
-  Value::Atom5,
-  Value::Atom6,
-  Value::Atom7,
-  Value::Atom8,
-  Value::Atom9,
-];
+pub static FIRST_ATOMS: [Value; 1] = [Value::Unit];
 
 #[derive(Debug)]
 pub struct Machine<'a> {
   pc: u8,
   accu: Value<'a>,
-  mem: Vec<u8>,
+  // Represent memory as a slice because it does not change in size.
+  mem: &'a [u8],
   asp: Vec<AspValue<'a>>,
   rsp: Vec<RspValue<'a>>,
   env: Vec<Value<'a>>, // A stack of pointers to our heap.
   cache_size: u8,      // The number of entries in the volatile part of the env.
-  first_atoms: &'a [Value<'a>; 10],
+  first_atoms: &'a [Value<'a>; 1],
 
   // The ZINC Experiment: page 84,
   //   The values of initialized globals, that is a sequence of one integer
@@ -84,16 +63,20 @@ pub struct Machine<'a> {
 }
 
 impl<'a> Machine<'a> {
-  pub fn new(mem: Vec<u8>) -> Self {
+  pub fn new(mem: &'a [u8]) -> Self {
     Machine {
       mem,
       pc: 0,
       accu: Value::Int(0),
-      env: vec![], // TODO Consider Vec::with_capacity
+
+      // TODO Consider Vec::with_capacity
+      env: vec![],
       asp: vec![],
       rsp: vec![],
-      first_atoms: &FIRST_ATOMS,
-      globals: vec![0], // TODO
+
+      first_atoms: &FIRST_ATOMS, // Statically allocated.
+
+      globals: vec![], // TODO
       cache_size: 0,
     }
   }
@@ -113,50 +96,61 @@ impl<'a> Machine<'a> {
           self.panic_pc("Constshort not implemented", instr); // TODO
         }
         Instruction::Atom0 => {
-          self.accu = Value::Hd(&self.first_atoms[0]);
+          //self.accu = self.first_atoms[0];
+          self.accu = Value::Unit;
           self.step(None);
         }
         Instruction::Atom1 => {
-          self.accu = Value::Hd(&self.first_atoms[1]);
+          // self.accu = self.first_atoms[1];
+          self.accu = Value::Unit;
           self.step(None);
         }
         Instruction::Atom2 => {
-          self.accu = Value::Hd(&self.first_atoms[2]);
+          // self.accu = self.first_atoms[2];
+          self.accu = Value::Unit;
           self.step(None);
         }
         Instruction::Atom3 => {
-          self.accu = Value::Hd(&self.first_atoms[3]);
+          // self.accu = self.first_atoms[3];
+          self.accu = Value::Unit;
           self.step(None);
         }
         Instruction::Atom4 => {
-          self.accu = Value::Hd(&self.first_atoms[4]);
+          // self.accu = self.first_atoms[4];
+          self.accu = Value::Unit;
           self.step(None);
         }
         Instruction::Atom5 => {
-          self.accu = Value::Hd(&self.first_atoms[5]);
+          // self.accu = self.first_atoms[5];
+          self.accu = Value::Unit;
           self.step(None);
         }
         Instruction::Atom6 => {
-          self.accu = Value::Hd(&self.first_atoms[6]);
+          // self.accu = self.first_atoms[6];
+          self.accu = Value::Unit;
           self.step(None);
         }
         Instruction::Atom7 => {
-          self.accu = Value::Hd(&self.first_atoms[7]);
+          // self.accu = self.first_atoms[7];
+          self.accu = Value::Unit;
           self.step(None);
         }
         Instruction::Atom8 => {
-          self.accu = Value::Hd(&self.first_atoms[8]);
+          // self.accu = self.first_atoms[8];
+          self.accu = Value::Unit;
           self.step(None);
         }
         Instruction::Atom9 => {
-          self.accu = Value::Hd(&self.first_atoms[9]);
+          // self.accu = self.first_atoms[9];
+          self.accu = Value::Unit;
           self.step(None);
         }
         Instruction::Atom => {
           self.step(None);
           let valofpc = self.mem[self.pc as usize];
           // TODO: I think the following index can be out of bounds at run-time:
-          self.accu = Value::Hd(&self.first_atoms[valofpc as usize]);
+          // self.accu = self.first_atoms[valofpc as usize];
+          self.accu = Value::Unit;
           self.step(None);
         }
         Instruction::Getglobal => {
@@ -214,7 +208,7 @@ impl<'a> Machine<'a> {
           self.cache_size = 1;
           if let Value::Closure { code, env } = &self.accu {
             self.pc = *code;
-            self.env = env.clone();
+            self.env = env.to_vec();
           } else {
             // TODO
             self.panic_pc("didn't get a closure in the accumulator", instr);
@@ -233,7 +227,7 @@ impl<'a> Machine<'a> {
           self.cache_size = 1;
           if let Value::Closure { code, env } = &self.accu {
             self.pc = *code;
-            self.env = env.clone();
+            self.env = env.to_vec();
           } else {
             // TODO
             self.panic_pc("didn't get a closure in the accumulator", instr);
@@ -257,7 +251,7 @@ impl<'a> Machine<'a> {
             })) = self.rsp.last()
             {
               self.pc = *pc; // Go here next.
-              self.env = env.clone();
+              self.env = env.to_vec();
               self.cache_size = *cache_size;
             }
             self.pop_ret_frame();
@@ -285,7 +279,7 @@ impl<'a> Machine<'a> {
               })) = self.rsp.last()
               {
                 self.pc = *pc; // Go here next.
-                self.env = env.clone();
+                self.env = env.to_vec();
                 self.cache_size = *cache_size;
               } else {
                 self.panic_pc("not a return frame", instr);
@@ -377,17 +371,35 @@ impl<'a> Machine<'a> {
           }
           self.step(None);
         }
+        Instruction::Dummy => {
+          // Put n dummy closures in front of the environment.
+          self.step(None);
+          let valofpc = self.mem[self.pc as usize];
+          assert!(valofpc > 0);
+          // TODO ...
+          self.step(None);
+        }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
     }
   }
 
   fn access(&self, i: u8) -> Value<'a> {
-    if let Value::Tuple { fields } = self.accu {
-      fields[i as usize].clone()
+    if self.cache_size > i {
+      if let Some(RspValue::Val(v)) = self.rsp.get(i as usize) {
+        v.clone()
+      } else {
+        panic!("not a value");
+      }
     } else {
-      panic!("value does not have fields");
+      Value::Unit // TODO
     }
+
+    //    if let Value::Tuple { fields } = self.accu {
+    //      fields[i as usize].clone()
+    //    } else {
+    //      panic!("value does not have fields");
+    //    }
   }
 
   fn heapify_env(&mut self) {}
@@ -433,7 +445,7 @@ mod tests {
   #[test]
   fn machine_halts() {
     let code = vec![1, 0, 59];
-    let mut machine = Machine::new(code);
+    let mut machine = Machine::new(&code);
     let accu = machine.interpret();
     if let Value::Int(int) = accu {
       assert_eq!(int, 1);
