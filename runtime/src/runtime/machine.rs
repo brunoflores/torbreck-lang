@@ -602,6 +602,18 @@ impl<'a> Machine<'a> {
             self.panic_pc("not an integer", instr);
           }
         }
+        Instruction::Addint => {
+          if let Value::Int(i) = self.accu {
+            self.accu =
+              if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
+                Value::Int(i + y)
+              } else {
+                self.panic_pc("not an integer in asp", instr);
+              }
+          } else {
+            self.panic_pc("not an integer", instr);
+          }
+        }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
     }
