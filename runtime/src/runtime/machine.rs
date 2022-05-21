@@ -523,8 +523,12 @@ impl<'a> Machine<'a> {
           };
           self.step(None);
         }
-        Instruction::Getfield2 => {} // TODO
-        Instruction::Getfield3 => {} // TODO
+        Instruction::Getfield2 => {
+          self.panic_pc("not implemented", instr); // TODO
+        }
+        Instruction::Getfield3 => {
+          self.panic_pc("not implemented", instr); // TODO
+        }
         Instruction::Getfield => {
           self.step(None);
           self.accu = match &self.accu {
@@ -538,6 +542,44 @@ impl<'a> Machine<'a> {
             _ => self.panic_pc("not implemented", instr),
           };
           self.step(None);
+        }
+        Instruction::Setfield0 => {
+          self.accu = match &self.accu {
+            Value::Closure { code: _, env } => {
+              if let Some(AspValue::Val(Value::Int(code))) = self.asp.pop() {
+                Value::Closure {
+                  code,
+                  env: env.clone(),
+                }
+              } else {
+                panic!();
+              }
+            }
+            _ => panic!(),
+          };
+          self.step(None);
+        }
+        Instruction::Setfield1 => {
+          self.accu = match self.accu {
+            Value::Closure { code, env: _ } => {
+              if let Some(AspValue::Val(v)) = self.asp.pop() {
+                Value::Closure { code, env: vec![v] }
+              } else {
+                panic!();
+              }
+            }
+            _ => panic!(),
+          };
+          self.step(None);
+        }
+        Instruction::Setfield2 => {
+          self.panic_pc("not implemented", instr); // TODO
+        }
+        Instruction::Setfield3 => {
+          self.panic_pc("not implemented", instr); // TODO
+        }
+        Instruction::Setfield => {
+          self.panic_pc("not implemented", instr); // TODO
         }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
