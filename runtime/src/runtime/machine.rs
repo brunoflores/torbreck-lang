@@ -9,17 +9,18 @@ pub enum Value {
     code: u8, // A code pointer.
     env: Vec<Value>,
   },
-  Int(i8),
-  Float(f32),
-  Bool(bool),
   ConcreteTy {
     tag: u8,
     // Constant constructors are a zero-length slice.
     constructors: Vec<Value>,
   },
+  Int(i8),
+  Float(f32),
+  Bool(bool),
   Record, // TODO
   Unit,
   Dummy,
+  Bytes(Vec<u8>), // A sequence of bytes.
 }
 
 impl Value {
@@ -34,6 +35,7 @@ impl Value {
         constructors: vec![],
       },
       2 => Value::Record,
+      3 => Value::Bytes(vec![]),
       _ => panic!("unknown tag: {}", t),
     }
   }
