@@ -9,7 +9,7 @@ pub enum Value {
     code: u8, // A code pointer.
     env: Vec<Value>,
   },
-  Int(u8),
+  Int(i8),
   Bool(bool),
   ConcreteTy {
     tag: u8,
@@ -82,7 +82,7 @@ pub struct Machine<'a> {
   //   (the slot number of the global) and one ZINC value (in prefix form).
   //   The integer -1 terminates this list.
   // TODO
-  globals: Vec<u8>,
+  globals: Vec<i8>,
 }
 
 impl<'a> Machine<'a> {
@@ -112,7 +112,7 @@ impl<'a> Machine<'a> {
         Instruction::Constbyte => {
           self.step(None);
           let valofpc = self.mem[self.pc as usize];
-          self.accu = Value::Int(self.mem[valofpc as usize]);
+          self.accu = Value::Int(self.mem[valofpc as usize] as i8);
           self.step(None);
         }
         Instruction::Constshort => {
@@ -432,7 +432,7 @@ impl<'a> Machine<'a> {
           self.accu = match Value::empty_from_tag(self.mem[self.pc as usize]) {
             Value::Closure { code: _, env: _ } => Value::Closure {
               code: if let Value::Int(i) = self.accu {
-                i
+                i as u8 // Can crash.
               } else {
                 self.panic_pc("not an integer value", instr);
               },
@@ -444,7 +444,7 @@ impl<'a> Machine<'a> {
             } => Value::ConcreteTy {
               // TODO Wild guess.
               tag: if let Value::Int(i) = self.accu {
-                i
+                i as u8 // Can crash.
               } else {
                 self.panic_pc("not an integer value", instr);
               },
@@ -458,7 +458,7 @@ impl<'a> Machine<'a> {
           self.accu = match Value::empty_from_tag(self.mem[self.pc as usize]) {
             Value::Closure { code: _, env: _ } => Value::Closure {
               code: if let Value::Int(i) = self.accu {
-                i
+                i as u8 // Can crash.
               } else {
                 self.panic_pc("not an integer value", instr);
               },
@@ -476,7 +476,7 @@ impl<'a> Machine<'a> {
             } => Value::ConcreteTy {
               // TODO Wild guess.
               tag: if let Value::Int(i) = self.accu {
-                i
+                i as u8 // Can crash.
               } else {
                 self.panic_pc("not an integer value", instr);
               },
@@ -503,11 +503,11 @@ impl<'a> Machine<'a> {
         }
         Instruction::Getfield0 => {
           self.accu = match self.accu {
-            Value::Closure { code, env: _ } => Value::Int(code),
+            Value::Closure { code, env: _ } => Value::Int(code as i8),
             Value::ConcreteTy {
               tag,
               constructors: _,
-            } => Value::Int(tag),
+            } => Value::Int(tag as i8),
             _ => self.panic_pc("not implemented", instr),
           };
           self.step(None);
@@ -548,7 +548,7 @@ impl<'a> Machine<'a> {
             Value::Closure { code: _, env } => {
               if let Some(AspValue::Val(Value::Int(code))) = self.asp.pop() {
                 Value::Closure {
-                  code,
+                  code: code as u8, // Can crash.
                   env: env.clone(),
                 }
               } else {
@@ -591,6 +591,13 @@ impl<'a> Machine<'a> {
         Instruction::Predint => {
           if let Value::Int(i) = self.accu {
             self.accu = Value::Int(i - 1);
+          } else {
+            self.panic_pc("not an integer", instr);
+          }
+        }
+        Instruction::Negint => {
+          if let Value::Int(i) = self.accu {
+            self.accu = Value::Int(-i);
           } else {
             self.panic_pc("not an integer", instr);
           }
