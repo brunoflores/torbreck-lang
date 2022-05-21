@@ -2,41 +2,47 @@ use crate::runtime::opcodes;
 use crate::runtime::opcodes::Instruction;
 
 // TODO Public?
+// Value is either a closure representing a function, or a constant.
 #[derive(Debug, Clone)]
-pub enum Value<'a> {
-  Int(u8),
+pub enum Value {
   Closure {
     code: u8, // A code pointer.
-    env: Vec<Value<'a>>,
+    env: Vec<Value>,
   },
+  Int(u8),
+  Bool(bool),
   ConcreteTy {
     // Constant constructors are a zero-length slice.
-    constructors: &'a [Value<'a>],
+    constructors: Vec<Value>,
   },
   Record, // TODO
   Unit,
+  Dummy,
 }
 
+// Pages 32 and 33.
 #[derive(Debug)]
-struct ReturnFrame<'a> {
-  pc: u8,
-  env: Vec<Value<'a>>,
-  cache_size: u8,
+struct ReturnFrame {
+  pc: u8,               // Code pointer.
+  pers_env: Vec<Value>, // Persistent part of environment.
+  vol_env: Vec<Value>,  // Volatile part of environment.
 }
 
 #[derive(Debug)]
 struct TrapFrame {}
 
+// Value in the argument stack is either a value or a mark.
 #[derive(Debug)]
-enum AspValue<'a> {
-  Val(Value<'a>),
+enum AspValue {
+  Val(Value),
   Mark,
 }
 
+// Value in the return stack is ... TODO
 #[derive(Debug)]
-enum RspValue<'a> {
-  Val(Value<'a>),
-  RetFrame(ReturnFrame<'a>),
+enum RspValue {
+  Val(Value),
+  RetFrame(ReturnFrame),
   TrapFrame(TrapFrame),
 }
 
@@ -44,15 +50,14 @@ pub static FIRST_ATOMS: [Value; 1] = [Value::Unit];
 
 #[derive(Debug)]
 pub struct Machine<'a> {
-  pc: u8,
-  accu: Value<'a>,
-  // Represent memory as a slice because it does not change in size.
-  mem: &'a [u8],
-  asp: Vec<AspValue<'a>>,
-  rsp: Vec<RspValue<'a>>,
-  env: Vec<Value<'a>>, // A stack of pointers to our heap.
-  cache_size: u8,      // The number of entries in the volatile part of the env.
-  first_atoms: &'a [Value<'a>; 1],
+  pc: u8,             // Code pointer.
+  env: Vec<Value>,    // Current environment.
+  cache_size: u8,     // Number of entries in the volatile part of env.
+  accu: Value,        // Accumulator for intermediate results.
+  mem: &'a [u8],      // Program memory in bytes.
+  asp: Vec<AspValue>, // Argument stack.
+  rsp: Vec<RspValue>, // Return stack.
+  first_atoms: &'a [Value; 1],
 
   // The ZINC Experiment: page 84,
   //   The values of initialized globals, that is a sequence of one integer
@@ -246,13 +251,13 @@ impl<'a> Machine<'a> {
             // TODO No sure it's needed.
             if let Some(RspValue::RetFrame(ReturnFrame {
               pc,
-              env,
-              cache_size,
+              pers_env,
+              vol_env,
             })) = self.rsp.last()
             {
               self.pc = *pc; // Go here next.
-              self.env = env.to_vec();
-              self.cache_size = *cache_size;
+              self.env = pers_env.to_vec();
+              self.cache_size = vol_env.len() as u8;
             }
             self.pop_ret_frame();
             // Proceed to instruction pointed at above.
@@ -274,13 +279,13 @@ impl<'a> Machine<'a> {
               // TODO No sure it's needed.
               if let Some(RspValue::RetFrame(ReturnFrame {
                 pc,
-                env,
-                cache_size,
+                pers_env,
+                vol_env,
               })) = self.rsp.last()
               {
                 self.pc = *pc; // Go here next.
-                self.env = env.to_vec();
-                self.cache_size = *cache_size;
+                self.env = pers_env.to_vec();
+                self.cache_size = vol_env.len() as u8;
               } else {
                 self.panic_pc("not a return frame", instr);
               }
@@ -376,7 +381,9 @@ impl<'a> Machine<'a> {
           self.step(None);
           let valofpc = self.mem[self.pc as usize];
           assert!(valofpc > 0);
-          // TODO ...
+          for _ in 0..valofpc {
+            self.env.push(Value::Dummy);
+          }
           self.step(None);
         }
         _ => self.panic_pc("not implemented", instr), // TODO
@@ -384,7 +391,7 @@ impl<'a> Machine<'a> {
     }
   }
 
-  fn access(&self, i: u8) -> Value<'a> {
+  fn access(&self, i: u8) -> Value {
     if self.cache_size > i {
       if let Some(RspValue::Val(v)) = self.rsp.get(i as usize) {
         v.clone()
@@ -407,8 +414,8 @@ impl<'a> Machine<'a> {
   fn push_ret_frame(&mut self) {
     self.rsp.push(RspValue::RetFrame(ReturnFrame {
       pc: self.pc,
-      env: self.env.clone(),
-      cache_size: self.cache_size,
+      pers_env: self.env.clone(),
+      vol_env: self.env[0..self.cache_size as usize].to_vec(),
     }));
   }
 
