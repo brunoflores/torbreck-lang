@@ -501,6 +501,44 @@ impl<'a> Machine<'a> {
         Instruction::Makeblock => {
           self.panic_pc("same sa above", instr); // TODO Maybe?
         }
+        Instruction::Getfield0 => {
+          self.accu = match self.accu {
+            Value::Closure { code, env: _ } => Value::Int(code),
+            Value::ConcreteTy {
+              tag,
+              constructors: _,
+            } => Value::Int(tag),
+            _ => self.panic_pc("not implemented", instr),
+          };
+          self.step(None);
+        }
+        Instruction::Getfield1 => {
+          self.accu = match &self.accu {
+            Value::Closure { code: _, env } => env[0].clone(), // Can panic.
+            Value::ConcreteTy {
+              tag: _,
+              constructors,
+            } => constructors[0].clone(), // Can panic.
+            _ => self.panic_pc("not implemented", instr),
+          };
+          self.step(None);
+        }
+        Instruction::Getfield2 => {} // TODO
+        Instruction::Getfield3 => {} // TODO
+        Instruction::Getfield => {
+          self.step(None);
+          self.accu = match &self.accu {
+            Value::Closure { code: _, env } => {
+              env[self.mem[self.pc as usize] as usize].clone()
+            } // Can panic.
+            Value::ConcreteTy {
+              tag: _,
+              constructors,
+            } => constructors[self.mem[self.pc as usize] as usize].clone(), // Can panic.
+            _ => self.panic_pc("not implemented", instr),
+          };
+          self.step(None);
+        }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
     }
