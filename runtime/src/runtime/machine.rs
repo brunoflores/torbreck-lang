@@ -588,6 +588,13 @@ impl<'a> Machine<'a> {
             self.panic_pc("not an integer", instr);
           }
         }
+        Instruction::Predint => {
+          if let Value::Int(i) = self.accu {
+            self.accu = Value::Int(i - 1);
+          } else {
+            self.panic_pc("not an integer", instr);
+          }
+        }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
     }
