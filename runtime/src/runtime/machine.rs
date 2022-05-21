@@ -381,10 +381,19 @@ impl<'a> Machine<'a> {
           self.step(None);
           let valofpc = self.mem[self.pc as usize];
           assert!(valofpc > 0);
-          for _ in 0..valofpc {
-            self.env.push(Value::Dummy);
-          }
+          self.accu = Value::Dummy;
+          // This seemed wrong...
+          //  for _ in 0..valofpc {
+          //    self.env.push(Value::Dummy);
+          //  }
           self.step(None);
+        }
+        Instruction::Update => {
+          self.accu = if let Some(AspValue::Val(v)) = self.asp.pop() {
+            v
+          } else {
+            self.panic_pc("not a value", instr);
+          }
         }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
