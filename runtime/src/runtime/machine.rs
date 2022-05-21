@@ -10,6 +10,7 @@ pub enum Value {
     env: Vec<Value>,
   },
   Int(i8),
+  Float(f32),
   Bool(bool),
   ConcreteTy {
     tag: u8,
@@ -735,6 +736,85 @@ impl<'a> Machine<'a> {
           } else {
             self.panic_pc("not an integer", instr);
           }
+        }
+        Instruction::Floatop => {
+          self.step(None);
+          self.accu = match self.decode() {
+            Instruction::Floatofint => {
+              if let Value::Int(v) = self.accu {
+                Value::Float(v as f32)
+              } else {
+                self.panic_pc("not an integer", instr);
+              }
+            }
+            Instruction::Negfloat => {
+              if let Value::Float(f) = self.accu {
+                Value::Float(-f)
+              } else {
+                self.panic_pc("not a float", instr);
+              }
+            }
+            Instruction::Addfloat => {
+              if let Value::Float(x) = self.accu {
+                if let Some(AspValue::Val(Value::Float(y))) = self.asp.pop() {
+                  Value::Float(x + y)
+                } else {
+                  self.panic_pc("not a float in asp", instr);
+                }
+              } else {
+                self.panic_pc("not a float in accu", instr);
+              }
+            }
+            Instruction::Subfloat => {
+              if let Value::Float(x) = self.accu {
+                if let Some(AspValue::Val(Value::Float(y))) = self.asp.pop() {
+                  Value::Float(x - y)
+                } else {
+                  self.panic_pc("not a float in asp", instr);
+                }
+              } else {
+                self.panic_pc("not a float in accu", instr);
+              }
+            }
+            Instruction::Mulfloat => {
+              if let Value::Float(x) = self.accu {
+                if let Some(AspValue::Val(Value::Float(y))) = self.asp.pop() {
+                  Value::Float(x * y)
+                } else {
+                  self.panic_pc("not a float in asp", instr);
+                }
+              } else {
+                self.panic_pc("not a float in accu", instr);
+              }
+            }
+            Instruction::Divfloat => {
+              if let Value::Float(x) = self.accu {
+                match self.asp.pop() {
+                  Some(AspValue::Val(Value::Float(y))) if y > 0.0 => {
+                    Value::Float(x / y)
+                  }
+                  Some(AspValue::Val(Value::Float(_))) => {
+                    self.panic_pc("division by zero", instr);
+                  }
+                  _ => self.panic_pc("not a float in asp", instr),
+                }
+              } else {
+                self.panic_pc("not a float in accu", instr);
+              }
+            }
+            _ => {
+              self.panic_pc("not an instruction supported with floats", instr)
+            }
+          };
+          self.step(None);
+        }
+        Instruction::Intoffloat => {
+          self.accu = if let Value::Float(f) = self.accu {
+            Value::Int(f as i8)
+          } else {
+            self.panic_pc("not a float", instr);
+          };
+          self.step(None);
         }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
