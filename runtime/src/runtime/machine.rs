@@ -455,16 +455,51 @@ impl<'a> Machine<'a> {
           self.step(None);
         }
         Instruction::Makeblock2 => {
-          //
+          self.accu = match Value::empty_from_tag(self.mem[self.pc as usize]) {
+            Value::Closure { code: _, env: _ } => Value::Closure {
+              code: if let Value::Int(i) = self.accu {
+                i
+              } else {
+                self.panic_pc("not an integer value", instr);
+              },
+              env: if let Some(AspValue::Val(v)) = self.asp.pop() {
+                vec![v]
+              } else {
+                // Do nothing.
+                // TODO Should we crash?
+                vec![]
+              },
+            },
+            Value::ConcreteTy {
+              tag: _,
+              constructors: _,
+            } => Value::ConcreteTy {
+              // TODO Wild guess.
+              tag: if let Value::Int(i) = self.accu {
+                i
+              } else {
+                self.panic_pc("not an integer value", instr);
+              },
+              constructors: if let Some(AspValue::Val(v)) = self.asp.pop() {
+                vec![v]
+              } else {
+                // Do nothing.
+                // TODO Should we crash?
+                vec![]
+              },
+            },
+            _ => panic!("not implemented"), // TODO
+          };
+          self.step(None);
         }
         Instruction::Makeblock3 => {
-          //
+          self.panic_pc("same sa above", instr);
         }
         Instruction::Makeblock4 => {
-          //
+          self.panic_pc("same sa above", instr);
         }
         Instruction::Makeblock => {
-          //
+          self.panic_pc("same sa above", instr); // TODO Maybe?
         }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
