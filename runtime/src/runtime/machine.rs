@@ -376,6 +376,7 @@ impl<'a> Machine<'a> {
           }
           self.step(None);
         }
+        // I thought this was Dummy(n), but there's no n being used here?
         Instruction::Dummy => {
           // Put n dummy closures in front of the environment.
           self.step(None);
@@ -388,12 +389,25 @@ impl<'a> Machine<'a> {
           //  }
           self.step(None);
         }
+        // I thought this was Update(n), but there's no n being used here?
         Instruction::Update => {
           self.accu = if let Some(AspValue::Val(v)) = self.asp.pop() {
             v
           } else {
             self.panic_pc("not a value", instr);
           }
+        }
+        Instruction::Letrec1 => {
+          // Same as [Dummy; Cur ofs; Update], a frequent sequence
+          // corresponding to [let ref f = function .. in ..].
+          self.step(None);
+          self.cache_size += 1;
+          self.rsp.push(RspValue::RetFrame(ReturnFrame {
+            pc: self.pc,
+            pers_env: vec![], // TODO
+            vol_env: vec![],
+          }));
+          self.step(None);
         }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
