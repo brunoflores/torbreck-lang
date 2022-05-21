@@ -12,12 +12,30 @@ pub enum Value {
   Int(u8),
   Bool(bool),
   ConcreteTy {
+    tag: u8,
     // Constant constructors are a zero-length slice.
     constructors: Vec<Value>,
   },
   Record, // TODO
   Unit,
   Dummy,
+}
+
+impl Value {
+  fn empty_from_tag(t: u8) -> Value {
+    match t {
+      0 => Value::Closure {
+        code: 0,
+        env: vec![],
+      },
+      1 => Value::ConcreteTy {
+        tag: 0,
+        constructors: vec![],
+      },
+      2 => Value::Record,
+      _ => panic!("unknown tag: {}", t),
+    }
+  }
 }
 
 // Pages 32 and 33.
@@ -152,7 +170,8 @@ impl<'a> Machine<'a> {
         }
         Instruction::Atom => {
           self.step(None);
-          let valofpc = self.mem[self.pc as usize];
+          // let valofpc = self.mem[self.pc as usize];
+          //
           // TODO: I think the following index can be out of bounds at run-time:
           // self.accu = self.first_atoms[valofpc as usize];
           self.accu = Value::Unit;
@@ -408,6 +427,44 @@ impl<'a> Machine<'a> {
             vol_env: vec![],
           }));
           self.step(None);
+        }
+        Instruction::Makeblock1 => {
+          self.accu = match Value::empty_from_tag(self.mem[self.pc as usize]) {
+            Value::Closure { code: _, env: _ } => Value::Closure {
+              code: if let Value::Int(i) = self.accu {
+                i
+              } else {
+                self.panic_pc("not an integer value", instr);
+              },
+              env: vec![],
+            },
+            Value::ConcreteTy {
+              tag: _,
+              constructors: _,
+            } => Value::ConcreteTy {
+              // TODO Wild guess.
+              tag: if let Value::Int(i) = self.accu {
+                i
+              } else {
+                self.panic_pc("not an integer value", instr);
+              },
+              constructors: vec![],
+            },
+            _ => panic!("not implemented"), // TODO
+          };
+          self.step(None);
+        }
+        Instruction::Makeblock2 => {
+          //
+        }
+        Instruction::Makeblock3 => {
+          //
+        }
+        Instruction::Makeblock4 => {
+          //
+        }
+        Instruction::Makeblock => {
+          //
         }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
