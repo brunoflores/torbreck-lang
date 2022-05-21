@@ -581,6 +581,13 @@ impl<'a> Machine<'a> {
         Instruction::Setfield => {
           self.panic_pc("not implemented", instr); // TODO
         }
+        Instruction::Succint => {
+          if let Value::Int(i) = self.accu {
+            self.accu = Value::Int(i + 1);
+          } else {
+            self.panic_pc("not an integer", instr);
+          }
+        }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
     }
