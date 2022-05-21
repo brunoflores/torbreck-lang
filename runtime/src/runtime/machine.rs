@@ -21,6 +21,8 @@ pub enum Value {
   Unit,
   Dummy,
   Bytes(Vec<u8>), // A sequence of bytes.
+  Atom0,
+  Atom1,
 }
 
 impl Value {
@@ -817,6 +819,13 @@ impl<'a> Machine<'a> {
             self.panic_pc("not a float", instr);
           };
           self.step(None);
+        }
+        Instruction::Boolnot => {
+          self.accu = match self.accu {
+            Value::Atom0 => Value::Bool(true),
+            Value::Atom1 => Value::Bool(false),
+            _ => panic!(),
+          }
         }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
