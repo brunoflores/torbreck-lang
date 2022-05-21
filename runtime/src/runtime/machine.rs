@@ -638,6 +638,19 @@ impl<'a> Machine<'a> {
             self.panic_pc("not an integer", instr);
           }
         }
+        Instruction::Divint => {
+          if let Value::Int(i) = self.accu {
+            self.accu = match self.asp.pop() {
+              Some(AspValue::Val(Value::Int(y))) if y > 0 => Value::Int(i / y),
+              Some(AspValue::Val(Value::Int(_))) => {
+                self.panic_pc("division by zero", instr)
+              }
+              _ => self.panic_pc("not an integer in asp", instr),
+            }
+          } else {
+            self.panic_pc("not an integer", instr);
+          }
+        }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
     }
