@@ -112,7 +112,7 @@ The transition function is as follows:
        s \\
      \text{Succ} & \textbf{Access}(n+1); c & (c_0, e_0) \cdot e & s &
        \textbf{Access}(n); c & e & s \\
-     \text{Push} & \textbf{Push}(c'); c & e & s & c & e & (c', e) \cdot s \\
+     \text{App} & \textbf{Push}(c'); c & e & s & c & e & (c', e) \cdot s \\
      \text{Abs} & \textbf{Grab}; c & e & (c_0, e_0) \cdot s & c &
        (c_0, e_0) \cdot e & s \\
    \hline
@@ -143,18 +143,18 @@ Evaluation of the term (:math:`\lambda` 0 0) (:math:`\lambda` 0),
 
 .. math::
 
-   \begin{array}{|c|l|}
+   \begin{array}{|l l l|l|}
    \hline
-   \textbf{State} & \textbf{Transition} \\
+   \textbf{Term} & \textbf{Stack} & \textbf{Env.} & \textbf{Transition} \\
    \hline
-   (\lambda \text{0 0}) (\lambda 0), \square, \square & \text{App} \\
-   \lambda \text{0 0}, [\lt \lambda 0, \square \gt], \square & \text{Abs} \\
-   \text{0 0}, \square, [\lt \lambda 0, \square \gt] & \text{App} \\
-   0, [\lt 0, \lt \lambda 0, \square \gt \gt], [\lt \lambda 0, \square \gt] & \text{Zero} \\
-   \lambda 0, [\lt 0, \lt \lambda 0, \square \gt \gt], \square & \text{Abs} \\
-   0, \square, [\lt 0, \lt \lambda 0, \square \gt \gt] & \text{Zero} \\
-   0, \square, [\lt \lambda 0, \square \gt] & \text{Zero} \\
-   \lambda 0, \square, \square & \text{} \\
+   (\lambda \text{0 0}) (\lambda 0) & \square & \square & \text{App} \\
+   \lambda \text{0 0} & [\lt \lambda 0, \square \gt] & \square & \text{Abs} \\
+   \text{0 0} & \square & [\lt \lambda 0, \square \gt] & \text{App} \\
+   0 &  [\lt 0, \lt \lambda 0, \square \gt \gt] & [\lt \lambda 0, \square \gt] & \text{Zero} \\
+   \lambda 0 & [\lt 0, \lt \lambda 0, \square \gt \gt] & \square & \text{Abs} \\
+   0 & \square & [\lt 0, \lt \lambda 0, \square \gt \gt] & \text{Zero} \\
+   0 & \square & [\lt \lambda 0, \square \gt] & \text{Zero} \\
+   \lambda 0 & \square & \square & \text{} \\
    \hline
    \end{array}
 
