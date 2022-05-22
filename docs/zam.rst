@@ -180,13 +180,17 @@ the stack is empty.
 
 What we need is a way to stop reduction even if there are
 arguments available on the stack. To this end, let's put a *mark* on some of the
-closures awaiting in the stack; this mark says "don't put me in the environment,
-stop reducing, and resume another reduction".
+closures awaiting in the stack; this mark says:
+
+*"Don't put me in the environment, stop reducing, and resume another
+reduction".*
 
 The modified Krivine's machine has a fourth instruction,
 :math:`\textbf{Reduce}(c)`, to force reduction of :math:`c` to weak head normal
-form, and a different semantics for :math:`\textbf{Grab}`. In the following,
-marked closures are written :math:`\langle c, e \rangle` instead of :math:`(c, e)`.
+form, and a different semantics for :math:`\textbf{Grab}`.
+
+In the following, **marked closures** are written :math:`\langle c, e \rangle`
+instead of :math:`(c, e)`.
 
 .. math::
 
