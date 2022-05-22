@@ -93,6 +93,33 @@ The :math:`\textbf{Push}` instruction performs one step of unrolling, and
 :math:`\textbf{Grab}` corresponds to one step of :math:`\beta` -reduction,
 that is it records the substitution in the environment.
 
+Example
+~~~~~~~
+
+Evaluation of the term (:math:`\lambda` 0 0) (:math:`\lambda` 0),
+
+.. math::
+
+   \begin{array}{|c|c|}
+   \hline
+   (\lambda \text{0 0}) (\lambda 0), \square, \square & \text{App} \\
+   \hline
+   \lambda \text{0 0}, [\lt \lambda 0, \square \gt], \square & \text{Abs} \\
+   \hline
+   \text{0 0}, \square, [\lt \lambda 0, \square \gt] & \text{App} \\
+   \hline
+   0, [\lt 0, \lt \lambda 0, \square \gt \gt], [\lt \lambda 0, \square \gt] & \text{Zero} \\
+   \hline
+   \lambda 0, [\lt 0, \lt \lambda 0, \square \gt \gt], \square & \text{Abs} \\
+   \hline
+   0, \square, [\lt 0, \lt \lambda 0, \square \gt \gt] & \text{Zero} \\
+   \hline
+   0, \square, [\lt \lambda 0, \square \gt] & \text{Zero} \\
+   \hline
+   \lambda 0, \square, \square & \text{} \\
+   \hline
+   \end{array}
+
 Krivine's machine with marks on the stack
 =========================================
 
