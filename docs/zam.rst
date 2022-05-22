@@ -170,7 +170,7 @@ to "freeze" the arguments, and these are unavoidable with a lazy strategy.
 Krivine's machine with marks on the stack
 =========================================
 
-A machine analogous to Krivine's, but performing strict evaluations instead
+A machine analogous to Krivine's, but performing strict evaluation instead
 of lazy evaluation.
 
 To perform strict evaluation with some variant of Krivine's machine,
