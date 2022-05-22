@@ -158,8 +158,20 @@ Evaluation of the term (:math:`\lambda` 0 0) (:math:`\lambda` 0),
    \hline
    \end{array}
 
+Multiple applications
+~~~~~~~~~~~~~~~~~~~~~
+
+In the example above, note that each time a :opcode:`Grab` instruction is
+encountered, that is each time an abstraction is reduced, one of the arguments
+is popped and added to the environment, then evaluation proceeds with the
+remaining code, that is the body of the abstraction. Those closures are built
+to "freeze" the arguments, and these are unavoidable with a lazy strategy.
+
 Krivine's machine with marks on the stack
 =========================================
+
+A machine analogous to Krivine's, but performing strict evaluations instead
+of lazy evaluation.
 
 To perform strict evaluation with some variant of Krivine's machine,
 we need first to be able to reduce some subterms of a given term to weak head
