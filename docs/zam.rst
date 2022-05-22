@@ -60,18 +60,32 @@ The transition function is as follows:
 
 .. math::
 
-   \begin{array}{|l l l|l l l|}
+   \begin{array}{|l|l l l|l l l|}
    \hline
-     \text{Code} & \text{Env.} & \text{Stack} & \text{Code} & \text{Env.} &
-       \text{Stack} \\
+     \text{Name} & \text{Code} & \text{Env.} & \text{Stack} & \text{Code} &
+       \text{Env.} & \text{Stack} \\
    \hline
-     \textbf{Access}(0); c & (c_0, e_0) \cdot e & s & c_0 & e_0 & s \\
-     \textbf{Access}(n+1); c & (c_0, e_0) \cdot e & s & \textbf{Access}(n); c
-       & e & s \\
-     \textbf{Push}(c'); c & e & s & c & e & (c', e) \cdot s \\
-     \textbf{Grab}; c & e & (c_0, e_0) \cdot s & c & (c_0, e_0) \cdot e & s \\
+     \text{App} & \textbf{Access}(0); c & (c_0, e_0) \cdot e & s & c_0 & e_0 &
+       s \\
+     \text{Abs} & \textbf{Access}(n+1); c & (c_0, e_0) \cdot e & s &
+       \textbf{Access}(n); c & e & s \\
+     \text{Zero} & \textbf{Push}(c'); c & e & s & c & e & (c', e) \cdot s \\
+     \text{Succ} & \textbf{Grab}; c & e & (c_0, e_0) \cdot s & c &
+       (c_0, e_0) \cdot e & s \\
    \hline
    \end{array}
+
++ The transition :math:`\text{App}` removes the parameter of an application and
+  put it on the stack for further evaluation
++ The transition :math:`\text{Abs}` removes the :math:`\lambda` of the term and
+  pop up the closure from the top of the stack and put it on the top of the
+  environment. This closure corresponds to the de Bruijn index 0 in the new
+  environment
++ The transition :math:`\text{Zero}` takes the first closure of the environment.
+  The term of this closure becomes the current term and the environment of this
+  closure becomes the current environment
++ The transition :math:`\text{Succ}` removes the first closure of the
+  environment list and decreases the value of the index
 
 At all times the stack represents the *spine* of the term being reduced
 (that is, the them whose code is in the code pointer).
