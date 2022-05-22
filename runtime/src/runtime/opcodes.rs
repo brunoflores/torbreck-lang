@@ -285,6 +285,7 @@ impl fmt::Display for Instruction {
 //     print "Instruction::" substr(toupper($1), 3,1)
 //     substr(tolower($1), 4) " => " i ","
 //   }'
+/*
 pub fn encode(i: Instruction) -> u8 {
   match i {
     Instruction::Constbyte => 1,
@@ -418,6 +419,7 @@ pub fn encode(i: Instruction) -> u8 {
     Instruction::Divfloat => 129,
   }
 }
+*/
 
 // In Fish:
 // cat instruct.h |
