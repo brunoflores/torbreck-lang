@@ -11,7 +11,7 @@ pub struct Closure(u8, Vec<Value>);
 pub enum Value {
   Closure(Closure),
   // ConcreteTy { tag: u8, constructors: Vec<Value> },
-  // Int(i8),
+  Int(i8),
   // Float(f32),
   // Bool(bool),
   // Record,         // TODO
@@ -167,8 +167,25 @@ impl<'a> Machine<'a> {
           // the caller. Otherwise, jump to the closure contained in the
           // accumulator.
           //
-          if let Some(AspValue::Mark) = self.asp.pop() {
-            //
+          match self.asp.pop() {
+            Some(AspValue::Mark) => {
+              let Closure(c1, e1) = self.rsp.pop().unwrap();
+              self.pc = c1;
+              self.env = e1;
+            }
+            Some(AspValue::Val(v)) => {
+              if let Value::Closure(Closure(c1, e1)) = &self.accu {
+                self.pc = *c1;
+                self.env = {
+                  let mut e1 = e1.clone();
+                  e1.push(v);
+                  e1
+                }
+              } else {
+                panic!();
+              }
+            }
+            None => panic!(),
           }
         }
         //         Instruction::Pop => {
