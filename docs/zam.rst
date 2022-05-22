@@ -25,6 +25,49 @@ price to pay for the additional flexibility of curried functions.
 Krivine's machine
 =================
 
+Three components:
+
++ term,
++ stack,
++ environment.
+
+|  state   = <term, stack, environment>
+|  closure = <term, environment>
+
+|  environment = [<term, environment>]
+|  stack       = [<term, environment>]
+
+The stack and the environment belong to the same recursive data structure.
+More precisely, the environment and the stack are lists of pairs
+<term, environment>, called closures.
+
+The first element of the environment is the closure associated with the
+index 0, the second element corresponds to the closure associated with
+index 1 etc.
+
+If the machine has to evaluate an index, it fetches there
+the pair <term, environment>, the closure that yields
+the term to be evaluated and the environment in which
+this term must be evaluated.
+
+| t = term
+| p = stack (pile)
+| s = state
+| e = environment
+| state = t, p, e
+
+The rules explain how the machine transforms
+*a state into another state*, after identifying the
+patterns among the states.
+
+The initial state aims to evaluate a term t, it is the state
+t, :math:`\square`, :math:`\square` in which the term is t and the stack and the
+environment are empty.
+
+The final state (in absence of error) is of the form :math:`\lambda t`,
+:math:`\square`, e, in other words, the resulting terms is an abstraction
+together with its environment and an empty stack.
+
 This machine performs reduction to *weak head normal form* following the
 standard (leftmost-outermost) strategy. However, it represents
 :math:`\lambda` -terms with closures, hence it does not perform substitutions
