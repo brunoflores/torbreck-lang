@@ -108,12 +108,12 @@ The transition function is as follows:
      \text{Name} & \text{Code} & \text{Env.} & \text{Stack} & \text{Code} &
        \text{Env.} & \text{Stack} \\
    \hline
-     \text{App} & \textbf{Access}(0); c & (c_0, e_0) \cdot e & s & c_0 & e_0 &
+     \text{Zero} & \textbf{Access}(0); c & (c_0, e_0) \cdot e & s & c_0 & e_0 &
        s \\
-     \text{Abs} & \textbf{Access}(n+1); c & (c_0, e_0) \cdot e & s &
+     \text{Succ} & \textbf{Access}(n+1); c & (c_0, e_0) \cdot e & s &
        \textbf{Access}(n); c & e & s \\
-     \text{Zero} & \textbf{Push}(c'); c & e & s & c & e & (c', e) \cdot s \\
-     \text{Succ} & \textbf{Grab}; c & e & (c_0, e_0) \cdot s & c &
+     \text{Push} & \textbf{Push}(c'); c & e & s & c & e & (c', e) \cdot s \\
+     \text{Abs} & \textbf{Grab}; c & e & (c_0, e_0) \cdot s & c &
        (c_0, e_0) \cdot e & s \\
    \hline
    \end{array}
@@ -143,22 +143,17 @@ Evaluation of the term (:math:`\lambda` 0 0) (:math:`\lambda` 0),
 
 .. math::
 
-   \begin{array}{|c|c|}
+   \begin{array}{|c|l|}
+   \hline
+   \textbf{State} & \textbf{Transition} \\
    \hline
    (\lambda \text{0 0}) (\lambda 0), \square, \square & \text{App} \\
-   \hline
    \lambda \text{0 0}, [\lt \lambda 0, \square \gt], \square & \text{Abs} \\
-   \hline
    \text{0 0}, \square, [\lt \lambda 0, \square \gt] & \text{App} \\
-   \hline
    0, [\lt 0, \lt \lambda 0, \square \gt \gt], [\lt \lambda 0, \square \gt] & \text{Zero} \\
-   \hline
    \lambda 0, [\lt 0, \lt \lambda 0, \square \gt \gt], \square & \text{Abs} \\
-   \hline
    0, \square, [\lt 0, \lt \lambda 0, \square \gt \gt] & \text{Zero} \\
-   \hline
    0, \square, [\lt \lambda 0, \square \gt] & \text{Zero} \\
-   \hline
    \lambda 0, \square, \square & \text{} \\
    \hline
    \end{array}
