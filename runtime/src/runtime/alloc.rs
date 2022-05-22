@@ -1,3 +1,4 @@
+/*
 #[derive(Debug, Copy, Clone)]
 pub struct Header {
   pub color: Color,
@@ -1044,3 +1045,4 @@ pub static FIRST_ATOMS: [Header; 256] = {
     },
   ]
 };
+*/
