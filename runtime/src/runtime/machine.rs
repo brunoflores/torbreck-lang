@@ -672,8 +672,8 @@ mod tests {
   use crate::runtime::opcodes::Instruction::*;
 
   enum Code {
-    I(Instruction),
-    D(u8),
+    I(Instruction), // Instruction
+    D(u8),          // Data
   }
 
   impl Code {
