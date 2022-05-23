@@ -239,6 +239,7 @@ impl<'a> Machine<'a> {
           } else {
             self.panic_pc("not an integer", instr);
           }
+          self.step(None);
         }
         Instruction::Predint => {
           if let Value::Int(i) = self.accu {
@@ -246,6 +247,7 @@ impl<'a> Machine<'a> {
           } else {
             self.panic_pc("not an integer", instr);
           }
+          self.step(None);
         }
         Instruction::Negint => {
           if let Value::Int(i) = self.accu {
@@ -253,18 +255,20 @@ impl<'a> Machine<'a> {
           } else {
             self.panic_pc("not an integer", instr);
           }
+          self.step(None);
         }
         Instruction::Addint => {
           if let Value::Int(i) = self.accu {
-            self.accu =
-              if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
-                Value::Int(i + y)
-              } else {
-                self.panic_pc("not an integer in asp", instr);
+            self.accu = match self.asp.pop().unwrap() {
+              AspValue::Val(Value::Int(y)) => Value::Int(i + y),
+              y => {
+                self.panic_pc(&format!("not an integer in asp: {:?}", y), instr)
               }
+            }
           } else {
             self.panic_pc("not an integer", instr);
           }
+          self.step(None);
         }
         Instruction::Subint => {
           if let Value::Int(i) = self.accu {
@@ -277,6 +281,7 @@ impl<'a> Machine<'a> {
           } else {
             self.panic_pc("not an integer", instr);
           }
+          self.step(None);
         }
         Instruction::Mulint => {
           if let Value::Int(i) = self.accu {
@@ -289,6 +294,7 @@ impl<'a> Machine<'a> {
           } else {
             self.panic_pc("not an integer", instr);
           }
+          self.step(None);
         }
         Instruction::Divint => {
           if let Value::Int(i) = self.accu {
@@ -302,6 +308,7 @@ impl<'a> Machine<'a> {
           } else {
             self.panic_pc("not an integer", instr);
           }
+          self.step(None);
         }
         Instruction::Modint => {
           if let Value::Int(i) = self.accu {
@@ -315,6 +322,7 @@ impl<'a> Machine<'a> {
           } else {
             self.panic_pc("not an integer", instr);
           }
+          self.step(None);
         }
         Instruction::Andint => {
           if let Value::Int(i) = self.accu {
@@ -327,6 +335,7 @@ impl<'a> Machine<'a> {
           } else {
             self.panic_pc("not an integer", instr);
           }
+          self.step(None);
         }
         Instruction::Orint => {
           if let Value::Int(i) = self.accu {
@@ -339,6 +348,7 @@ impl<'a> Machine<'a> {
           } else {
             self.panic_pc("not an integer", instr);
           }
+          self.step(None);
         }
         Instruction::Xorint => {
           if let Value::Int(i) = self.accu {
@@ -351,6 +361,7 @@ impl<'a> Machine<'a> {
           } else {
             self.panic_pc("not an integer", instr);
           }
+          self.step(None);
         }
         Instruction::Shiftleftint => {
           if let Value::Int(i) = self.accu {
@@ -363,6 +374,7 @@ impl<'a> Machine<'a> {
           } else {
             self.panic_pc("not an integer", instr);
           }
+          self.step(None);
         }
         Instruction::Shiftrightintsigned => {
           if let Value::Int(i) = self.accu {
@@ -375,6 +387,7 @@ impl<'a> Machine<'a> {
           } else {
             self.panic_pc("not an integer", instr);
           }
+          self.step(None);
         }
         Instruction::Shiftrightintunsigned => {
           if let Value::Int(i) = self.accu {
@@ -387,6 +400,7 @@ impl<'a> Machine<'a> {
           } else {
             self.panic_pc("not an integer", instr);
           }
+          self.step(None);
         }
         Instruction::Floatop => {
           self.step(None);
@@ -472,7 +486,8 @@ impl<'a> Machine<'a> {
             Value::Bool(false) => Value::Bool(true),
             Value::Bool(true) => Value::Bool(false),
             _ => panic!(),
-          }
+          };
+          self.step(None);
         }
         Instruction::Constbyte => {
           self.step(None);
@@ -698,6 +713,29 @@ mod tests {
     let accu = machine.interpret();
     if let Value::Int(int) = accu {
       assert_eq!(int, 42);
+    } else {
+      panic!("not an integer");
+    }
+  }
+
+  #[test]
+  fn machine_can_add() {
+    let program: Vec<u8> = vec![
+      I(Constbyte),
+      D(42),
+      I(Push),
+      I(Constbyte),
+      D(1),
+      I(Addint),
+      I(Stop),
+    ]
+    .iter()
+    .map(Code::encode)
+    .collect();
+    let mut machine = Machine::new(&program);
+    let accu = machine.interpret();
+    if let Value::Int(int) = accu {
+      assert_eq!(int, 43);
     } else {
       panic!("not an integer");
     }
