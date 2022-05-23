@@ -763,4 +763,27 @@ mod tests {
       panic!("not an integer");
     }
   }
+
+  #[test]
+  fn machine_can_mul() {
+    let program: Vec<u8> = vec![
+      I(Constbyte),
+      D(2),
+      I(Push),
+      I(Constbyte),
+      D(21),
+      I(Mulint),
+      I(Stop),
+    ]
+    .iter()
+    .map(Code::encode)
+    .collect();
+    let mut machine = Machine::new(&program);
+    let accu = machine.interpret();
+    if let Value::Int(int) = accu {
+      assert_eq!(int, 42);
+    } else {
+      panic!("not an integer");
+    }
+  }
 }
