@@ -668,8 +668,9 @@ impl<'a> Machine<'a> {
 
 #[cfg(test)]
 mod tests {
-  use super::*;
-  use crate::runtime::opcodes::Instruction::*;
+  use super::{Machine, Value};
+  use crate::runtime::opcodes;
+  use crate::runtime::opcodes::{Instruction, Instruction::*};
 
   enum Code {
     I(Instruction), // Instruction
