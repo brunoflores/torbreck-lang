@@ -12,8 +12,8 @@ pub enum Value {
   Closure(Closure),
   // ConcreteTy { tag: u8, constructors: Vec<Value> },
   Int(i8),
-  // Float(f32),
-  // Bool(bool),
+  Float(f32),
+  Bool(bool),
   // Record,         // TODO
   // Bytes(Vec<u8>), // Sequence of bytes.
   Dummy,
@@ -194,6 +194,7 @@ impl<'a> Machine<'a> {
           self.env.push(self.accu.clone());
           self.step(None);
         }
+        // TODO
         // Instruction::Letrec1 => {
         //   // Same as [Dummy; Cur ofs; Update], a frequent sequence
         //   // corresponding to [let ref f = function .. in ..].
@@ -231,6 +232,247 @@ impl<'a> Machine<'a> {
             panic!("expected a Dummy in the environment");
           }
           self.step(None);
+        }
+        Instruction::Succint => {
+          if let Value::Int(i) = self.accu {
+            self.accu = Value::Int(i + 1);
+          } else {
+            self.panic_pc("not an integer", instr);
+          }
+        }
+        Instruction::Predint => {
+          if let Value::Int(i) = self.accu {
+            self.accu = Value::Int(i - 1);
+          } else {
+            self.panic_pc("not an integer", instr);
+          }
+        }
+        Instruction::Negint => {
+          if let Value::Int(i) = self.accu {
+            self.accu = Value::Int(-i);
+          } else {
+            self.panic_pc("not an integer", instr);
+          }
+        }
+        Instruction::Addint => {
+          if let Value::Int(i) = self.accu {
+            self.accu =
+              if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
+                Value::Int(i + y)
+              } else {
+                self.panic_pc("not an integer in asp", instr);
+              }
+          } else {
+            self.panic_pc("not an integer", instr);
+          }
+        }
+        Instruction::Subint => {
+          if let Value::Int(i) = self.accu {
+            self.accu =
+              if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
+                Value::Int(i - y)
+              } else {
+                self.panic_pc("not an integer in asp", instr);
+              }
+          } else {
+            self.panic_pc("not an integer", instr);
+          }
+        }
+        Instruction::Mulint => {
+          if let Value::Int(i) = self.accu {
+            self.accu =
+              if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
+                Value::Int(i * y)
+              } else {
+                self.panic_pc("not an integer in asp", instr);
+              }
+          } else {
+            self.panic_pc("not an integer", instr);
+          }
+        }
+        Instruction::Divint => {
+          if let Value::Int(i) = self.accu {
+            self.accu = match self.asp.pop() {
+              Some(AspValue::Val(Value::Int(y))) if y > 0 => Value::Int(i / y),
+              Some(AspValue::Val(Value::Int(_))) => {
+                self.panic_pc("division by zero", instr)
+              }
+              _ => self.panic_pc("not an integer in asp", instr),
+            }
+          } else {
+            self.panic_pc("not an integer", instr);
+          }
+        }
+        Instruction::Modint => {
+          if let Value::Int(i) = self.accu {
+            self.accu = match self.asp.pop() {
+              Some(AspValue::Val(Value::Int(y))) if y > 0 => Value::Int(i % y),
+              Some(AspValue::Val(Value::Int(_))) => {
+                self.panic_pc("division by zero", instr)
+              }
+              _ => self.panic_pc("not an integer in asp", instr),
+            }
+          } else {
+            self.panic_pc("not an integer", instr);
+          }
+        }
+        Instruction::Andint => {
+          if let Value::Int(i) = self.accu {
+            self.accu =
+              if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
+                Value::Int(i & y)
+              } else {
+                self.panic_pc("not an integer in asp", instr);
+              }
+          } else {
+            self.panic_pc("not an integer", instr);
+          }
+        }
+        Instruction::Orint => {
+          if let Value::Int(i) = self.accu {
+            self.accu =
+              if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
+                Value::Int(i | y)
+              } else {
+                self.panic_pc("not an integer in asp", instr);
+              }
+          } else {
+            self.panic_pc("not an integer", instr);
+          }
+        }
+        Instruction::Xorint => {
+          if let Value::Int(i) = self.accu {
+            self.accu =
+              if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
+                Value::Int(i ^ y)
+              } else {
+                self.panic_pc("not an integer in asp", instr);
+              }
+          } else {
+            self.panic_pc("not an integer", instr);
+          }
+        }
+        Instruction::Shiftleftint => {
+          if let Value::Int(i) = self.accu {
+            self.accu =
+              if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
+                Value::Int(i << y)
+              } else {
+                self.panic_pc("not an integer in asp", instr);
+              }
+          } else {
+            self.panic_pc("not an integer", instr);
+          }
+        }
+        Instruction::Shiftrightintsigned => {
+          if let Value::Int(i) = self.accu {
+            self.accu =
+              if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
+                Value::Int(i >> y)
+              } else {
+                self.panic_pc("not an integer in asp", instr);
+              }
+          } else {
+            self.panic_pc("not an integer", instr);
+          }
+        }
+        Instruction::Shiftrightintunsigned => {
+          if let Value::Int(i) = self.accu {
+            self.accu =
+              if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
+                Value::Int(((i as u8) >> y) as i8) // Can crash.
+              } else {
+                self.panic_pc("not an integer in asp", instr);
+              }
+          } else {
+            self.panic_pc("not an integer", instr);
+          }
+        }
+        Instruction::Floatop => {
+          self.step(None);
+          self.accu = match self.decode() {
+            Instruction::Floatofint => {
+              if let Value::Int(v) = self.accu {
+                Value::Float(v as f32)
+              } else {
+                self.panic_pc("not an integer", instr);
+              }
+            }
+            Instruction::Negfloat => {
+              if let Value::Float(f) = self.accu {
+                Value::Float(-f)
+              } else {
+                self.panic_pc("not a float", instr);
+              }
+            }
+            Instruction::Addfloat => {
+              if let Value::Float(x) = self.accu {
+                if let Some(AspValue::Val(Value::Float(y))) = self.asp.pop() {
+                  Value::Float(x + y)
+                } else {
+                  self.panic_pc("not a float in asp", instr);
+                }
+              } else {
+                self.panic_pc("not a float in accu", instr);
+              }
+            }
+            Instruction::Subfloat => {
+              if let Value::Float(x) = self.accu {
+                if let Some(AspValue::Val(Value::Float(y))) = self.asp.pop() {
+                  Value::Float(x - y)
+                } else {
+                  self.panic_pc("not a float in asp", instr);
+                }
+              } else {
+                self.panic_pc("not a float in accu", instr);
+              }
+            }
+            Instruction::Mulfloat => {
+              if let Value::Float(x) = self.accu {
+                if let Some(AspValue::Val(Value::Float(y))) = self.asp.pop() {
+                  Value::Float(x * y)
+                } else {
+                  self.panic_pc("not a float in asp", instr);
+                }
+              } else {
+                self.panic_pc("not a float in accu", instr);
+              }
+            }
+            Instruction::Divfloat => {
+              if let Value::Float(x) = self.accu {
+                match self.asp.pop() {
+                  Some(AspValue::Val(Value::Float(y))) if y > 0.0 => {
+                    Value::Float(x / y)
+                  }
+                  Some(AspValue::Val(Value::Float(_))) => {
+                    self.panic_pc("division by zero", instr);
+                  }
+                  _ => self.panic_pc("not a float in asp", instr),
+                }
+              } else {
+                self.panic_pc("not a float in accu", instr);
+              }
+            }
+            _ => {
+              self.panic_pc("not an instruction supported with floats", instr)
+            }
+          };
+          self.step(None);
+        }
+        Instruction::Intoffloat => {
+          self.accu = if let Value::Float(f) = self.accu {
+            Value::Int(f as i8)
+          } else {
+            self.panic_pc("not a float", instr);
+          };
+          self.step(None);
+        }
+        Instruction::Boolnot => {
+          self.accu = match self.accu {
+            Value::Bool(false) => Value::Bool(true),
+            Value::Bool(true) => Value::Bool(false),
+            _ => panic!(),
+          }
         }
 
         //         Instruction::Pop => {
@@ -393,247 +635,6 @@ impl<'a> Machine<'a> {
         //         }
         //         Instruction::Setfield => {
         //           self.panic_pc("not implemented", instr); // TODO
-        //         }
-        //         Instruction::Succint => {
-        //           if let Value::Int(i) = self.accu {
-        //             self.accu = Value::Int(i + 1);
-        //           } else {
-        //             self.panic_pc("not an integer", instr);
-        //           }
-        //         }
-        //         Instruction::Predint => {
-        //           if let Value::Int(i) = self.accu {
-        //             self.accu = Value::Int(i - 1);
-        //           } else {
-        //             self.panic_pc("not an integer", instr);
-        //           }
-        //         }
-        //         Instruction::Negint => {
-        //           if let Value::Int(i) = self.accu {
-        //             self.accu = Value::Int(-i);
-        //           } else {
-        //             self.panic_pc("not an integer", instr);
-        //           }
-        //         }
-        //         Instruction::Addint => {
-        //           if let Value::Int(i) = self.accu {
-        //             self.accu =
-        //               if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
-        //                 Value::Int(i + y)
-        //               } else {
-        //                 self.panic_pc("not an integer in asp", instr);
-        //               }
-        //           } else {
-        //             self.panic_pc("not an integer", instr);
-        //           }
-        //         }
-        //         Instruction::Subint => {
-        //           if let Value::Int(i) = self.accu {
-        //             self.accu =
-        //               if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
-        //                 Value::Int(i - y)
-        //               } else {
-        //                 self.panic_pc("not an integer in asp", instr);
-        //               }
-        //           } else {
-        //             self.panic_pc("not an integer", instr);
-        //           }
-        //         }
-        //         Instruction::Mulint => {
-        //           if let Value::Int(i) = self.accu {
-        //             self.accu =
-        //               if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
-        //                 Value::Int(i * y)
-        //               } else {
-        //                 self.panic_pc("not an integer in asp", instr);
-        //               }
-        //           } else {
-        //             self.panic_pc("not an integer", instr);
-        //           }
-        //         }
-        //         Instruction::Divint => {
-        //           if let Value::Int(i) = self.accu {
-        //             self.accu = match self.asp.pop() {
-        //               Some(AspValue::Val(Value::Int(y))) if y > 0 => Value::Int(i / y),
-        //               Some(AspValue::Val(Value::Int(_))) => {
-        //                 self.panic_pc("division by zero", instr)
-        //               }
-        //               _ => self.panic_pc("not an integer in asp", instr),
-        //             }
-        //           } else {
-        //             self.panic_pc("not an integer", instr);
-        //           }
-        //         }
-        //         Instruction::Modint => {
-        //           if let Value::Int(i) = self.accu {
-        //             self.accu = match self.asp.pop() {
-        //               Some(AspValue::Val(Value::Int(y))) if y > 0 => Value::Int(i % y),
-        //               Some(AspValue::Val(Value::Int(_))) => {
-        //                 self.panic_pc("division by zero", instr)
-        //               }
-        //               _ => self.panic_pc("not an integer in asp", instr),
-        //             }
-        //           } else {
-        //             self.panic_pc("not an integer", instr);
-        //           }
-        //         }
-        //         Instruction::Andint => {
-        //           if let Value::Int(i) = self.accu {
-        //             self.accu =
-        //               if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
-        //                 Value::Int(i & y)
-        //               } else {
-        //                 self.panic_pc("not an integer in asp", instr);
-        //               }
-        //           } else {
-        //             self.panic_pc("not an integer", instr);
-        //           }
-        //         }
-        //         Instruction::Orint => {
-        //           if let Value::Int(i) = self.accu {
-        //             self.accu =
-        //               if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
-        //                 Value::Int(i | y)
-        //               } else {
-        //                 self.panic_pc("not an integer in asp", instr);
-        //               }
-        //           } else {
-        //             self.panic_pc("not an integer", instr);
-        //           }
-        //         }
-        //         Instruction::Xorint => {
-        //           if let Value::Int(i) = self.accu {
-        //             self.accu =
-        //               if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
-        //                 Value::Int(i ^ y)
-        //               } else {
-        //                 self.panic_pc("not an integer in asp", instr);
-        //               }
-        //           } else {
-        //             self.panic_pc("not an integer", instr);
-        //           }
-        //         }
-        //         Instruction::Shiftleftint => {
-        //           if let Value::Int(i) = self.accu {
-        //             self.accu =
-        //               if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
-        //                 Value::Int(i << y)
-        //               } else {
-        //                 self.panic_pc("not an integer in asp", instr);
-        //               }
-        //           } else {
-        //             self.panic_pc("not an integer", instr);
-        //           }
-        //         }
-        //         Instruction::Shiftrightintsigned => {
-        //           if let Value::Int(i) = self.accu {
-        //             self.accu =
-        //               if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
-        //                 Value::Int(i >> y)
-        //               } else {
-        //                 self.panic_pc("not an integer in asp", instr);
-        //               }
-        //           } else {
-        //             self.panic_pc("not an integer", instr);
-        //           }
-        //         }
-        //         Instruction::Shiftrightintunsigned => {
-        //           if let Value::Int(i) = self.accu {
-        //             self.accu =
-        //               if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
-        //                 Value::Int(((i as u8) >> y) as i8) // Can crash.
-        //               } else {
-        //                 self.panic_pc("not an integer in asp", instr);
-        //               }
-        //           } else {
-        //             self.panic_pc("not an integer", instr);
-        //           }
-        //         }
-        //         Instruction::Floatop => {
-        //           self.step(None);
-        //           self.accu = match self.decode() {
-        //             Instruction::Floatofint => {
-        //               if let Value::Int(v) = self.accu {
-        //                 Value::Float(v as f32)
-        //               } else {
-        //                 self.panic_pc("not an integer", instr);
-        //               }
-        //             }
-        //             Instruction::Negfloat => {
-        //               if let Value::Float(f) = self.accu {
-        //                 Value::Float(-f)
-        //               } else {
-        //                 self.panic_pc("not a float", instr);
-        //               }
-        //             }
-        //             Instruction::Addfloat => {
-        //               if let Value::Float(x) = self.accu {
-        //                 if let Some(AspValue::Val(Value::Float(y))) = self.asp.pop() {
-        //                   Value::Float(x + y)
-        //                 } else {
-        //                   self.panic_pc("not a float in asp", instr);
-        //                 }
-        //               } else {
-        //                 self.panic_pc("not a float in accu", instr);
-        //               }
-        //             }
-        //             Instruction::Subfloat => {
-        //               if let Value::Float(x) = self.accu {
-        //                 if let Some(AspValue::Val(Value::Float(y))) = self.asp.pop() {
-        //                   Value::Float(x - y)
-        //                 } else {
-        //                   self.panic_pc("not a float in asp", instr);
-        //                 }
-        //               } else {
-        //                 self.panic_pc("not a float in accu", instr);
-        //               }
-        //             }
-        //             Instruction::Mulfloat => {
-        //               if let Value::Float(x) = self.accu {
-        //                 if let Some(AspValue::Val(Value::Float(y))) = self.asp.pop() {
-        //                   Value::Float(x * y)
-        //                 } else {
-        //                   self.panic_pc("not a float in asp", instr);
-        //                 }
-        //               } else {
-        //                 self.panic_pc("not a float in accu", instr);
-        //               }
-        //             }
-        //             Instruction::Divfloat => {
-        //               if let Value::Float(x) = self.accu {
-        //                 match self.asp.pop() {
-        //                   Some(AspValue::Val(Value::Float(y))) if y > 0.0 => {
-        //                     Value::Float(x / y)
-        //                   }
-        //                   Some(AspValue::Val(Value::Float(_))) => {
-        //                     self.panic_pc("division by zero", instr);
-        //                   }
-        //                   _ => self.panic_pc("not a float in asp", instr),
-        //                 }
-        //               } else {
-        //                 self.panic_pc("not a float in accu", instr);
-        //               }
-        //             }
-        //             _ => {
-        //               self.panic_pc("not an instruction supported with floats", instr)
-        //             }
-        //           };
-        //           self.step(None);
-        //         }
-        //         Instruction::Intoffloat => {
-        //           self.accu = if let Value::Float(f) = self.accu {
-        //             Value::Int(f as i8)
-        //           } else {
-        //             self.panic_pc("not a float", instr);
-        //           };
-        //           self.step(None);
-        //         }
-        //         Instruction::Boolnot => {
-        //           self.accu = match self.accu {
-        //             Value::Atom0 => Value::Bool(true),
-        //             Value::Atom1 => Value::Bool(false),
-        //             _ => panic!(),
-        //           }
         //         }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
