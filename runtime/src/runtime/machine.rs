@@ -669,16 +669,36 @@ impl<'a> Machine<'a> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::runtime::opcodes::Instruction::*;
+
+  enum Code {
+    I(Instruction),
+    D(u8),
+  }
+
+  impl Code {
+    fn enc(c: &Code) -> u8 {
+      match c {
+        Code::I(i) => opcodes::encode(*i),
+        D(d) => *d,
+      }
+    }
+  }
+
+  use Code::*;
 
   #[test]
   fn machine_halts() {
-    let code = vec![1, 42, 59];
+    let code: Vec<u8> = vec![I(Constbyte), D(42), I(Stop)]
+      .iter()
+      .map(Code::enc)
+      .collect();
     let mut machine = Machine::new(&code);
     let accu = machine.interpret();
     if let Value::Int(int) = accu {
       assert_eq!(int, 42);
     } else {
-      assert!(false);
+      panic!("not an integer");
     }
   }
 }
