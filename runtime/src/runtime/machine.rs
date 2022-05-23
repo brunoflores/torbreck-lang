@@ -16,6 +16,7 @@ pub enum Value {
   // Bool(bool),
   // Record,         // TODO
   // Bytes(Vec<u8>), // Sequence of bytes.
+  Dummy,
   Atom0,
 }
 
@@ -188,85 +189,55 @@ impl<'a> Machine<'a> {
             None => panic!(),
           }
         }
+        Instruction::Let => {
+          // Put the value of the accumulator in front of the environment.
+          self.env.push(self.accu.clone());
+          self.step(None);
+        }
+        // Instruction::Letrec1 => {
+        //   // Same as [Dummy; Cur ofs; Update], a frequent sequence
+        //   // corresponding to [let ref f = function .. in ..].
+        //   self.step(None);
+        //   self.cache_size += 1;
+        //   self.rsp.push(RspValue::RetFrame(ReturnFrame {
+        //     pc: self.pc,
+        //     pers_env: vec![], // TODO
+        //     vol_env: vec![],
+        //   }));
+        //   self.step(None);
+        // }
+        Instruction::Endlet => {
+          // Throw away the first n local variables from the environment.
+          self.step(None);
+          let valofpc = self.mem[self.pc as usize];
+          for _ in 0..valofpc {
+            let _ = self.env.pop();
+          }
+          self.step(None);
+        }
+        Instruction::Endlet1 => {
+          let _ = self.env.pop();
+          self.step(None);
+        }
+        Instruction::Dummy => {
+          self.env.push(Value::Dummy);
+          self.step(None);
+        }
+        Instruction::Update => {
+          if let Value::Dummy = self.env.pop().unwrap() {
+            self.env.push(self.accu.clone());
+          } else {
+            panic!("expected a Dummy in the environment");
+          }
+          self.step(None);
+        }
+
         //         Instruction::Pop => {
         //           self.accu = match self.asp.pop() {
         //             Some(AspValue::Val(value)) => value,
         //             Some(AspValue::Mark) => self.panic_pc("popping a mark", instr),
         //             None => self.panic_pc("popping an empty argument stack", instr),
         //           };
-        //           self.step(None);
-        //         }
-        //         Instruction::Let => {
-        //           // Put the value of the accumulator in front of the environment.
-        //           self.rsp.push(RspValue::Val(self.accu.clone()));
-        //           self.cache_size += 1;
-        //           self.step(None);
-        //         }
-        //         Instruction::Endlet1 => {
-        //           if self.cache_size > 0 {
-        //             self.cache_size -= 1;
-        //             let _ = self.rsp.pop();
-        //           } else {
-        //             let _ = self.env.pop();
-        //           }
-        //           self.step(None);
-        //         }
-        //         Instruction::Endlet => {
-        //           // Throw away the first n local variables from the environment.
-        //           self.step(None);
-        //           let valofpc = self.mem[self.pc as usize];
-        //           if self.cache_size >= valofpc {
-        //             self.cache_size -= valofpc;
-        //             for _ in 0..valofpc {
-        //               let _ = self.rsp.pop();
-        //             }
-        //             // TODO Consider shrink_to_fit
-        //           } else {
-        //             for _ in 0..(valofpc - self.cache_size) {
-        //               // Pop, discard and de-allocates the respective boxed values
-        //               // from our heap.
-        //               let _ = self.env.pop();
-        //               // TODO Consider shrink_to_fit
-        //             }
-        //             for _ in 0..self.cache_size {
-        //               let _ = self.rsp.pop();
-        //               // TODO Consider shrink_to_fit
-        //             }
-        //             self.cache_size = 0;
-        //           }
-        //           self.step(None);
-        //         }
-        //         // I thought this was Dummy(n), but there's no n being used here?
-        //         Instruction::Dummy => {
-        //           // Put n dummy closures in front of the environment.
-        //           self.step(None);
-        //           let valofpc = self.mem[self.pc as usize];
-        //           assert!(valofpc > 0);
-        //           self.accu = Rc::new(Value::Dummy);
-        //           // This seemed wrong...
-        //           //  for _ in 0..valofpc {
-        //           //    self.env.push(Value::Dummy);
-        //           //  }
-        //           self.step(None);
-        //         }
-        //         // I thought this was Update(n), but there's no n being used here?
-        //         Instruction::Update => {
-        //           self.accu = if let Some(AspValue::Val(v)) = self.asp.pop() {
-        //             v
-        //           } else {
-        //             self.panic_pc("not a value", instr);
-        //           }
-        //         }
-        //         Instruction::Letrec1 => {
-        //           // Same as [Dummy; Cur ofs; Update], a frequent sequence
-        //           // corresponding to [let ref f = function .. in ..].
-        //           self.step(None);
-        //           self.cache_size += 1;
-        //           self.rsp.push(RspValue::RetFrame(ReturnFrame {
-        //             pc: self.pc,
-        //             pers_env: vec![], // TODO
-        //             vol_env: vec![],
-        //           }));
         //           self.step(None);
         //         }
         //         Instruction::Makeblock1 => {
