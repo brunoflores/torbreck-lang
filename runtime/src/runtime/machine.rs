@@ -72,8 +72,6 @@ impl<'a> Machine<'a> {
       match instr {
         Instruction::Stop => return self.accu.clone(),
         Instruction::Access => {
-          // Place in the accumulator the local variable of index mem[pc+1].
-          // Leave the rest of state untouched.
           self.accu =
             self.env[self.mem[(self.pc + 1) as usize] as usize].clone();
           self.step(Some(2));
@@ -796,6 +794,30 @@ mod tests {
       I(Constbyte),
       D(84),
       I(Divint),
+      I(Stop),
+    ]
+    .iter()
+    .map(Code::encode)
+    .collect();
+    let mut machine = Machine::new(&program);
+    let accu = machine.interpret();
+    if let Value::Int(int) = accu {
+      assert_eq!(int, 42);
+    } else {
+      panic!("not an integer");
+    }
+  }
+
+  // (\lambda x. x) 42
+  #[test]
+  fn machine_can_apply() {
+    let program: Vec<u8> = vec![
+      I(Constbyte),
+      D(42),
+      I(Push),
+      I(Grab),
+      I(Access),
+      D(0),
       I(Stop),
     ]
     .iter()
