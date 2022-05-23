@@ -198,12 +198,9 @@ impl<'a> Machine<'a> {
         //   // Same as [Dummy; Cur ofs; Update], a frequent sequence
         //   // corresponding to [let ref f = function .. in ..].
         //   self.step(None);
-        //   self.cache_size += 1;
-        //   self.rsp.push(RspValue::RetFrame(ReturnFrame {
-        //     pc: self.pc,
-        //     pers_env: vec![], // TODO
-        //     vol_env: vec![],
-        //   }));
+        //   self.rsp.push(Closure(self.pc, self.env.clone()));
+        //   self.step(None);
+        //   self.pc = self.pc + self.mem[self.pc as usize];
         //   self.step(None);
         // }
         Instruction::Endlet => {
