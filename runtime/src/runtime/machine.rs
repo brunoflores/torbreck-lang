@@ -216,14 +216,18 @@ impl<'a> Machine<'a> {
           self.step(None);
         }
         Instruction::Endlet1 => {
+          // Throw away the head of the environment.
           let _ = self.env.pop();
           self.step(None);
         }
         Instruction::Dummy => {
+          // Place a Dummy in the environment.
           self.env.push(Value::Dummy);
           self.step(None);
         }
         Instruction::Update => {
+          // Replace the head of the environment with the value in the
+          // accumulator.
           if let Value::Dummy = self.env.pop().unwrap() {
             self.env.push(self.accu.clone());
           } else {
