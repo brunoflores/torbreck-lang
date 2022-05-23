@@ -689,11 +689,11 @@ mod tests {
 
   #[test]
   fn machine_halts() {
-    let code: Vec<u8> = vec![I(Constbyte), D(42), I(Stop)]
+    let program: Vec<u8> = vec![I(Constbyte), D(42), I(Stop)]
       .iter()
       .map(Code::encode)
       .collect();
-    let mut machine = Machine::new(&code);
+    let mut machine = Machine::new(&program);
     let accu = machine.interpret();
     if let Value::Int(int) = accu {
       assert_eq!(int, 42);
