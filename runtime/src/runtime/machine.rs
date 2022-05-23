@@ -73,9 +73,9 @@ impl<'a> Machine<'a> {
       match instr {
         Instruction::Stop => return self.accu.clone(),
         Instruction::Access => {
-          self.accu =
-            self.env[self.mem[(self.pc + 1) as usize] as usize].clone();
-          self.step(Some(2));
+          self.step(None);
+          self.accu = self.access_nth(self.deref_pc()).clone();
+          self.step(None);
         }
         Instruction::Appterm => {
           // Application in tail-call position.
@@ -157,7 +157,9 @@ impl<'a> Machine<'a> {
         }
         Instruction::Cur => {
           // Abstraction using the stack.
-          self.accu = Value::Closure(Closure(self.pc, self.env.clone()));
+          self.step(None);
+          self.accu =
+            Value::Closure(Closure(self.deref_pc(), self.env.clone()));
           self.step(None);
         }
         Instruction::Return => {
@@ -660,6 +662,14 @@ impl<'a> Machine<'a> {
     }
   }
 
+  fn deref_pc(&self) -> u8 {
+    self.mem[self.pc as usize]
+  }
+
+  fn access_nth(&self, n: u8) -> &Value {
+    &self.env[n as usize]
+  }
+
   fn step(&mut self, n: Option<u8>) {
     match n {
       Some(n) => self.pc += n,
@@ -833,20 +843,22 @@ mod tests {
     }
   }
 
-  // Identity:
-  // (\lambda x. x x) (\lambda x. x)
   #[test]
-  fn machine_can_apply_id() {
-    let program: Vec<u8> = vec![I(Cur), I(Push), I(Stop)]
-      .iter()
-      .map(Code::encode)
-      .collect();
+  fn machine_can_cur() {
+    let program: Vec<u8> =
+      vec![I(Constbyte), D(42), I(Push), I(Grab), I(Cur), D(1), I(Stop)]
+        .iter()
+        .map(Code::encode)
+        .collect();
     let mut machine = Machine::new(&program);
     let accu = machine.interpret();
-    if let Value::Closure(Closure(0, _)) = accu {
-      assert!(true);
+    if let Value::Closure(Closure(1, env)) = accu {
+      match &env[..] {
+        [Value::Int(42)] => assert!(true),
+        _ => panic!("environment is empty"),
+      }
     } else {
-      assert!(false);
+      panic!("not a closure");
     }
   }
 }
