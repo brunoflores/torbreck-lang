@@ -679,7 +679,7 @@ mod tests {
   impl Code {
     fn enc(c: &Code) -> u8 {
       match c {
-        Code::I(i) => opcodes::encode(*i),
+        Code::I(i) => opcodes::encode(i),
         D(d) => *d,
       }
     }
