@@ -13,7 +13,8 @@ pub enum Value {
   // ConcreteTy { tag: u8, constructors: Vec<Value> },
   Int(i8),
   Float(f32),
-  Bool(bool),
+  True,
+  False,
   // Record,         // TODO
   // Bytes(Vec<u8>), // Sequence of bytes.
   Dummy,
@@ -481,9 +482,9 @@ impl<'a> Machine<'a> {
         }
         Instruction::Boolnot => {
           self.accu = match self.accu {
-            Value::Bool(false) => Value::Bool(true),
-            Value::Bool(true) => Value::Bool(false),
-            _ => panic!(),
+            Value::False => Value::True,
+            Value::True => Value::False,
+            _ => panic!("not a bool in the accumulator"),
           };
           self.step(None);
         }
@@ -681,7 +682,7 @@ impl<'a> Machine<'a> {
 
 #[cfg(test)]
 mod tests {
-  use super::{Machine, Value};
+  use super::{Closure, Machine, Value};
   use crate::runtime::opcodes;
   use crate::runtime::opcodes::{Instruction, Instruction::*};
 
@@ -829,6 +830,23 @@ mod tests {
       assert_eq!(int, 42);
     } else {
       panic!("not an integer");
+    }
+  }
+
+  // Identity:
+  // (\lambda x. x x) (\lambda x. x)
+  #[test]
+  fn machine_can_apply_id() {
+    let program: Vec<u8> = vec![I(Cur), I(Push), I(Stop)]
+      .iter()
+      .map(Code::encode)
+      .collect();
+    let mut machine = Machine::new(&program);
+    let accu = machine.interpret();
+    if let Value::Closure(Closure(0, _)) = accu {
+      assert!(true);
+    } else {
+      assert!(false);
     }
   }
 }

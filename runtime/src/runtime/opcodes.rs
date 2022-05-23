@@ -286,6 +286,7 @@ impl fmt::Display for Instruction {
 //     print "Instruction::" substr(toupper($1), 3,1)
 //     substr(tolower($1), 4) " => " i ","
 //   }'
+#[cfg(test)]
 pub fn encode(i: &Instruction) -> u8 {
   match i {
     Instruction::Constbyte => 1,
