@@ -474,6 +474,11 @@ impl<'a> Machine<'a> {
             _ => panic!(),
           }
         }
+        Instruction::Constbyte => {
+          self.step(None);
+          self.accu = Value::Int(self.mem[self.pc as usize] as i8);
+          self.step(None);
+        }
 
         //         Instruction::Pop => {
         //           self.accu = match self.asp.pop() {
@@ -667,11 +672,11 @@ mod tests {
 
   #[test]
   fn machine_halts() {
-    let code = vec![1, 0, 59];
+    let code = vec![1, 42, 59];
     let mut machine = Machine::new(&code);
     let accu = machine.interpret();
     if let Value::Int(int) = accu {
-      assert_eq!(int, 1);
+      assert_eq!(int, 42);
     } else {
       assert!(false);
     }
