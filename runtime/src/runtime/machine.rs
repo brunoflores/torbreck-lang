@@ -740,4 +740,27 @@ mod tests {
       panic!("not an integer");
     }
   }
+
+  #[test]
+  fn machine_can_sub() {
+    let program: Vec<u8> = vec![
+      I(Constbyte),
+      D(1),
+      I(Push),
+      I(Constbyte),
+      D(43),
+      I(Subint),
+      I(Stop),
+    ]
+    .iter()
+    .map(Code::encode)
+    .collect();
+    let mut machine = Machine::new(&program);
+    let accu = machine.interpret();
+    if let Value::Int(int) = accu {
+      assert_eq!(int, 42);
+    } else {
+      panic!("not an integer");
+    }
+  }
 }
