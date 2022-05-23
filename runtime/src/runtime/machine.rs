@@ -677,7 +677,7 @@ mod tests {
   }
 
   impl Code {
-    fn enc(c: &Code) -> u8 {
+    fn encode(c: &Code) -> u8 {
       match c {
         Code::I(i) => opcodes::encode(i),
         D(d) => *d,
@@ -691,7 +691,7 @@ mod tests {
   fn machine_halts() {
     let code: Vec<u8> = vec![I(Constbyte), D(42), I(Stop)]
       .iter()
-      .map(Code::enc)
+      .map(Code::encode)
       .collect();
     let mut machine = Machine::new(&code);
     let accu = machine.interpret();
