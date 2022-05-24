@@ -11,13 +11,13 @@ depends: [
   "base-unix" {= "base"}
   "base_quickcheck" {= "v0.15.0"}
   "bin_prot" {= "v0.15.0"}
-  "cppo" {= "1.6.8"}
+  "cppo" {= "1.6.9"}
   "csexp" {= "1.5.1"}
-  "dune" {= "3.1.1"}
-  "dune-configurator" {= "3.1.1"}
+  "dune" {= "3.2.0"}
+  "dune-configurator" {= "3.2.0"}
   "fieldslib" {= "v0.15.0"}
   "jane-street-headers" {= "v0.15.0"}
-  "jst-config" {= "v0.15.0"}
+  "jst-config" {= "v0.15.1"}
   "menhir" {= "20220210"}
   "menhirLib" {= "20220210"}
   "menhirSdk" {= "20220210"}
@@ -63,7 +63,7 @@ depends: [
   "ppx_typerep_conv" {= "v0.15.0"}
   "ppx_variants_conv" {= "v0.15.0"}
   "ppxlib" {= "0.26.0"}
-  "re" {= "1.10.3"}
+  "re" {= "1.10.4"}
   "result" {= "1.5"}
   "seq" {= "base"}
   "sexplib" {= "v0.15.0"}
