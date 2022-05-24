@@ -5,6 +5,7 @@ edition = "2018"
 
 [lib]
 path = "lib.rs"
+# https://doc.rust-lang.org/reference/linkage.html#linkage
 crate-type = ["staticlib"]
 
 [dependencies]

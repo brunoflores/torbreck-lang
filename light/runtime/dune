@@ -1,7 +1,9 @@
+; Do not use the whole Rust's target dir.
 (dirs :standard \ target)
 
 (rule
   (target librust_stdlib.a)
+  ; Only build when deps change.
   (deps Cargo.toml lib.rs)
   (action
     (progn
