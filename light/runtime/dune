@@ -1,0 +1,9 @@
+(dirs :standard \ target)
+
+(rule
+  (target librust_stdlib.a)
+  (deps Cargo.toml lib.rs)
+  (action
+    (progn
+     (run cargo build --release)
+     (run cp target/release/librust_stdlib.a .))))

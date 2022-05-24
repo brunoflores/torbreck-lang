@@ -1,3 +1,3 @@
 module Lexer = LightLib.Lexer
 
-let () = print_endline "Light"
+let () = LightStdLib.Io.print_string "Light"

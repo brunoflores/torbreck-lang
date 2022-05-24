@@ -1,6 +1,6 @@
 (executable
   (name light)
   (modules light)
-  (libraries lightLib)
+  (libraries lightLib lightStdLib)
   (preprocess
     (pps ppx_jane ppx_deriving.show)))

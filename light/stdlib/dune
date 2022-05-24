@@ -1,0 +1,4 @@
+(library
+ (name lightStdLib)
+ (flags (:standard -nopervasives))
+ (foreign_archives ../runtime/rust_stdlib))
