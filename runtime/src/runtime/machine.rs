@@ -864,7 +864,7 @@ mod tests {
         [Value::Int(42)] => assert!(true),
         _ => panic!("environment does not match"),
       },
-      Value::Fn(Closure(_, _)) => panic!("wrong pc"),
+      Value::Fn(Closure(pc, _)) => panic!("wrong pc: {}", pc),
       _ => panic!("not a closure: {:?}", accu),
     }
   }
