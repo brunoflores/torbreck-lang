@@ -46,11 +46,15 @@ impl Config {
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
   let contents = fs::read(config.filename)?;
+  let signed: Vec<i32> = contents
+    .into_iter()
+    .map(|e| if e <= 127 { e as i32 } else { (e - 128) as i32 })
+    .collect();
 
-  println!("with bytes: {:?}", contents);
-  println!("number of global variables: {}", contents[0]);
+  println!("with bytes: {:?}", signed);
+  // println!("number of global variables: {}", contents[0]);
 
-  let mut machine = Machine::new(&contents[1..]);
+  let mut machine = Machine::new(&signed[1..]);
   println!("starting interpretation - we might never return");
   let accu = machine.interpret();
   println!("returned - accumulator is: {:?}", accu);

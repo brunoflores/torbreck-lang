@@ -3,15 +3,15 @@ use crate::runtime::opcodes::Instruction;
 
 // TODO Public?
 #[derive(Debug, Clone)]
-pub struct Closure(u8, Vec<Value>);
+pub struct Closure(i32, Vec<Value>);
 
 // TODO Public?
 // Value is either a closure representing a function, or a constant.
 #[derive(Debug, Clone)]
 pub enum Value {
-  Closure(Closure),
+  Fn(Closure),
   // ConcreteTy { tag: u8, constructors: Vec<Value> },
-  Int(i8),
+  Int(i32),
   Float(f32),
   True,
   False,
@@ -45,8 +45,8 @@ enum AspValue {
 
 #[derive(Debug)]
 pub struct Machine<'a> {
-  pc: u8,             // Code pointer.
-  mem: &'a [u8],      // Program memory in bytes.
+  pc: i32,            // Code pointer.
+  mem: &'a [i32],     // Program memory in bytes.
   env: Vec<Value>,    // Current environment.
   asp: Vec<AspValue>, // Argument stack.
   rsp: Vec<Closure>,  // Return stack.
@@ -54,7 +54,7 @@ pub struct Machine<'a> {
 }
 
 impl<'a> Machine<'a> {
-  pub fn new(mem: &'a [u8]) -> Self {
+  pub fn new(mem: &'a [i32]) -> Self {
     Machine {
       mem,
       pc: 0,
@@ -80,7 +80,7 @@ impl<'a> Machine<'a> {
         Instruction::Appterm => {
           // Application in tail-call position.
           // There is no need to push a mark in the argument stack.
-          if let Value::Closure(Closure(c1, e1)) = &self.accu {
+          if let Value::Fn(Closure(c1, e1)) = &self.accu {
             self.pc = *c1;
             self.env = {
               let mut e1 = e1.clone();
@@ -97,7 +97,7 @@ impl<'a> Machine<'a> {
         }
         Instruction::Apply => {
           // Application using the return stack.
-          if let Value::Closure(Closure(c1, e1)) = &self.accu {
+          if let Value::Fn(Closure(c1, e1)) = &self.accu {
             // Read current state...
             self.rsp.push(Closure(self.pc, self.env.clone()));
             // now modify it...
@@ -147,7 +147,7 @@ impl<'a> Machine<'a> {
             Some(AspValue::Mark) => {
               let Closure(c1, e1) = self.rsp.pop().unwrap();
               // Read current state...
-              self.accu = Value::Closure(Closure(self.pc, self.env.clone()));
+              self.accu = Value::Fn(Closure(self.pc, self.env.clone()));
               // now modify it...
               self.pc = c1;
               self.env = e1;
@@ -159,7 +159,7 @@ impl<'a> Machine<'a> {
           // Abstraction using the stack.
           self.step(None);
           self.accu =
-            Value::Closure(Closure(self.deref_pc(), self.env.clone()));
+            Value::Fn(Closure(self.pc + self.deref_pc(), self.env.clone()));
           self.step(None);
         }
         Instruction::Return => {
@@ -176,7 +176,7 @@ impl<'a> Machine<'a> {
               self.env = e1;
             }
             Some(AspValue::Val(v)) => {
-              if let Value::Closure(Closure(c1, e1)) = &self.accu {
+              if let Value::Fn(Closure(c1, e1)) = &self.accu {
                 self.pc = *c1;
                 self.env = {
                   let mut e1 = e1.clone();
@@ -394,7 +394,7 @@ impl<'a> Machine<'a> {
           if let Value::Int(i) = self.accu {
             self.accu =
               if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
-                Value::Int(((i as u8) >> y) as i8) // Can crash.
+                Value::Int(((i as u8) >> y) as i32) // Can crash.
               } else {
                 self.panic_pc("not an integer in asp", instr);
               }
@@ -476,7 +476,7 @@ impl<'a> Machine<'a> {
         }
         Instruction::Intoffloat => {
           self.accu = if let Value::Float(f) = self.accu {
-            Value::Int(f as i8)
+            Value::Int(f as i32)
           } else {
             self.panic_pc("not a float", instr);
           };
@@ -492,7 +492,7 @@ impl<'a> Machine<'a> {
         }
         Instruction::Constbyte => {
           self.step(None);
-          self.accu = Value::Int(self.mem[self.pc as usize] as i8);
+          self.accu = Value::Int(self.mem[self.pc as usize] as i32);
           self.step(None);
         }
 
@@ -579,11 +579,11 @@ impl<'a> Machine<'a> {
         //         }
         //         Instruction::Getfield0 => {
         //           self.accu = match self.accu {
-        //             Value::Closure { code, env: _ } => Value::Int(code as i8),
+        //             Value::Closure { code, env: _ } => Value::Int(code as i32),
         //             Value::ConcreteTy {
         //               tag,
         //               constructors: _,
-        //             } => Value::Int(tag as i8),
+        //             } => Value::Int(tag as i32),
         //             _ => self.panic_pc("not implemented", instr),
         //           };
         //           self.step(None);
@@ -662,15 +662,15 @@ impl<'a> Machine<'a> {
     }
   }
 
-  fn deref_pc(&self) -> u8 {
+  fn deref_pc(&self) -> i32 {
     self.mem[self.pc as usize]
   }
 
-  fn access_nth(&self, n: u8) -> &Value {
+  fn access_nth(&self, n: i32) -> &Value {
     &self.env[n as usize]
   }
 
-  fn step(&mut self, n: Option<u8>) {
+  fn step(&mut self, n: Option<i32>) {
     match n {
       Some(n) => self.pc += n,
       None => self.pc += 1,
@@ -698,11 +698,11 @@ mod tests {
 
   enum Code {
     I(Instruction), // Instruction
-    D(u8),          // Data
+    D(i32),         // Data
   }
 
   impl Code {
-    fn encode(c: &Code) -> u8 {
+    fn encode(c: &Code) -> i32 {
       match c {
         Code::I(i) => opcodes::encode(i),
         D(d) => *d,
@@ -714,7 +714,7 @@ mod tests {
 
   #[test]
   fn machine_halts() {
-    let program: Vec<u8> = vec![I(Constbyte), D(42), I(Stop)]
+    let program: Vec<i32> = vec![I(Constbyte), D(42), I(Stop)]
       .iter()
       .map(Code::encode)
       .collect();
@@ -729,7 +729,7 @@ mod tests {
 
   #[test]
   fn machine_can_add() {
-    let program: Vec<u8> = vec![
+    let program: Vec<i32> = vec![
       I(Constbyte),
       D(42),
       I(Push),
@@ -752,7 +752,7 @@ mod tests {
 
   #[test]
   fn machine_can_sub() {
-    let program: Vec<u8> = vec![
+    let program: Vec<i32> = vec![
       I(Constbyte),
       D(1),
       I(Push),
@@ -775,7 +775,7 @@ mod tests {
 
   #[test]
   fn machine_can_mul() {
-    let program: Vec<u8> = vec![
+    let program: Vec<i32> = vec![
       I(Constbyte),
       D(2),
       I(Push),
@@ -798,7 +798,7 @@ mod tests {
 
   #[test]
   fn machine_can_div() {
-    let program: Vec<u8> = vec![
+    let program: Vec<i32> = vec![
       I(Constbyte),
       D(2),
       I(Push),
@@ -822,7 +822,7 @@ mod tests {
   // (\lambda x. x) 42
   #[test]
   fn machine_can_apply() {
-    let program: Vec<u8> = vec![
+    let program: Vec<i32> = vec![
       I(Constbyte),
       D(42),
       I(Push),
@@ -845,20 +845,27 @@ mod tests {
 
   #[test]
   fn machine_can_cur() {
-    let program: Vec<u8> =
-      vec![I(Constbyte), D(42), I(Push), I(Grab), I(Cur), D(1), I(Stop)]
-        .iter()
-        .map(Code::encode)
-        .collect();
+    let program: Vec<i32> = vec![
+      I(Constbyte),
+      D(42),
+      I(Push),
+      I(Grab),
+      I(Cur),
+      D(-5),
+      I(Stop),
+    ]
+    .iter()
+    .map(Code::encode)
+    .collect();
     let mut machine = Machine::new(&program);
     let accu = machine.interpret();
-    if let Value::Closure(Closure(1, env)) = accu {
-      match &env[..] {
+    match accu {
+      Value::Fn(Closure(0, env)) => match &env[..] {
         [Value::Int(42)] => assert!(true),
-        _ => panic!("environment is empty"),
-      }
-    } else {
-      panic!("not a closure");
+        _ => panic!("environment does not match"),
+      },
+      Value::Fn(Closure(_, _)) => panic!("wrong pc"),
+      _ => panic!("not a closure: {:?}", accu),
     }
   }
 }
