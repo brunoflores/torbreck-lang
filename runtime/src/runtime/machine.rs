@@ -868,4 +868,29 @@ mod tests {
       _ => panic!("not a closure: {:?}", accu),
     }
   }
+
+  // Identity:
+  // (\lambda x. x) 42
+  #[test]
+  fn machine_can_apply_id() {
+    let program: Vec<i32> = vec![
+      I(Constbyte),
+      D(42),
+      I(Push),
+      I(Grab),
+      I(Access),
+      D(0),
+      I(Stop),
+    ]
+    .iter()
+    .map(Code::encode)
+    .collect();
+
+    let mut machine = Machine::new(&program);
+    let accu = machine.interpret();
+    match accu {
+      Value::Int(x) => assert_eq!(x, 42),
+      _ => panic!("not 42"),
+    }
+  }
 }
