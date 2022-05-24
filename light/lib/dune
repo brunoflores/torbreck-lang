@@ -1,0 +1,13 @@
+(ocamllex
+ (modules lexer))
+
+(menhir
+ (modules parser)
+ (flags --table --strict))
+
+(library
+ (name lightLib)
+ (inline_tests)
+ (libraries stdio menhirLib)
+ (preprocess
+  (pps ppx_deriving.show ppx_inline_test)))
