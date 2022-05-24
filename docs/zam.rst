@@ -22,10 +22,10 @@ this multiple application.
 Why care? Maybe this bad behaviour is unavoidable and these closures are the
 price to pay for the additional flexibility of curried functions.
 
-Krivine's machine
-=================
+Krivine Machine
+==================
 
-Three components:
+The Krivine Machine [#]_ has three major components:
 
 + term,
 + stack,
@@ -709,3 +709,4 @@ The linker and the runtime system
 .. [CAM]
 .. [FAM]
 .. [SECD]
+.. [#] https://en.wikipedia.org/wiki/Krivine_machine
