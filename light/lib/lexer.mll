@@ -27,3 +27,6 @@ rule read = parse
             Hashtbl.find symbolTable s
           with Not_found ->
             IDENT s }
+  | "=" { EQUAL }
+  | "(" { LPAREN }
+  | ")" { RPAREN }
