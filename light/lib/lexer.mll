@@ -3,7 +3,8 @@
 open Parser
 
 let reservedWords = [
-  ("and", AND);
+  ("let", LET);
+  ("in", IN);
 ]
 
 let (symbolTable : (string, token) Hashtbl.t) = Hashtbl.create 149
@@ -17,3 +18,12 @@ let line_break = [' ' '\009' '\012']*"\n"
 rule read = parse
   | white
     { read lexbuf }
+  | line_break
+    { read lexbuf }
+  | ['A'-'Z' 'a'-'z']
+    ( '_' ? ['A'-'Z' 'a'-'z' '\'' '0'-'9' ] )
+      { let s = Lexing.lexeme lexbuf in
+          try
+            Hashtbl.find symbolTable s
+          with Not_found ->
+            IDENT s }
