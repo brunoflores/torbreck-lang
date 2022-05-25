@@ -1,5 +1,4 @@
-(* module Lexer = LightLib.Lexer *)
-(* let () = LightStdLib.Io.print_string "Light" *)
+(* Command-line parsing *)
 
 open LightLib.Compiler
 
@@ -14,8 +13,11 @@ let () =
   Arg.parse spec readfname usage;
   match !filename with
   | Some f ->
-      compile_implementation f;
-      exit 0
+      if Filename.check_suffix f ".ml" then (
+        let filename = Filename.chop_suffix ".ml" in
+        compile_implementation filename ".ml";
+        exit 0)
+      else exit 1
   | None ->
       print_endline usage;
       exit 0
