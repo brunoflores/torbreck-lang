@@ -27,6 +27,14 @@ rule read = parse
             Hashtbl.find symbolTable s
           with Not_found ->
             IDENT s }
+  | ['0'-'9']+
+    { INT (int_of_string (Lexing.lexeme lexbuf)) }
   | "=" { EQUAL }
   | "(" { LPAREN }
   | ")" { RPAREN }
+  | ";" { SEMI }
+  | ";;" { SEMISEMI }
+  | eof
+    { EOF }
+  | _
+    { raise (Failure "Lexer: Illegal character") }

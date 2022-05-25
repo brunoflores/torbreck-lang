@@ -18,6 +18,7 @@ open Syntax
 %token EQUAL
 %token LPAREN
 %token RPAREN
+%token SEMI
 %token SEMISEMI
 
 /* The end-of-file marker */

@@ -14,7 +14,7 @@ let () =
   match !filename with
   | Some f ->
       if Filename.check_suffix f ".ml" then (
-        let filename = Filename.chop_suffix ".ml" in
+        let filename = Filename.chop_suffix f ".ml" in
         compile_implementation filename ".ml";
         exit 0)
       else exit 1
