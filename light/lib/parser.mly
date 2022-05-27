@@ -2,6 +2,8 @@
 open Const
 open Paraux
 open Syntax
+open Globals
+open Primdecl
 %}
 
 /* Identifiers, prefixes and infixes */
@@ -29,6 +31,12 @@ open Syntax
 
 /* The end-of-file marker */
 %token EOF
+
+/* Precedences and associativities. Lower precedences first. */
+
+%right MINUSGREATER
+
+/* Entry points */
 
 %start <Syntax.impl_phrase> implementation
 %start <Syntax.intf_phrase> interface

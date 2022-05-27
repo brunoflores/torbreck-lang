@@ -43,6 +43,7 @@ type primitive =
   | Pvectlength
   | Pgetvectitem
   | Psetvectitem
+  | Pprintstring
 [@@deriving show]
 
 and float_primitive =
