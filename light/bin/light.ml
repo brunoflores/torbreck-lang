@@ -13,10 +13,11 @@ let () =
   Arg.parse spec readfname usage;
   match !filename with
   | Some f ->
-      if Filename.check_suffix f ".ml" then (
+      if Filename.check_suffix f ".ml" then begin
         let filename = Filename.chop_suffix f ".ml" in
         compile_implementation filename ".ml";
-        exit 0)
+        exit 0
+      end
       else exit 1
   | None ->
       print_endline usage;
