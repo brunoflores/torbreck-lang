@@ -4,13 +4,15 @@ open Location
 open Const
 open Globals
 
-type pattern
+type pattern = { p_desc : pattern_desc; p_loc : location }
+and pattern_desc = Zwildpat [@@deriving show]
 
 type expression = {
   e_desc : expression_desc;
   e_loc : location;
   mutable e_typ : typ;
 }
+[@@deriving show]
 
 and expression_desc = Zident of expr_ident ref | Zconstant of struct_constant
 (* | Ztuple of expression list *)
@@ -33,8 +35,10 @@ and expression_desc = Zident of expr_ident ref | Zconstant of struct_constant
 (* | Zstream of stream_component list *)
 (* | Zparser of (stream_pattern list * expression) list *)
 (* | Zwhen of expression * expression *)
+[@@deriving show]
 
 and expr_ident = Zglobal of value_desc global | Zlocal of string
+[@@deriving show]
 
 type impl_phrase = { im_desc : impl_desc; im_loc : location }
 
@@ -44,6 +48,7 @@ and impl_desc =
 (* | Ztypedef of (string * string list * type_decl) list *)
 (* | Zexcdef of constr_decl list *)
 (* | Zimpldirective of directiveu *)
+[@@deriving show]
 
 (* type intf_phrase = { in_desc : intf_desc; in_loc : location } *)
 
@@ -52,3 +57,6 @@ and impl_desc =
 (*   | Ztypedecl of (string * string list * type_decl) list *)
 (*   | Zexcdecl of constr_decl list *)
 (*   | Zintfdirective of directiveu *)
+
+let expr_is_pure expr =
+  match expr.e_desc with Zident _ -> true | Zconstant _ -> true
