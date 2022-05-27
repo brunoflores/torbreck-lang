@@ -5,17 +5,24 @@ synopsis: "A compiler"
 maintainer: "Bruno Flores <bruno@brunoflores.com.br>"
 license: "APACHE-2.0"
 depends: [
+  "astring" {= "0.8.5"}
   "base" {= "v0.15.0"}
   "base-bigarray" {= "base"}
+  "base-bytes" {= "base"}
   "base-threads" {= "base"}
   "base-unix" {= "base"}
   "base_quickcheck" {= "v0.15.0"}
   "bin_prot" {= "v0.15.0"}
+  "cmdliner" {= "1.1.1"}
   "cppo" {= "1.6.9"}
   "csexp" {= "1.5.1"}
   "dune" {= "3.2.0"}
+  "dune-build-info" {= "3.2.0"}
   "dune-configurator" {= "3.2.0"}
+  "either" {= "1.0.0"}
   "fieldslib" {= "v0.15.0"}
+  "fix" {= "20220121"}
+  "fpath" {= "0.7.3"}
   "jane-street-headers" {= "v0.15.0"}
   "jst-config" {= "v0.15.1"}
   "menhir" {= "20220210"}
@@ -28,7 +35,12 @@ depends: [
   "ocaml-option-flambda" {= "1"}
   "ocaml-option-nnpchecker" {= "1"}
   "ocaml-variants" {= "4.14.0+options"}
+  "ocaml-version" {= "3.4.0"}
+  "ocamlbuild" {= "0.14.1"}
   "ocamlfind" {= "1.9.3"}
+  "ocamlformat" {= "0.22.4"}
+  "ocp-indent" {= "1.8.1"}
+  "odoc-parser" {= "1.0.0"}
   "parsexp" {= "v0.15.0"}
   "ppx_assert" {= "v0.15.0"}
   "ppx_base" {= "v0.15.0"}
@@ -72,6 +84,10 @@ depends: [
   "stdio" {= "v0.15.0"}
   "stdlib-shims" {= "0.3.0"}
   "time_now" {= "v0.15.0"}
+  "topkg" {= "1.0.5"}
   "typerep" {= "v0.15.0"}
+  "uucp" {= "14.0.0"}
+  "uuseg" {= "14.0.0"}
+  "uutf" {= "1.0.3"}
   "variantslib" {= "v0.15.0"}
 ]
