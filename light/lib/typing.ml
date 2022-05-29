@@ -60,11 +60,50 @@ let type_of_structured_constant = function
   | SCatom ac -> type_of_atomic_constant ac
   | _ -> failwith "not implemented: Typing.type_of_structured_constant"
 
-let type_expr _env expr =
+(* Typing of expressions *)
+
+let unify_expr expr expected_ty actual_ty =
+  try unify (expected_ty, actual_ty)
+  with Unify -> expr_wrong_type_err expr actual_ty expected_ty
+
+let rec type_expr env expr =
   let inferred_ty =
     match expr.e_desc with
     | Zconstant c -> type_of_structured_constant c
-    | _ -> failwith "not implemented: Typing.type_expr"
+    | Zapply (fn, args) ->
+        let ty_fn = type_expr env fn in
+        let rec type_args ty_res = function
+          | [] -> ty_res
+          | arg1 :: arg_rest ->
+              let ty1, ty2 =
+                try filter_arrow ty_res
+                with Unify -> application_of_non_function_err fn ty_fn
+              in
+              type_expect env arg1 ty1;
+              type_args ty2 arg_rest
+        in
+        type_args ty_fn args
+    | _ as d ->
+        Printf.printf "%s\n" (Syntax.show_expression_desc d);
+        failwith "Typing.type_expr"
   in
   expr.e_typ <- inferred_ty;
   inferred_ty
+
+and type_expect env exp expected_ty =
+  match exp.e_desc with
+  | Zconstant (SCatom (ACstring _)) ->
+      let actual_ty =
+        begin
+          match (type_repr expected_ty).typ_desc with
+          (* https://github.com/brunoflores/camllight/blob/master/sources/src/compiler/typing.ml#L457 *)
+          (* | Tconstr (cstr, _) ->
+           *     if cstr = constr_type_format then type_format exp.e_loc s
+           *     else type_string *)
+          | _ -> type_string
+        end
+      in
+      unify_expr exp expected_ty actual_ty
+  (* To do: try...with, match...with ? *)
+  (* https://github.com/brunoflores/camllight/blob/master/sources/src/compiler/typing.ml#L480 *)
+  | _ -> unify_expr exp expected_ty (type_expr env exp)

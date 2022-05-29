@@ -3,6 +3,7 @@
 open Location
 open Syntax
 open Globals
+open Types
 
 let output_globalref oc = function
   | GRname s -> output_string oc s
@@ -60,3 +61,21 @@ let cannot_generalize_err val_desc =
     (Globals.show_value_desc val_desc.info)
     (Globals.show_typ val_desc.info.val_typ);
   raise @@ Failure "cannot_generalize_err"
+
+let application_of_non_function_err exp ty =
+  begin
+    try
+      let _ = filter_arrow ty in
+      Printf.eprintf "This function is applied to too many arguments.\n"
+    with Unify ->
+      Printf.eprintf
+        "This expression is not a function, it cannot be applied: %s.\n"
+        (Syntax.show_expression exp)
+  end;
+  raise @@ Failure "application_of_non_function_err"
+
+let expr_wrong_type_err _exp actual_ty expected_ty =
+  Printf.eprintf "This expression has type %s but is used with type %s.\n"
+    (Globals.show_typ actual_ty)
+    (Globals.show_typ expected_ty);
+  raise @@ Failure "expr_wrong_type_err"

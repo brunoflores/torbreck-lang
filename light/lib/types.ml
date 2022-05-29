@@ -34,6 +34,14 @@ and pop_type_level () = decr current_level
 let new_type_var () =
   { typ_desc = Tvar { link = Tnolink }; typ_level = !current_level }
 
+let rec type_var_list n level =
+  if n <= 0 then []
+  else
+    { typ_desc = Tvar { link = Tnolink }; typ_level = level }
+    :: type_var_list (pred n) level
+
+let new_type_var_list n = type_var_list n !current_level
+
 let new_global_type_var () =
   { typ_desc = Tvar { link = Tnolink }; typ_level = 1 }
 
@@ -177,6 +185,92 @@ let occur_check level0 v =
     | { typ_desc = Tconstr (_, ty_list); _ } -> List.exists occurs_rec ty_list
   in
   occurs_rec
+
+let rec unify (ty1, ty2) =
+  if ty1 == ty2 then ()
+  else begin
+    let ty1 = type_repr ty1 in
+    let ty2 = type_repr ty2 in
+    if ty1 == ty2 then ()
+    else begin
+      match (ty1.typ_desc, ty2.typ_desc) with
+      | Tvar link1, Tvar link2 ->
+          if ty1.typ_level < ty2.typ_level then begin
+            ty2.typ_level <- ty1.typ_level;
+            link2.link <- Tlinkto ty1
+          end
+          else begin
+            ty1.typ_level <- ty2.typ_level;
+            link1.link <- Tlinkto ty2
+          end
+      | Tvar link1, _ when not (occur_check ty1.typ_level ty1 ty2) ->
+          link1.link <- Tlinkto ty2
+      | _, Tvar link2 when not (occur_check ty2.typ_level ty2 ty1) ->
+          link2.link <- Tlinkto ty1
+      | Tarrow (t1arg, t1res), Tarrow (t2arg, t2res) ->
+          unify (t1arg, t2arg);
+          unify (t1res, t2res)
+      | Tproduct tyl1, Tproduct tyl2 -> unify_list (tyl1, tyl2)
+      | Tconstr (cstr1, []), Tconstr (cstr2, [])
+        when cstr1.info.ty_stamp == cstr2.info.ty_stamp
+             && cstr1.qualid.qual = cstr2.qualid.qual ->
+          ()
+      | Tconstr ({ info = { ty_abbr = Tabbrev (params, body); _ }; _ }, args), _
+        ->
+          unify (expand_abbrev params body args, ty2)
+      | _, Tconstr ({ info = { ty_abbr = Tabbrev (params, body); _ }; _ }, args)
+        ->
+          unify (ty1, expand_abbrev params body args)
+      | Tconstr (cstr1, tyl1), Tconstr (cstr2, tyl2)
+        when cstr1.info.ty_stamp == cstr2.info.ty_stamp
+             && cstr1.qualid.qual = cstr2.qualid.qual ->
+          unify_list (tyl1, tyl2)
+      | _, _ -> raise Unify
+    end
+  end
+
+and unify_list = function
+  | [], [] -> ()
+  | ty1 :: rest1, ty2 :: rest2 ->
+      unify (ty1, ty2);
+      unify_list (rest1, rest2)
+  | _ -> raise Unify
+
+(* Two special cases of unification *)
+
+let rec filter_arrow ty =
+  match type_repr ty with
+  | { typ_desc = Tvar link; typ_level = level } ->
+      let ty1 = { typ_desc = Tvar { link = Tnolink }; typ_level = level } in
+      let ty2 = { typ_desc = Tvar { link = Tnolink }; typ_level = level } in
+      link.link <-
+        Tlinkto { typ_desc = Tarrow (ty1, ty2); typ_level = notgeneric };
+      (ty1, ty2)
+  | { typ_desc = Tarrow (ty1, ty2); _ } -> (ty1, ty2)
+  | {
+   typ_desc =
+     Tconstr ({ info = { ty_abbr = Tabbrev (params, body); _ }; _ }, args);
+   _;
+  } ->
+      filter_arrow (expand_abbrev params body args)
+  | _ -> raise Unify
+
+let rec filter_product arity ty =
+  match type_repr ty with
+  | { typ_desc = Tvar link; typ_level = level } ->
+      let ty_list = type_var_list arity level in
+      link.link <-
+        Tlinkto { typ_desc = Tproduct ty_list; typ_level = notgeneric };
+      ty_list
+  | { typ_desc = Tproduct ty_list; _ } ->
+      if List.length ty_list == arity then ty_list else raise Unify
+  | {
+   typ_desc =
+     Tconstr ({ info = { ty_abbr = Tabbrev (params, body); _ }; _ }, args);
+   _;
+  } ->
+      filter_product arity (expand_abbrev params body args)
+  | _ -> raise Unify
 
 (* Type matching.
  *
