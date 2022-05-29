@@ -20,6 +20,7 @@ type module' = {
 
 let values_of_module md = md.mod_values
 and types_of_module md = md.mod_types
+and constrs_of_module md = md.mod_constrs
 
 let module_table = (Hashtbl.create 37 : (string, module') Hashtbl.t)
 
@@ -144,6 +145,8 @@ let add_global_info sel_fct glob =
   Hashtbl.add tbl glob.qualid.id glob
 
 let add_value = add_global_info values_of_module
+and add_constr = add_global_info constrs_of_module
+and add_type = add_global_info types_of_module
 
 (* Find the descriptor for a reference to a global identifier.
     If the identifier is qualified (mod__name), just look into module mod.

@@ -2,6 +2,7 @@
 
 open Syntax
 open Ty_decl
+open Ty_intf
 open Emit_phr
 open Front
 open Back
@@ -99,6 +100,7 @@ let compile_implementation modname filename suffix =
       in
       let intf = read_module modname intfname in
       start_compiling_implementation modname intf;
+      enter_interface_definitions intf;
       ()
     with x -> (* Sys.remove (filename ^ ".zo"); *)
               raise x

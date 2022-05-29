@@ -5,6 +5,14 @@ open Typing
 open Modules
 open Globals
 
+type external_type = {
+  et_descr : type_desc global;
+  et_manifest : bool;
+  mutable et_defined : bool;
+}
+
+let external_types = ref ([] : (string * external_type) list)
+
 let type_expression _loc expr =
   push_type_level ();
   let ty = type_expr [] expr in
