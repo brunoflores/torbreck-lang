@@ -101,6 +101,10 @@ ide:
   | i = IDENT
     { i }
 
+ext_ident:
+  | id = ide
+    { GRname id }
+
 /* Type expressions */
 
 typ:
@@ -112,6 +116,10 @@ typ:
 simple_type:
   | ty = type_var
     { make_typ (Ztypevar ty) }
+  | id = ext_ident
+    { make_typ (Ztypeconstr (id, [])) }
+  | ty = simple_type id = ext_ident
+    { make_typ (Ztypeconstr (id, [ty])) }
 
 type_var:
   | QUOTE id = IDENT
