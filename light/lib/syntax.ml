@@ -9,6 +9,7 @@ type type_expression = { te_desc : type_expression_desc; te_loc : location }
 and type_expression_desc =
   | Ztypevar of string
   | Ztypearrow of type_expression * type_expression
+  | Ztypeconstr of global_reference * type_expression list
 
 type pattern = { p_desc : pattern_desc; p_loc : location }
 and pattern_desc = Zwildpat [@@deriving show]
