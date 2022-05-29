@@ -28,8 +28,41 @@ and type_abbrev =
 and typ = { typ_desc : typ_desc; mutable typ_level : int } [@@deriving show]
 
 and typ_desc =
+  | Tvar of typ_link (* A type variable *)
+  | Tarrow of typ * typ (* A function type *)
   | Tproduct of typ list (* A tuple type *)
   | Tconstr of type_constr global * typ list (* A constructed type *)
+
+and typ_link =
+  | Tnolink (* Free variable *)
+  | Tlinkto of typ (* Instantiated variable *)
+
+(* Type constructor descriptions *)
+
+type type_desc = {
+  ty_constr : type_constr global; (* The constructor *)
+  ty_arity : int; (* Its arity *)
+  mutable ty_desc : type_components; (* Its description *)
+}
+[@@deriving show]
+
+and type_components = Abstract_type | Variant_type of constr_desc global list
+
+(* Value constructors *)
+and constr_desc = {
+  cs_res : typ; (* Result type *)
+  cs_arg : typ; (* Argument type *)
+  cs_mut : mutable_flag; (* Mutable or not *)
+  cs_tag : constr_tag; (* Its run-time tag *)
+  cs_kind : constr_kind; (* How it is represented *)
+}
+
+and mutable_flag = Mutable | Notmutable
+
+and constr_kind =
+  | Constr_constant (* Constant constructor *)
+  | Constr_regular (* Usual constructor *)
+  | Constr_superfluous of int (* Superfluous constructur with its arity *)
 
 (* Labels *)
 
