@@ -101,6 +101,8 @@ let compile_implementation modname filename suffix =
       let intf = read_module modname intfname in
       start_compiling_implementation modname intf;
       enter_interface_definitions intf;
+      compile_impl filename suffix;
+      check_interface intf;
       ()
     with x -> (* Sys.remove (filename ^ ".zo"); *)
               raise x

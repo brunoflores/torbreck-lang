@@ -31,3 +31,25 @@ let displacement_overflow () =
   Printf.eprintf "%tPhrase too large, a relative displacement overflowed.\n"
     output_input_name;
   raise @@ Failure "displacement_overflow"
+
+let undefined_value_err val_desc =
+  Printf.eprintf
+    "The value %s is declared in the interface but not implemented.\n"
+    (Globals.show_value_desc val_desc);
+  raise @@ Failure "undefined_value_err"
+
+let type_mismatch_err val_desc val_desc' =
+  Printf.eprintf
+    "The value %s is declared with type %s, but defined with type %s.\n"
+    (Globals.show_value_desc val_desc.info)
+    (Globals.show_typ val_desc.info.val_typ)
+    (Globals.show_typ val_desc'.info.val_typ);
+  raise @@ Failure "type_mismatch_err"
+
+let cannot_generalize_err val_desc =
+  Printf.eprintf
+    "The type inferred for the value %s, that is %s, contains type variables \
+     that cannot be generalized.\n"
+    (Globals.show_value_desc val_desc.info)
+    (Globals.show_typ val_desc.info.val_typ);
+  raise @@ Failure "cannot_generalize_err"

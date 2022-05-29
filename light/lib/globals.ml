@@ -29,7 +29,7 @@ and type_abbrev =
 and typ = { typ_desc : typ_desc; mutable typ_level : int } [@@deriving show]
 
 and typ_desc =
-  | Tvar of typ_link (* A type variable *)
+  | Tvar of { mutable link : typ_link } (* A type variable *)
   | Tarrow of typ * typ (* A function type *)
   | Tproduct of typ list (* A tuple type *)
   | Tconstr of type_constr global * typ list (* A constructed type *)

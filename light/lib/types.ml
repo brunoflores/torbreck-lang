@@ -2,8 +2,24 @@
 
 open Globals
 
+(* Type constructor equality *)
+let same_type_constr cstr1 cstr2 =
+  cstr1.info.ty_stamp == cstr2.info.ty_stamp
+  && cstr1.qualid.qual = cstr2.qualid.qual
+
 (* To take the canonical representative of a type *)
-let type_repr ty = match ty.typ_desc with _ -> ty
+let rec type_repr ty =
+  match ty.typ_desc with
+  | Tvar r -> begin
+      match r.link with
+      | Tnolink -> ty
+      | Tlinkto t1 -> begin
+          let t2 = type_repr t1 in
+          r.link <- Tlinkto t2;
+          t2
+        end
+    end
+  | _ -> ty
 
 (* The current nesting level of lets *)
 
@@ -15,7 +31,27 @@ and pop_type_level () = decr current_level
 
 (* To get fresh type variables *)
 
-let new_global_type_var () = { typ_desc = Tvar Tnolink; typ_level = 1 }
+let new_type_var () =
+  { typ_desc = Tvar { link = Tnolink }; typ_level = !current_level }
+
+let new_global_type_var () =
+  { typ_desc = Tvar { link = Tnolink }; typ_level = 1 }
+
+(* Compute the free type variables in a type *)
+let free_type_vars level ty =
+  let fv = ref [] in
+  let rec free_vars ty =
+    let ty = type_repr ty in
+    match ty.typ_desc with
+    | Tvar _ -> if ty.typ_level >= level then fv := ty :: !fv
+    | Tarrow (t1, t2) ->
+        free_vars t1;
+        free_vars t2
+    | Tproduct ty_list -> List.iter free_vars ty_list
+    | Tconstr (_, ty_list) -> List.iter free_vars ty_list
+  in
+  free_vars ty;
+  !fv
 
 (* To generalize a type *)
 
@@ -43,3 +79,149 @@ and gen_type_list = function
 let generalize_type ty =
   let _ = gen_type ty in
   ()
+
+(* Take an instance of a type *)
+
+let rec copy_type = function
+  | { typ_desc = Tvar link; typ_level = level } as ty -> begin
+      match link.link with
+      | Tnolink ->
+          if level == generic then begin
+            let v = new_type_var () in
+            link.link <- Tlinkto v;
+            v
+          end
+          else ty
+      | Tlinkto ty -> if level == generic then ty else copy_type ty
+    end
+  | { typ_desc = Tarrow (t1, t2); typ_level = level } as ty ->
+      if level == generic then
+        {
+          typ_desc = Tarrow (copy_type t1, copy_type t2);
+          typ_level = notgeneric;
+        }
+      else ty
+  | { typ_desc = Tproduct ty_list; typ_level = level } as ty ->
+      if level == generic then
+        {
+          typ_desc = Tproduct (List.map copy_type ty_list);
+          typ_level = notgeneric;
+        }
+      else ty
+  | { typ_desc = Tconstr (cstr, ty_list); typ_level = level } as ty ->
+      if level == generic then
+        {
+          typ_desc = Tconstr (cstr, List.map copy_type ty_list);
+          typ_level = notgeneric;
+        }
+      else ty
+
+(* When copying is over, we restore the "link" field of generic variables to
+   Tnolink. *)
+let rec cleanup_type = function
+  | { typ_desc = Tvar link; typ_level = level } -> begin
+      match link.link with
+      | Tnolink -> ()
+      | Tlinkto ty ->
+          if level == generic then link.link <- Tnolink else cleanup_type ty
+    end
+  | { typ_desc = Tarrow (t1, t2); typ_level = level } ->
+      if level == generic then begin
+        cleanup_type t1;
+        cleanup_type t2
+      end
+      else ()
+  | { typ_desc = Tproduct ty_list; typ_level = level } ->
+      if level == generic then List.iter cleanup_type ty_list else ()
+  | { typ_desc = Tconstr (_, ty_list); typ_level = level } ->
+      if level == generic then List.iter cleanup_type ty_list else ()
+
+(* The actual instantiation functions *)
+
+let type_instance ty =
+  let ty' = copy_type ty in
+  cleanup_type ty;
+  ty'
+
+(* Expansion of an abbreviation *)
+
+let bind_variable ty1 ty2 =
+  match ty1.typ_desc with
+  | Tvar link -> begin
+      match link.link with
+      | Tnolink -> link.link <- Tlinkto ty2
+      | Tlinkto _ -> failwith "bind_variable"
+    end
+  | _ -> failwith "bind_variable"
+
+let expand_abbrev params body args =
+  let params' = List.map copy_type params in
+  let body' = copy_type body in
+  List.iter cleanup_type params;
+  cleanup_type body;
+  List.iter2 bind_variable params' args;
+  body'
+
+(* Unification *)
+
+exception Unify
+
+let occur_check level0 v =
+  let rec occurs_rec ty =
+    match type_repr ty with
+    | { typ_desc = Tvar _; typ_level = level } as ty' ->
+        if level > level0 then ty.typ_level <- level0;
+        ty' == v
+    | { typ_desc = Tarrow (t1, t2); _ } -> occurs_rec t1 || occurs_rec t2
+    | { typ_desc = Tproduct ty_list; _ } -> List.exists occurs_rec ty_list
+    | { typ_desc = Tconstr (_, ty_list); _ } -> List.exists occurs_rec ty_list
+  in
+  occurs_rec
+
+(* Type matching.
+ *
+ * Instantiates ty1 so that it is equal to ty2, or raises Unify if not
+ * possible.
+ *
+ * Type ty2 is unmodified. Since the levels in ty1 are not properly updated,
+ * ty1 must not be generalized afterwards. *)
+let rec filter (ty1, ty2) =
+  if ty1 == ty2 then ()
+  else begin
+    let ty1 = type_repr ty1 in
+    let ty2 = type_repr ty2 in
+    if ty1 == ty2 then ()
+    else begin
+      match (ty1.typ_desc, ty2.typ_desc) with
+      | Tvar link1, Tvar _ when ty1.typ_level != generic ->
+          link1.link <- Tlinkto ty2
+      | Tvar link1, _
+        when ty1.typ_level != generic && not (occur_check ty1.typ_level ty1 ty2)
+        ->
+          link1.link <- Tlinkto ty2
+      | Tarrow (t1arg, t1res), Tarrow (t2arg, t2res) ->
+          filter (t1arg, t2arg);
+          filter (t1res, t2res)
+      | Tproduct t1args, Tproduct t2args -> filter_list (t1args, t2args)
+      | Tconstr (cstr1, []), Tconstr (cstr2, [])
+        when same_type_constr cstr1 cstr2 ->
+          ()
+      | Tconstr ({ info = { ty_abbr = Tabbrev (params, body); _ }; _ }, args), _
+        ->
+          filter (expand_abbrev params body args, ty2)
+      | _, Tconstr ({ info = { ty_abbr = Tabbrev (params, body); _ }; _ }, args)
+        ->
+          filter (ty1, expand_abbrev params body args)
+      | Tconstr (cstr1, tyl1), Tconstr (cstr2, tyl2)
+        when same_type_constr cstr1 cstr2 ->
+          filter_list (tyl1, tyl2)
+      | _, _ -> raise Unify
+    end
+  end
+
+and filter_list = function
+  | [], [] -> ()
+  | ty1 :: rest1, ty2 :: rest2 ->
+      filter (ty1, ty2);
+      filter_list (rest1, rest2)
+  | _ -> raise Unify
