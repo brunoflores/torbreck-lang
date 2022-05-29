@@ -171,6 +171,7 @@ let find_desc sel_fn = function
         with Not_found -> raise Desc_not_found))
 
 let find_value_desc = find_desc values_of_module
+and find_constr_desc = find_desc constrs_of_module
 and find_type_desc = find_desc types_of_module
 
 (* To write the interface of the module currently compiled *)

@@ -66,6 +66,8 @@ expr:
 simple_expr:
   | s = struct_constant
     { make_expr (Zconstant s) }
+  | e = ext_ident
+    { expr_constr_or_ident e }
 
 /* Constants */
 
@@ -76,6 +78,8 @@ struct_constant:
 atomic_constant:
   | i = INT
     { ACint i }
+  | s = STRING
+    { ACstring s }
 
 /* Declarations */
 

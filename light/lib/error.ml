@@ -9,6 +9,11 @@ let output_globalref oc = function
       output_string oc "__";
       output_string oc q.id
 
+let unbound_value_err name loc =
+  Printf.eprintf "%aThe value identifier %a is unbound.\n" output_location loc
+    output_globalref name;
+  raise @@ Failure "unbound_value_err"
+
 let unbound_type_var_err v ty =
   Printf.eprintf "%aThe type variable %s is unbound.\n" output_location
     ty.te_loc v;
