@@ -11,7 +11,13 @@ module LexerUtil = MenhirLib.LexerUtil
 module Interpreter = Parser.MenhirInterpreter
 
 let succeed_impl (p : impl_phrase) = p
-let succeed_intf (p : intf_phrase) = p
+
+let succeed_intf intf_name (p : intf_phrase) =
+  (* Printf.printf "%s\n" @@ Syntax.show_intf_phrase p; *)
+  let oc = open_out_bin intf_name in
+  write_compiled_interface oc;
+  close_out oc;
+  p
 
 let show text positions =
   Errors.extract text positions
@@ -45,11 +51,13 @@ let compile_intf_phrase phr =
 
 let compile_interface modname filename =
   let source_name = filename ^ ".mli" in
+  let intf_name = filename ^ ".zi" in
   let lexbuf, content = get_contents source_name in
   try
     start_compiling_interface modname;
     compile_intf_phrase
-    @@ parse Parser.Incremental.interface succeed_intf lexbuf content
+    @@ parse Parser.Incremental.interface (succeed_intf intf_name) lexbuf
+         content
   with Sys_error s | Failure s -> failwith s
 
 (* Compiling an implementation *)

@@ -169,3 +169,6 @@ let find_desc sel_fn = function
 
 let find_value_desc = find_desc values_of_module
 and find_type_desc = find_desc types_of_module
+
+(* To write the interface of the module currently compiled *)
+let write_compiled_interface oc = output_value oc !defined_module

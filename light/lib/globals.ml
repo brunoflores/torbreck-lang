@@ -6,6 +6,7 @@ open Prim
 (* A reference to a global, in a source file, is either a qualified
    identifier mod__name, or an unqualified identifier name. *)
 type global_reference = GRname of string | GRmodname of qualified_ident
+[@@deriving show]
 
 (* Internally, a global is represented by its fully qualified name,
    plus associated information. *)
