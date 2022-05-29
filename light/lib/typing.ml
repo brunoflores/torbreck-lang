@@ -44,11 +44,13 @@ let type_of_type_expression strict_flag typexp =
 
 (* Check if an expression is non-expansive, that is, the result of its
    evaluation cannot contain newly created mutable objects. *)
-let is_nonexpansive expr =
+let rec is_nonexpansive expr =
   match expr.e_desc with
   | Zident _ -> true
   | Zconstant _ -> true
   | Zconstruct0 _ -> true
+  | Zapply _ -> false
+  | Zconstruct1 (cstr, e) -> cstr.info.cs_mut == Notmutable && is_nonexpansive e
 
 let type_of_atomic_constant = function
   | ACint _ -> type_int

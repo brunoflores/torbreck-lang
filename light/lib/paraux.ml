@@ -13,6 +13,11 @@ and make_typ desc = { te_desc = desc; te_loc = get_current_location () }
 and make_impl desc = { im_desc = desc; im_loc = get_current_location () }
 and make_intf desc = { in_desc = desc; in_loc = get_current_location () }
 
+let make_apply = function
+  | { e_desc = Zconstruct0 cstr1; _ }, [ e2 ] ->
+      make_expr (Zconstruct1 (cstr1, e2))
+  | e1, el -> make_expr (Zapply (e1, el))
+
 let expr_constr_or_ident = function
   | GRname s as gr -> begin
       try make_expr (Zconstruct0 (find_constr_desc gr))

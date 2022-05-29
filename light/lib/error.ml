@@ -1,3 +1,5 @@
+(* Printing of error messages and warnings *)
+
 open Location
 open Syntax
 open Globals

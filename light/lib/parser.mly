@@ -62,12 +62,20 @@ interface:
 expr:
   | s = simple_expr
     { s }
+  | s = simple_expr more = simple_expr_list
+    { make_apply (s, more) }
 
 simple_expr:
   | s = struct_constant
     { make_expr (Zconstant s) }
   | e = ext_ident
     { expr_constr_or_ident e }
+
+simple_expr_list:
+  | s = simple_expr more = simple_expr_list
+    { s :: more }
+  | s = simple_expr
+    { [s] }
 
 /* Constants */
 

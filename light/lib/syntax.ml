@@ -27,9 +27,9 @@ and expression_desc =
   | Zident of expr_ident ref
   | Zconstant of struct_constant
   | Zconstruct0 of constr_desc global
+  | Zconstruct1 of constr_desc global * expression
+  | Zapply of expression * expression list
 (* | Ztuple of expression list *)
-(* | Zconstruct1 of constr_desc global * expression *)
-(* | Zapply of expression * expression list *)
 (* | Zlet of bool * (pattern * expression) list * expression *)
 (* | Zfunction of (pattern list * expression) list *)
 (* | Ztrywith of expression * (pattern * expression) list *)
@@ -74,8 +74,10 @@ and intf_desc = Zvaluedecl of (string * type_expression * prim_desc) list
 (*   | Zexcdecl of constr_decl list *)
 (*   | Zintfdirective of directiveu *)
 
-let expr_is_pure expr =
+let rec expr_is_pure expr =
   match expr.e_desc with
   | Zident _ -> true
   | Zconstant _ -> true
   | Zconstruct0 _ -> true
+  | Zapply _ -> false
+  | Zconstruct1 (_, arg) -> expr_is_pure arg
