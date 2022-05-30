@@ -17,6 +17,21 @@ let rec emit = function
       out Opcodes.getglobal;
       Reloc.slot_for_literal sc;
       emit code
+  | Kprim p :: code ->
+      begin
+        match p with
+        | Pccall (name, arity) ->
+            if arity <= 5 then out (Opcodes.c_call1 + arity - 1)
+            else begin
+              out Opcodes.c_calln;
+              out arity
+            end;
+            Reloc.slot_for_c_prim name
+        | _ ->
+            Printf.printf "%s\n" (Prim.show_primitive p);
+            failwith "not implemented: Emitcode.emit"
+      end;
+      emit code
   | xs ->
       Printf.printf "Instructions list:\n%s"
         (List.fold_left

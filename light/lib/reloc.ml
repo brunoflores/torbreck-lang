@@ -17,3 +17,7 @@ let enter info = reloc_info := (info, !out_position) :: !reloc_info
 let slot_for_literal sc =
   enter (Reloc_literal sc);
   out_short 0
+
+and slot_for_c_prim name =
+  enter (Reloc_primitive name);
+  out_short 0
