@@ -14,9 +14,8 @@ let rec emit = function
       out_int_const i;
       emit code
   | xs ->
-      failwith
-      @@ Printf.sprintf "not implemented: Emitcode.emit:\n%s"
-           (List.fold_left
-              (fun acc x ->
-                Printf.sprintf "%s\t%s\n" acc (show_zam_instruction x))
-              "" xs)
+      Printf.printf "Instructions list:\n%s"
+        (List.fold_left
+           (fun acc x -> Printf.sprintf "%s\t%s\n" acc (show_zam_instruction x))
+           "" xs);
+      failwith "not implemented: Emitcode.emit"
