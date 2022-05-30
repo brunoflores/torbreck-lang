@@ -38,10 +38,7 @@ let get_contents filename =
 (* Compiling an interface *)
 
 let compile_intf_phrase phr =
-  match phr.in_desc with
-  | Zvaluedecl decl ->
-      type_valuedecl phr.in_loc decl;
-      ()
+  match phr.in_desc with Zvaluedecl decl -> type_valuedecl phr.in_loc decl
 
 let write_compiled_interface intf_name =
   let oc = open_out_bin intf_name in
