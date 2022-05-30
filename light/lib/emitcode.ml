@@ -13,6 +13,10 @@ let rec emit = function
   | Kquote (SCatom (ACint i)) :: code ->
       out_int_const i;
       emit code
+  | Kquote sc :: code ->
+      out Opcodes.getglobal;
+      Reloc.slot_for_literal sc;
+      emit code
   | xs ->
       Printf.printf "Instructions list:\n%s"
         (List.fold_left
