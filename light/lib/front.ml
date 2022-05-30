@@ -12,7 +12,7 @@ let translate_expr env =
     | Zident { contents = Zlocal s } -> translate_access s env
     | Zconstant c -> Lconst c
     | x ->
-        Printf.printf "%s" (Syntax.show_expression_desc x);
+        Printf.printf "%s\n" (Syntax.show_expression_desc x);
         failwith "not implemented: Front.translate_expr"
   in
   transl
