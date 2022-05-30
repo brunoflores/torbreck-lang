@@ -127,8 +127,7 @@ let start_compiling_interface name =
 let start_compiling_implementation name intf =
   start_compiling_interface name;
   !defined_module.mod_type_stamp <- intf.mod_type_stamp;
-  !defined_module.mod_exc_stamp <- intf.mod_exc_stamp;
-  ()
+  !defined_module.mod_exc_stamp <- intf.mod_exc_stamp
 
 let compiled_module_name () = !defined_module.mod_name
 
@@ -142,6 +141,7 @@ let add_global_info sel_fct glob =
   (* if !toplevel then begin *)
   add_rollback (fun () -> Hashtbl.remove tbl glob.qualid.id);
   (* end *)
+  Printf.printf "add_global_info: %s\n" glob.qualid.id;
   Hashtbl.add tbl glob.qualid.id glob
 
 let add_value = add_global_info values_of_module
@@ -160,7 +160,7 @@ let find_desc sel_fn = function
       try Hashtbl.find (sel_fn (find_module q.qual)) q.id
       with Not_found -> raise Desc_not_found
     end
-  | GRname s -> (
+  | GRname s -> begin
       try Hashtbl.find (sel_fn !defined_module) s
       with Not_found -> (
         try
@@ -168,11 +168,18 @@ let find_desc sel_fn = function
           (* Record the module as actually used *)
           Hashtbl.find !used_opened_modules res.qualid.qual := true;
           res
-        with Not_found -> raise Desc_not_found))
+        with Not_found -> raise Desc_not_found)
+    end
 
 let find_value_desc = find_desc values_of_module
 and find_constr_desc = find_desc constrs_of_module
 and find_type_desc = find_desc types_of_module
 
 (* To write the interface of the module currently compiled *)
-let write_compiled_interface oc = output_value oc !defined_module
+let write_compiled_interface oc =
+  print_endline "write_compiled_interface:";
+  Hashtbl.iter
+    (fun name { info = desc; _ } ->
+      Printf.printf "%s: %s\n" name (Globals.show_value_desc desc))
+    !defined_module.mod_values;
+  output_value oc !defined_module

@@ -11,6 +11,7 @@ open Types
    when an explicit interface exists. *)
 
 let enter_interface_definitions intf =
+  Printf.printf "enter_interface_defitions\n";
   external_types := [];
   Hashtbl.iter
     (fun _name ty_desc ->

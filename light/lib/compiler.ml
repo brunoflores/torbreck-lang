@@ -13,11 +13,8 @@ module Interpreter = Parser.MenhirInterpreter
 
 let succeed_impl (p : impl_phrase) = p
 
-let succeed_intf intf_name (p : intf_phrase) =
+let succeed_intf (p : intf_phrase) =
   (* Printf.printf "%s\n" @@ Syntax.show_intf_phrase p; *)
-  let oc = open_out_bin intf_name in
-  write_compiled_interface oc;
-  close_out oc;
   p
 
 let show text positions =
@@ -57,8 +54,11 @@ let compile_interface modname filename =
   try
     start_compiling_interface modname;
     compile_intf_phrase
-    @@ parse Parser.Incremental.interface (succeed_intf intf_name) lexbuf
-         content
+    @@ parse Parser.Incremental.interface succeed_intf lexbuf content;
+    (* Write: *)
+    let oc = open_out_bin intf_name in
+    write_compiled_interface oc;
+    close_out oc
   with Sys_error s | Failure s -> failwith s
 
 (* Compiling an implementation *)
