@@ -18,7 +18,7 @@ let still_to_compile = (Stack.create () : (lambda * int) Stack.t)
 
 (* The translator from lambda terms to lists of instructions. *)
 let compile_expr _staticfail =
-  let compexp expr code =
+  let rec compexp expr code =
     match expr with
     | Lvar n -> Kaccess n :: code
     | Lconst c -> begin
@@ -26,9 +26,15 @@ let compile_expr _staticfail =
         | (Kquote _ | Kget_global _ | Kaccess _ | Kpushmark) :: _ -> code
         | _ -> Kquote c :: code
       end
+    | Lprim (p, explist) -> compexplist explist (Kprim p :: code)
     | x ->
         Printf.printf "%s\n" (Lambda.show_lambda x);
         failwith "not implemented: Back.compile_expr"
+  and compexplist explist code =
+    match explist with
+    | [] -> code
+    | [ exp ] -> compexp exp code
+    | exp :: rest -> compexplist rest (Kpush :: compexp exp code)
   in
   compexp
 
