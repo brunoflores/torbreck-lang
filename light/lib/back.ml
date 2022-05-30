@@ -27,9 +27,8 @@ let compile_expr _staticfail =
         | _ -> Kquote c :: code
       end
     | x ->
-        failwith
-        @@ Printf.sprintf "not implemented: Back.compile_expr: %s"
-             (Lambda.show_lambda x)
+        Printf.printf "%s\n" (Lambda.show_lambda x);
+        failwith "not implemented: Back.compile_expr"
   in
   compexp
 
