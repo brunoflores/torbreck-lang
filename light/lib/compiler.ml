@@ -69,21 +69,23 @@ let compile_impl_phrase oc (phr : impl_phrase) =
       emit_phrase oc (expr_is_pure expr)
         (compile_lambda false (translate_expression expr))
   | x ->
-      failwith
-      @@ Printf.sprintf "not implemented: Compiler.parse: %s"
-           (Syntax.show_impl_desc x)
+      Printf.printf "%s\n" (Syntax.show_impl_desc x);
+      failwith "not implemented: Compiler.parse"
 
 let compile_impl filename suffix =
   let source_name = filename ^ suffix in
   let obj_name = filename ^ ".zo" in
   let oc = open_out_bin obj_name in
   let lexbuf, content = get_contents source_name in
-  (* start_emit_phrase oc; *)
-  try
-    compile_impl_phrase oc
-    @@ parse Parser.Incremental.implementation succeed_impl lexbuf content
-  with Sys_error s | Failure s -> failwith s
-(* end_emit_phrase oc *)
+  start_emit_phrase oc;
+  begin
+    try
+      compile_impl_phrase oc
+      @@ parse Parser.Incremental.implementation succeed_impl lexbuf content
+    with Sys_error s | Failure s -> failwith s
+  end;
+  end_emit_phrase oc;
+  close_out oc
 
 let compile_implementation modname filename suffix =
   if Sys.file_exists (filename ^ ".mli") then begin

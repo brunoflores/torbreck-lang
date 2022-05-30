@@ -21,3 +21,8 @@ let slot_for_literal sc =
 and slot_for_c_prim name =
   enter (Reloc_primitive name);
   out_short 0
+
+let get_info () =
+  let res = !reloc_info in
+  reloc_info := [];
+  List.rev res
