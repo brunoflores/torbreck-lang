@@ -44,5 +44,7 @@ type event = {
 type lambda =
   | Lvar of int
   | Lconst of struct_constant
+  | Lapply of lambda * lambda list
   | Lprim of primitive * lambda list
+  | Levent of event * lambda
 [@@deriving show]
