@@ -22,6 +22,8 @@ let start_emit_phrase oc =
 let end_emit_phrase oc =
   output_value oc !compiled_phrase_index;
   compiled_phrase_index := [];
+  Printf.printf "Emit_phr.end_emit_phrase: abs_out_position: %d\n"
+    !abs_out_position;
   seek_out oc 0;
   output_binary_int oc !abs_out_position
 
