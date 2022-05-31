@@ -4,3 +4,10 @@
   (libraries lightLib lightStdLib)
   (preprocess
     (pps ppx_jane ppx_deriving.show)))
+
+(executable
+  (name linker)
+  (modules linker)
+  (libraries lightLib)
+  (preprocess
+    (pps ppx_jane ppx_deriving.show)))
