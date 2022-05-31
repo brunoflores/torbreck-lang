@@ -1,11 +1,20 @@
-(* Command-line parsing *)
+(* Linker: Command-line parsing *)
+
+open LightLib.Link
 
 let () =
   let usage = "linker [-d] <file1> [<file2>] ..." in
   let debug = ref false in
-  let files = ref ([] : string list) in
+  let object_files = ref ([] : string list) in
   let spec = [ ("-d", Arg.Set debug, "Print debug information") ] in
-  let anonymous fname = files := fname :: !files in
+  let anonymous fname =
+    let name =
+      if Filename.check_suffix fname ".ml" then
+        Filename.chop_suffix fname ".ml" ^ ".zo"
+      else fname
+    in
+    object_files := name :: !object_files
+  in
   Arg.parse spec anonymous usage;
-  List.iter (fun s -> print_endline s) !files;
+  link (List.rev !object_files) !exec_file;
   exit 0
