@@ -69,7 +69,7 @@ impl<'a> Machine<'a> {
       rsp: vec![],
 
       // Feed the primitives table
-      prims: [prims::prim_print_string],
+      prims: [prims::print_string],
     }
   }
 
