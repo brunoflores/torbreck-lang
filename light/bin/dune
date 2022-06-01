@@ -1,3 +1,5 @@
+;; End-user binaries
+
 (executable
   (name light)
   (modules light)
@@ -8,6 +10,15 @@
 (executable
   (name linker)
   (modules linker)
+  (libraries lightLib)
+  (preprocess
+    (pps ppx_jane ppx_deriving.show)))
+
+;; Test binaries
+
+(executable
+  (name light_test)
+  (modules light_test)
   (libraries lightLib)
   (preprocess
     (pps ppx_jane ppx_deriving.show)))
