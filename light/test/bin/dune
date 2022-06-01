@@ -1,0 +1,8 @@
+;; Test binaries
+
+(executable
+  (name light_test)
+  (modules light_test)
+  (libraries lightLib lightTestLib)
+  (preprocess
+    (pps ppx_jane ppx_deriving.show)))

@@ -1,28 +1,7 @@
-module Compiler = LightLib.Compiler
-module Modules = LightLib.Modules
-module Lexer = LightLib.Lexer
 module Parser = LightLib.Parser
-module Interpreter = Parser.MenhirInterpreter
-module Errors = MenhirLib.ErrorReports
-module LexerUtil = MenhirLib.LexerUtil
-
-let show text positions =
-  Errors.extract text positions
-  |> Errors.sanitize |> Errors.compress |> Errors.shorten 20
-
-let fail text buffer _ =
-  let location = LexerUtil.range (Errors.last buffer) in
-  let indication =
-    Format.sprintf "Syntax error %s.\n" (Errors.show (show text) buffer)
-  in
-  Format.eprintf "%s%s%!" location indication;
-  exit 1
-
-let parse start succeed lexbuf text =
-  let supplier = Interpreter.lexer_lexbuf_to_supplier Lexer.read lexbuf in
-  let buffer, supplier = Errors.wrap_supplier supplier in
-  let checkpoint = start lexbuf.lex_curr_p in
-  Interpreter.loop_handle succeed (fail text buffer) supplier checkpoint
+module Modules = LightLib.Modules
+module Compiler = LightLib.Compiler
+module Paraux = LightTestLib.Paraux
 
 let () =
   let modname = "one" in
@@ -34,7 +13,7 @@ let () =
     try
       Modules.default_used_modules := [ "builtin" ];
       Modules.start_compiling_interface modname;
-      parse Parser.Incremental.interface
+      Paraux.parse Parser.Incremental.interface
         (fun phr -> Compiler.compile_intf_phrase phr)
         lexbuf content
     with Sys_error s | Failure s -> failwith s
