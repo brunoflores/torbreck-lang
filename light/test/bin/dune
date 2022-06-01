@@ -6,3 +6,11 @@
   (libraries lightLib lightTestLib)
   (preprocess
     (pps ppx_jane ppx_deriving.show)))
+
+
+(executable
+  (name light_stdlib_test)
+  (modules light_stdlib_test)
+  (libraries lightStdLib)
+  (preprocess
+    (pps ppx_jane ppx_deriving.show)))
