@@ -1,7 +1,7 @@
 (* Command-line parsing *)
 
-open LightLib.Compiler
-open LightLib.Modules
+open LightLib.Compiler_driver
+(* open LightLib.Modules *)
 
 let () =
   let usage = "light [-d] <file1> [<file2>] ..." in
@@ -14,7 +14,7 @@ let () =
   Arg.parse spec readfname usage;
   match !filename with
   | Some f ->
-      default_used_modules := [ "builtin" ];
+      LightLib.Modules.default_used_modules := [ "builtin" ];
       if Filename.check_suffix f ".ml" then
         let filename = Filename.chop_suffix f ".ml" in
         compile_implementation (Filename.basename filename) filename ".ml"
