@@ -131,6 +131,7 @@ pub enum Instruction {
   Subfloat,
   Mulfloat,
   Divfloat,
+  Makestring,
 }
 
 // In Fish:
@@ -274,6 +275,7 @@ impl fmt::Display for Instruction {
         Instruction::Subfloat => "Subfloat",
         Instruction::Mulfloat => "Mulfloat",
         Instruction::Divfloat => "Divfloat",
+        Instruction::Makestring => "Makestring",
       }
     )
   }
@@ -418,6 +420,7 @@ pub fn encode(i: &Instruction) -> i32 {
     Instruction::Subfloat => 127,
     Instruction::Mulfloat => 128,
     Instruction::Divfloat => 129,
+    Instruction::Makestring => 130,
   }
 }
 
@@ -559,6 +562,7 @@ pub fn decode(i: i32) -> Instruction {
     127 => Instruction::Subfloat,
     128 => Instruction::Mulfloat,
     129 => Instruction::Divfloat,
+    130 => Instruction::Makestring,
     _ => panic!("not an instruction: {}", i),
   }
 }

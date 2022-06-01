@@ -1,6 +1,7 @@
 use crate::runtime::opcodes;
 use crate::runtime::opcodes::Instruction;
 use crate::runtime::prims;
+use std::str;
 
 // TODO Public?
 #[derive(Debug, Clone)]
@@ -503,11 +504,26 @@ impl<'a> Machine<'a> {
         }
         Instruction::Ccall1 => {
           self.step(None);
-          self.accu =
-            Value::Int(self.prims[self.pc as usize](match &self.accu {
-              Value::String(s) => s.clone(),
-              _ => panic!("not a string in the accumulator"),
-            }));
+          self.accu = Value::Int(self.prims
+            [self.mem[self.pc as usize] as usize](
+            match &self.accu {
+            Value::String(s) => s.clone(),
+            a => panic!("not a string in the accumulator: {:?}", a),
+          }
+          ));
+          self.step(None);
+        }
+        Instruction::Makestring => {
+          let mut buff: Vec<u8> = vec![];
+          loop {
+            self.step(None);
+            let b = self.mem[self.pc as usize] as u8;
+            if b == 0 {
+              break;
+            }
+            buff.push(b);
+          }
+          self.accu = Value::String(str::from_utf8(&buff).unwrap().into());
           self.step(None);
         }
         //         Instruction::Pop => {
@@ -880,6 +896,23 @@ mod tests {
       },
       Value::Fn(Closure(pc, _)) => panic!("wrong pc: {}", pc),
       _ => panic!("not a closure: {:?}", accu),
+    }
+  }
+
+  #[test]
+  fn machine_can_print() {
+    let mut program: Vec<Code> = vec![I(Makestring)];
+    program
+      .append(&mut ("42\0".as_bytes().iter().map(|b| D(*b as i32)).collect()));
+    program.push(I(Ccall1)); // Call primitive
+    program.push(D(0)); // Primitive 0
+    program.push(I(Stop));
+    let program: Vec<i32> = program.iter().map(Code::encode).collect();
+    let mut machine = Machine::new(&program);
+    let accu = machine.interpret();
+    match accu {
+      Value::Int(0) => (),
+      _ => panic!(""),
     }
   }
 }
