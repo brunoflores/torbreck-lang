@@ -13,6 +13,7 @@ pub enum Value {
   // ConcreteTy { tag: u8, constructors: Vec<Value> },
   Int(i32),
   Float(f32),
+  String(String),
   True,
   False,
   // Record,         // TODO
@@ -43,6 +44,13 @@ enum AspValue {
   Mark,
 }
 
+type PrimFn = fn(String) -> i32;
+
+fn prim_print_string(s: String) -> i32 {
+  println!("{}", s);
+  0
+}
+
 #[derive(Debug)]
 pub struct Machine<'a> {
   pc: i32,            // Code pointer.
@@ -51,6 +59,7 @@ pub struct Machine<'a> {
   asp: Vec<AspValue>, // Argument stack.
   rsp: Vec<Closure>,  // Return stack.
   accu: Value,        // Accumulator for intermediate results.
+  prims: [PrimFn; 1], // Primitives table
 }
 
 impl<'a> Machine<'a> {
@@ -64,6 +73,9 @@ impl<'a> Machine<'a> {
       env: vec![],
       asp: vec![],
       rsp: vec![],
+
+      // Feed the primitives table
+      prims: [prim_print_string],
     }
   }
 
@@ -495,7 +507,15 @@ impl<'a> Machine<'a> {
           self.accu = Value::Int(self.mem[self.pc as usize] as i32);
           self.step(None);
         }
-
+        Instruction::Ccall1 => {
+          self.step(None);
+          self.accu =
+            Value::Int(self.prims[self.pc as usize](match &self.accu {
+              Value::String(s) => s.clone(),
+              _ => panic!("not a string in the accumulator"),
+            }));
+          self.step(None);
+        }
         //         Instruction::Pop => {
         //           self.accu = match self.asp.pop() {
         //             Some(AspValue::Val(value)) => value,
