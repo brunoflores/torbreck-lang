@@ -1,5 +1,6 @@
 use crate::runtime::opcodes;
 use crate::runtime::opcodes::Instruction;
+use crate::runtime::prims;
 
 // TODO Public?
 #[derive(Debug, Clone)]
@@ -44,22 +45,15 @@ enum AspValue {
   Mark,
 }
 
-type PrimFn = fn(String) -> i32;
-
-fn prim_print_string(s: String) -> i32 {
-  println!("{}", s);
-  0
-}
-
 #[derive(Debug)]
 pub struct Machine<'a> {
-  pc: i32,            // Code pointer.
-  mem: &'a [i32],     // Program memory in bytes.
-  env: Vec<Value>,    // Current environment.
-  asp: Vec<AspValue>, // Argument stack.
-  rsp: Vec<Closure>,  // Return stack.
-  accu: Value,        // Accumulator for intermediate results.
-  prims: [PrimFn; 1], // Primitives table
+  pc: i32,                   // Code pointer.
+  mem: &'a [i32],            // Program memory in bytes.
+  env: Vec<Value>,           // Current environment.
+  asp: Vec<AspValue>,        // Argument stack.
+  rsp: Vec<Closure>,         // Return stack.
+  accu: Value,               // Accumulator for intermediate results.
+  prims: [prims::PrimFn; 1], // Primitives table
 }
 
 impl<'a> Machine<'a> {
@@ -75,7 +69,7 @@ impl<'a> Machine<'a> {
       rsp: vec![],
 
       // Feed the primitives table
-      prims: [prim_print_string],
+      prims: [prims::prim_print_string],
     }
   }
 
