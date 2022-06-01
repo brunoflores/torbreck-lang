@@ -16,5 +16,5 @@ let () =
     object_files := name :: !object_files
   in
   Arg.parse spec anonymous usage;
-  link (List.rev !object_files) !exec_file;
+  link (List.rev !object_files) "a.out";
   exit 0

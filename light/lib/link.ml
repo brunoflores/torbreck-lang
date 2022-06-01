@@ -2,6 +2,9 @@
 
 open Emit_phr
 open Reloc
+open Config
+open Lambda
+open Patch
 
 (* First pass: determine which phrases are required *)
 
@@ -48,6 +51,29 @@ let scan_file tolink name =
   close_in ic;
   (name, required) :: tolink
 
+(* Second pass: link in the required phrases *)
+let events = ref ([] : event list)
+let abs_pos = ref 0
+
+let link_object oc (name, required) =
+  let ic = open_in_bin name in
+  try
+    List.iter
+      (fun phr ->
+        seek_in ic phr.cph_pos;
+        let buff = Bytes.create phr.cph_len in
+        really_input ic buff 0 phr.cph_len;
+        patch_object buff 0 phr.cph_reloc;
+        (* add_events phr.cph_events; *)
+        output oc buff 0 phr.cph_len;
+        abs_pos := !abs_pos + phr.cph_len)
+      required;
+    close_in ic
+  with x ->
+    Printf.eprintf "error while liinking file %s.\n" name;
+    close_in ic;
+    raise x
+
 (* Build a bytecode executable file *)
 
 let link module_list exec_name =
@@ -57,4 +83,46 @@ let link module_list exec_name =
       [ Open_wronly; Open_trunc; Open_creat; Open_binary ]
       0o777 exec_name
   in
-  ()
+  try
+    (* The header *)
+    begin
+      try
+        let ic = open_in_bin (Filename.concat !path_library "header") in
+        let buff = Bytes.create 1024 in
+        while true do
+          let n = input ic buff 0 1024 in
+          if n <= 0 then begin
+            close_in ic;
+            raise Exit
+          end;
+          output oc buff 0 n
+        done
+      with Exit | Sys_error _ -> ()
+    end;
+    (* The bytecode *)
+    let pos1 = pos_out oc in
+    abs_pos := 0;
+    List.iter (link_object oc) tolink;
+    output_byte oc Opcodes.stop;
+    (* The table of global data *)
+    let pos2 = pos_out oc in
+    (* emit_data oc; *)
+    (* Linker tables *)
+    let pos3 = pos_out oc in
+    (* if !write_debug_info then save_linker_tables oc; *)
+    (* Debugging info (the events) *)
+    let pos4 = pos_out oc in
+    (* if !write_debug_info then output_compact_value oc !events; *)
+    events := [];
+    (* The trailer *)
+    let pos5 = pos_out oc in
+    output_binary_int oc (pos2 - pos1);
+    output_binary_int oc (pos3 - pos2);
+    output_binary_int oc (pos4 - pos3);
+    output_binary_int oc (pos5 - pos4);
+    output_string oc "CL07";
+    close_out oc
+  with x ->
+    close_out oc;
+    Sys.remove exec_name;
+    raise x

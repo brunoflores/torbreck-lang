@@ -78,8 +78,7 @@ let compile_implementation modname filename suffix =
       Modules.start_compiling_implementation modname intf;
       Ty_intf.enter_interface_definitions intf;
       compile_impl filename suffix;
-      Ty_intf.check_interface intf;
-      ()
+      Ty_intf.check_interface intf
     with x -> (* Sys.remove (filename ^ ".zo"); *)
               raise x
   end
