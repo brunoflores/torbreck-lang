@@ -10,6 +10,7 @@
 
 (executable
   (name light_stdlib_test)
+  (modes (best exe) (byte c))
   (modules light_stdlib_test)
   (libraries lightStdLib)
   (preprocess

@@ -9,3 +9,12 @@
     (progn
      (run cargo build --release)
      (run cp target/release/librust_stdlib.a .))))
+
+(rule
+  (target dllrust_stdlib.so)
+  ; Only build when deps change.
+  (deps Cargo.toml lib.rs)
+  (action
+    (progn
+     (run cargo build --release)
+     (run cp target/release/librust_stdlib.so ./dllrust_stdlib.so))))
