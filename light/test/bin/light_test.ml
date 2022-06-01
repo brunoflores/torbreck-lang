@@ -20,7 +20,15 @@ let () =
   end;
   let md = !Modules.defined_module in
   match md with
-  | { mod_name = "one"; mod_values; mod_types; mod_constrs; _ } -> begin
+  | {
+   mod_name = "one";
+   mod_values;
+   mod_types;
+   mod_constrs;
+   mod_type_stamp = 0;
+   mod_exc_stamp = 0;
+   mod_persistent = false;
+  } -> begin
       begin
         try
           let md = Hashtbl.find mod_values "print_string" in
