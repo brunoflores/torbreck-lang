@@ -24,6 +24,22 @@ pub enum Value {
   Atom0,
 }
 
+impl Value {
+  fn string_from_bytes(bs: &[i32]) -> (Value, usize) {
+    let mut buff: Vec<u8> = vec![];
+    let mut i: usize = 0;
+    loop {
+      let b = bs[i] as u8;
+      if b == 0 {
+        break;
+      }
+      buff.push(b);
+      i += 1;
+    }
+    (Value::String(str::from_utf8(&buff).unwrap().into()), i)
+  }
+}
+
 // impl Value {
 //   fn empty_from_tag(t: u8) -> Value {
 //     match t {
@@ -46,7 +62,6 @@ enum AspValue {
   Mark,
 }
 
-#[derive(Debug)]
 pub struct Machine<'a> {
   pc: i32,                   // Code pointer.
   mem: &'a [i32],            // Program memory in bytes.
@@ -504,26 +519,16 @@ impl<'a> Machine<'a> {
         }
         Instruction::Ccall1 => {
           self.step(None);
-          self.accu = Value::Int(self.prims
-            [self.mem[self.pc as usize] as usize](
-            match &self.accu {
-            Value::String(s) => s.clone(),
-            a => panic!("not a string in the accumulator: {:?}", a),
-          }
-          ));
+          let prim = self.prims[self.mem[self.pc as usize] as usize];
+          self.accu = Value::Int(prim(&self.accu));
           self.step(None);
         }
         Instruction::Makestring => {
-          let mut buff: Vec<u8> = vec![];
-          loop {
-            self.step(None);
-            let b = self.mem[self.pc as usize] as u8;
-            if b == 0 {
-              break;
-            }
-            buff.push(b);
-          }
-          self.accu = Value::String(str::from_utf8(&buff).unwrap().into());
+          self.step(None);
+          let (val, len) =
+            Value::string_from_bytes(&self.mem[self.pc as usize..]);
+          self.accu = val;
+          self.step(Some(len.try_into().unwrap()));
           self.step(None);
         }
         //         Instruction::Pop => {
