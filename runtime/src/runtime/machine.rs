@@ -35,7 +35,11 @@ impl Value {
       buff.push(b);
       i += 1;
     }
-    (Value::String(std::str::from_utf8(&buff).unwrap().into()), i)
+    if let Ok(s) = std::str::from_utf8(&buff) {
+      (Value::String(s.into()), i)
+    } else {
+      panic!("bytes failed to convert to utf8: {:?}", buff);
+    }
   }
 }
 
