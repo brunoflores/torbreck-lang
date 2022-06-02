@@ -42,7 +42,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
       buff.push(b.unwrap());
     }
     buff
-  } else if let Ok(c) = fs::read(config.filename.clone()) {
+  } else if let Ok(c) = fs::read(fname) {
     c
   } else {
     println!("could not open file: {}", config.filename);
