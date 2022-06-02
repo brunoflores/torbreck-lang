@@ -1,7 +1,6 @@
 use std::env;
 use std::error::Error;
 use std::fs;
-use std::io::Read;
 use std::process;
 
 mod runtime;
@@ -36,51 +35,47 @@ impl Config {
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
   let fname = config.filename.clone();
-  let input: Vec<u8> = if fname == "-" {
-    let mut buff: Vec<u8> = vec![];
-    for b in std::io::stdin().bytes() {
-      buff.push(b.unwrap());
-    }
+  let input: Vec<i32> = if fname == "-" {
+    let buff: Vec<i32> = vec![];
+    // for b in std::io::stdin().bytes() {
+    //   buff.push(b.unwrap());
+    // }
     buff
-  } else if let Ok(c) = fs::read(fname) {
-    c
-  } else {
-    println!("could not open file: {}", config.filename);
-    process::exit(1);
-  };
-
-  let contents: Vec<u8> = if !input.is_empty() && input[0] == b'#' {
-    let mut buff: Vec<u8> = vec![];
+  } else if let Ok(u8bytes) = fs::read(fname) {
+    let mut buff: Vec<i32> = vec![];
     let mut donewithshebang = false;
-    for b in input.iter() {
+    let mut val32: i32;
+    let mut position = 0;
+    for b in u8bytes.iter() {
       let byte = *b;
+      // if byte == b'#' {
       if !donewithshebang && byte != b'\n' {
         continue;
       } else if !donewithshebang {
         donewithshebang = true;
         continue;
       }
-      buff.push(byte);
+      // }
+
+      val32 = (byte >> (8 * position)) as i32;
+      if position == 3 {
+        buff.push(val32);
+        position = 0;
+      } else {
+        position += 1;
+      }
     }
     buff
   } else {
-    input
+    println!("could not open file: {}", config.filename);
+    process::exit(1);
   };
 
-  // println!("with unsigned bytes: {:?}", contents);
+  println!("{:?}", input);
 
-  let signed: Vec<i32> = contents
-    .into_iter()
-    .map(|e| if e <= 127 { e as i32 } else { (e - 128) as i32 })
-    .collect();
-
-  // println!("with signed bytes: {:?}", signed);
-  // println!("number of global variables: {}", contents[0]);
-
-  let mut machine = Machine::new(&signed[1..]);
-  // println!("starting interpretation - we might never return");
-  let _accu = machine.interpret();
-  // println!("returned - accumulator is: {:?}", accu);
+  let mut machine = Machine::new(&input[0..]);
+  let accu = machine.interpret();
+  println!("returned - accumulator is: {:?}", accu);
   Ok(())
 }
 
@@ -107,11 +102,5 @@ mod tests {
   fn cli_is_sane() {
     let cfg = Config::new(&["prog".to_string(), "filename.txt".to_string()]);
     assert_eq!("filename.txt", cfg.unwrap().filename);
-  }
-
-  #[test]
-  fn cli_can_fail() {
-    let cfg = Config::new(&["prog".to_string()]);
-    assert!(cfg.is_err());
   }
 }
