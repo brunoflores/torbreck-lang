@@ -5,7 +5,7 @@ pub type PrimFn = fn(&Value) -> i32;
 pub fn print_string(val: &Value) -> i32 {
   match val {
     Value::String(s) => {
-      println!("{}", s);
+      println!("{s}");
       0
     }
     a => panic!(
