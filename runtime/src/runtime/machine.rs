@@ -1,7 +1,6 @@
 use crate::runtime::opcodes;
 use crate::runtime::opcodes::Instruction;
 use crate::runtime::prims;
-use std::str;
 
 // TODO Public?
 #[derive(Debug, Clone)]
@@ -36,7 +35,7 @@ impl Value {
       buff.push(b);
       i += 1;
     }
-    (Value::String(str::from_utf8(&buff).unwrap().into()), i)
+    (Value::String(std::str::from_utf8(&buff).unwrap().into()), i)
   }
 }
 
