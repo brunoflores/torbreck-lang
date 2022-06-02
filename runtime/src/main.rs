@@ -13,11 +13,6 @@ fn usage() -> &'static str {
   "Usage: breckrun filename"
 }
 
-fn crash(msg: &str) -> ! {
-  println!("{}", msg);
-  process::exit(1);
-}
-
 #[derive(Debug)]
 pub struct ConfigError;
 
@@ -45,7 +40,12 @@ impl Config {
 }
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
-  let contents = fs::read(config.filename)?;
+  let contents = if let Ok(c) = fs::read(config.filename.clone()) {
+    c
+  } else {
+    println!("could not open file: {}", config.filename);
+    process::exit(1);
+  };
   let signed: Vec<i32> = contents
     .into_iter()
     .map(|e| if e <= 127 { e as i32 } else { (e - 128) as i32 })
@@ -64,11 +64,15 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 fn main() {
   let args: Vec<String> = env::args().collect();
   let config = match Config::new(&args) {
-    Err(ConfigError) => crash(usage()),
+    Err(ConfigError) => {
+      println!("{}", usage());
+      process::exit(1)
+    }
     Ok(config) => config,
   };
   if let Err(e) = run(config) {
-    crash(&format!("error: {}", e));
+    println!("error: {e}");
+    process::exit(1);
   }
 }
 
