@@ -1,28 +1,18 @@
 use std::env;
-use std::process;
-
-use std::fmt;
-use std::fs;
-
 use std::error::Error;
+use std::fs;
+use std::io::Read;
+use std::process;
 
 mod runtime;
 use runtime::machine::Machine;
 
 fn usage() -> &'static str {
-  "Usage: breckrun filename"
+  "Usage: breckrun [filename]"
 }
 
 #[derive(Debug)]
 pub struct ConfigError;
-
-impl fmt::Display for ConfigError {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(f, "End of Stream")
-  }
-}
-
-impl std::error::Error for ConfigError {}
 
 pub struct Config {
   pub filename: String,
@@ -30,34 +20,66 @@ pub struct Config {
 
 impl Config {
   pub fn new(args: &[String]) -> Result<Config, ConfigError> {
-    if args.len() != 2 {
-      return Err(ConfigError);
+    if args.len() == 1 {
+      Ok(Config {
+        filename: "-".into(),
+      })
+    } else if args.len() == 2 {
+      Ok(Config {
+        filename: args[1].clone(),
+      })
+    } else {
+      Err(ConfigError)
     }
-
-    let filename = args[1].clone();
-    Ok(Config { filename })
   }
 }
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
-  let contents = if let Ok(c) = fs::read(config.filename.clone()) {
+  let fname = config.filename.clone();
+  let input: Vec<u8> = if fname == "-" {
+    let mut buff: Vec<u8> = vec![];
+    for b in std::io::stdin().bytes() {
+      buff.push(b.unwrap());
+    }
+    buff
+  } else if let Ok(c) = fs::read(config.filename.clone()) {
     c
   } else {
     println!("could not open file: {}", config.filename);
     process::exit(1);
   };
+
+  let contents: Vec<u8> = if !input.is_empty() && input[0] == b'#' {
+    let mut buff: Vec<u8> = vec![];
+    let mut donewithshebang = false;
+    for b in input.iter() {
+      if !donewithshebang && *b != b'\n' {
+        continue;
+      } else if !donewithshebang {
+        donewithshebang = true;
+        continue;
+      }
+      buff.push(*b);
+    }
+    buff
+  } else {
+    input
+  };
+
+  // println!("with unsigned bytes: {:?}", contents);
+
   let signed: Vec<i32> = contents
     .into_iter()
     .map(|e| if e <= 127 { e as i32 } else { (e - 128) as i32 })
     .collect();
 
-  println!("with bytes: {:?}", signed);
+  // println!("with signed bytes: {:?}", signed);
   // println!("number of global variables: {}", contents[0]);
 
   let mut machine = Machine::new(&signed[1..]);
-  println!("starting interpretation - we might never return");
-  let accu = machine.interpret();
-  println!("returned - accumulator is: {:?}", accu);
+  // println!("starting interpretation - we might never return");
+  let _accu = machine.interpret();
+  // println!("returned - accumulator is: {:?}", accu);
   Ok(())
 }
 
