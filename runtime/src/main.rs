@@ -53,13 +53,14 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let mut buff: Vec<u8> = vec![];
     let mut donewithshebang = false;
     for b in input.iter() {
-      if !donewithshebang && *b != b'\n' {
+      let byte = *b;
+      if !donewithshebang && byte != b'\n' {
         continue;
       } else if !donewithshebang {
         donewithshebang = true;
         continue;
       }
-      buff.push(*b);
+      buff.push(byte);
     }
     buff
   } else {
