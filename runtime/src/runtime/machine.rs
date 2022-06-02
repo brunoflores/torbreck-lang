@@ -519,8 +519,12 @@ impl<'a> Machine<'a> {
         }
         Instruction::Ccall1 => {
           self.step(None);
-          let prim = self.prims[self.mem[self.pc as usize] as usize];
-          self.accu = Value::Int(prim(&self.accu));
+          let pnum = self.mem[self.pc as usize] as usize;
+          if let Some(prim) = self.prims.get(pnum) {
+            self.accu = Value::Int(prim(&self.accu));
+          } else {
+            panic!("primitive number {pnum} undefined");
+          };
           self.step(None);
         }
         Instruction::Makestring => {
