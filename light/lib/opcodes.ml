@@ -127,3 +127,4 @@ let addfloat = 126
 let subfloat = 127
 let mulfloat = 128
 let divfloat = 129
+let makestring = 130
