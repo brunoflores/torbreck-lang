@@ -13,8 +13,13 @@ and type_expression_desc =
   | Ztypeconstr of global_reference * type_expression list
 [@@deriving show]
 
-type pattern = { p_desc : pattern_desc; p_loc : location }
-and pattern_desc = Zwildpat [@@deriving show]
+type pattern = { p_desc : pattern_desc; p_loc : location; mutable p_typ : typ }
+
+and pattern_desc =
+  | Zwildpat
+  | Zvarpat of string
+  | Zconstruct0pat of constr_desc global
+[@@deriving show]
 
 type expression = {
   e_desc : expression_desc;
@@ -29,12 +34,12 @@ and expression_desc =
   | Zconstruct0 of constr_desc global
   | Zconstruct1 of constr_desc global * expression
   | Zapply of expression * expression list
+  | Zlet of bool * (pattern * expression) list * expression
+  | Zfunction of (pattern list * expression) list
+  | Zcondition of expression * expression * expression
 (* | Ztuple of expression list *)
-(* | Zlet of bool * (pattern * expression) list * expression *)
-(* | Zfunction of (pattern list * expression) list *)
 (* | Ztrywith of expression * (pattern * expression) list *)
 (* | Zsequence of expression * expression *)
-(* | Zcondition of expression * expression * expression *)
 (* | Zwhile of expression * expression *)
 (* | Zfor of string * expression * expression * bool * expression *)
 (* | Zconstraint of expression * type_expression *)
@@ -79,5 +84,8 @@ let rec expr_is_pure expr =
   | Zident _ -> true
   | Zconstant _ -> true
   | Zconstruct0 _ -> true
+  | Zfunction _ -> true
   | Zapply _ -> false
+  | Zlet _ -> false
+  | Zcondition _ -> false
   | Zconstruct1 (_, arg) -> expr_is_pure arg

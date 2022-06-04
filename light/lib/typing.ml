@@ -49,8 +49,13 @@ let rec is_nonexpansive expr =
   | Zident _ -> true
   | Zconstant _ -> true
   | Zconstruct0 _ -> true
+  | Zfunction _ -> true
   | Zapply _ -> false
   | Zconstruct1 (cstr, e) -> cstr.info.cs_mut == Notmutable && is_nonexpansive e
+  | Zlet (_rec_flag, bindings, body) ->
+      List.for_all (fun (_pat, expr) -> is_nonexpansive expr) bindings
+      && is_nonexpansive body
+  | Zcondition (_e1, e2, e3) -> is_nonexpansive e2 && is_nonexpansive e3
 
 let type_of_atomic_constant = function
   | ACint _ -> type_int
