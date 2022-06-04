@@ -4,10 +4,13 @@ open Paraux
 open Syntax
 open Globals
 open Primdecl
+open Builtins
 %}
 
 /* Identifiers, prefixes and infixes */
 %token <string> IDENT
+%token <string> INFIX0
+%token <string> INFIX2
 
 /* Literals */
 %token <int> INT
@@ -15,14 +18,17 @@ open Primdecl
 
 /* Keywords */
 %token LET
+%token REC
 %token IN
 %token VALUE
+%token IF
+%token THEN
+%token ELSE
 
 /* Special symbols */
 %token EQUAL
 %token LPAREN
 %token RPAREN
-%token SEMI
 %token SEMISEMI
 %token COLON
 %token AND
@@ -34,7 +40,11 @@ open Primdecl
 
 /* Precedences and associativities. Lower precedences first. */
 
+%right prec_let
 %right MINUSGREATER
+%right prec_if
+%left INFIX0 /* comparisons */
+%left INFIX2 /* additives, subtractives */
 
 /* Entry points */
 
@@ -48,6 +58,8 @@ open Primdecl
 implementation:
   | e = expr SEMISEMI
     { make_impl (Zexpr e) }
+  /* | LET REC b = binding_list SEMISEMI */
+  /*   { make_impl (Zletdef (true, b)) } */
   | EOF
     { raise End_of_file }
 
@@ -60,22 +72,38 @@ interface:
 /* Expressions */
 
 expr:
-  | s = simple_expr
-    { s }
-  | s = simple_expr more = simple_expr_list
-    { make_apply (s, more) }
+  | e = simple_expr
+    { e }
+  | e = simple_expr more = simple_expr_list
+    { make_apply (e, more) }
+  | e1 = expr i = INFIX2 e2 = expr
+    { make_binop i e1 e2 }
+  | e1 = expr i = INFIX0 e2 = expr
+    { make_binop i e1 e2 }
+  | IF e1 = expr THEN e2 = expr ELSE e3 = expr %prec prec_if
+    { make_expr (Zcondition (e1, e2, e3)) }
+  | LET REC b = binding_list IN e = expr %prec prec_let
+    { make_expr (Zlet (true, b, e)) }
 
 simple_expr:
   | s = struct_constant
     { make_expr (Zconstant s) }
   | e = ext_ident
     { expr_constr_or_ident e }
+  | LPAREN e = opt_expr RPAREN
+    { e }
 
 simple_expr_list:
   | s = simple_expr more = simple_expr_list
     { s :: more }
   | s = simple_expr
     { [s] }
+
+opt_expr:
+  | e = expr
+    { e }
+  | /*empty */
+    { make_expr (Zconstruct0 (constr_void)) }
 
 /* Constants */
 
@@ -136,3 +164,29 @@ simple_type:
 type_var:
   | QUOTE id = IDENT
     { id }
+
+/* Definitions by pattern matchings */
+
+binding_list:
+  | b = binding
+    { [b] }
+
+binding:
+  | id = ide pat = simple_pattern_list EQUAL e = expr
+    { (pat_constr_or_var id, make_expr (Zfunction [pat, e])) }
+
+/* Patterns */
+
+simple_pattern_list:
+  | pat = simple_pattern
+    { [pat] }
+
+pattern:
+  | pat = simple_pattern
+    { pat }
+
+simple_pattern:
+  | id = ide
+    { pat_constr_or_var id }
+  | LPAREN pat = pattern RPAREN
+    { pat }
