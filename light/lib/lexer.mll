@@ -4,7 +4,11 @@ open Parser
 
 let reservedWords = [
   ("let", LET);
+  ("rec", REC);
   ("in", IN);
+  ("if", IF);
+  ("else", ELSE);
+  ("then", THEN);
   ("value", VALUE);
 ]
 
@@ -55,13 +59,14 @@ rule read = parse
         with Not_found ->
           IDENT s }
 
-  | "=" { EQUAL }
   | "(" { LPAREN }
   | ")" { RPAREN }
-  | ";" { SEMI }
+  | "=" { EQUAL }
   | ";;" { SEMISEMI }
   | ":" { COLON }
   | "->" { MINUSGREATER }
+  | ['<'] { INFIX0 (Lexing.lexeme lexbuf) }
+  | ['+' '-'] { INFIX2 (Lexing.lexeme lexbuf) }
 
   | "\""
     { resetstr(); string lexbuf }
@@ -69,7 +74,7 @@ rule read = parse
   | eof
     { EOF }
   | _
-    { raise (Failure "Lexer: Illegal character") }
+    { raise (Failure ("Lexer: Illegal character: '" ^ (Lexing.lexeme lexbuf) ^ "'")) }
 
 and string = parse
   | '"'
@@ -97,8 +102,8 @@ and escaped = parse
   | ['0'-'9']['0'-'9']['0'-'9']
     { let x = int_of_string(Lexing.lexeme lexbuf) in
       if x > 255 then
-         raise (Failure "Illegal character constant")
+         raise (Failure "Lexer: Illegal character constant")
       else
         Char.chr x }
   | [^ '"' '\\' 't' 'n' '\'']
-    { raise (Failure "Illegal character constant") }
+    { raise (Failure "Lexer: Illegal character constant") }
