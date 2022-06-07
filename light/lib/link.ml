@@ -2,7 +2,6 @@
 
 open Emit_phr
 open Reloc
-open Config
 open Lambda
 open Patch
 
@@ -65,6 +64,10 @@ let link_object oc (name, required) =
         really_input ic buff 0 phr.cph_len;
         patch_object buff 0 phr.cph_reloc;
         (* add_events phr.cph_events; *)
+        Printf.printf "output bytes: %s\n"
+        @@ Bytes.fold_left
+             (fun acc c -> acc ^ string_of_int (int_of_char c) ^ ", ")
+             "" buff;
         output oc buff 0 phr.cph_len;
         abs_pos := !abs_pos + phr.cph_len)
       required;
@@ -84,43 +87,53 @@ let link module_list exec_name =
       0o777 exec_name
   in
   try
+    output_string oc
+      "#!/home/bruno/devel/torbreck-lang/runtime/target/release/runtime\n";
+
+    (* output_binary_int oc Opcodes.makestring;
+     * String.iter (fun c -> output_binary_int oc @@ int_of_char c) "Bruno Flores";
+     * output_binary_int oc 0;
+     * output_binary_int oc Opcodes.c_call1;
+     * output_binary_int oc 0;
+     * output_binary_int oc Opcodes.stop; *)
+
     (* The header *)
-    begin
-      try
-        let ic = open_in_bin (Filename.concat !path_library "header") in
-        let buff = Bytes.create 1024 in
-        while true do
-          let n = input ic buff 0 1024 in
-          if n <= 0 then begin
-            close_in ic;
-            raise Exit
-          end;
-          output oc buff 0 n
-        done
-      with Exit | Sys_error _ -> ()
-    end;
+    (* begin
+     *   try
+     *     let ic = open_in_bin (Filename.concat !path_library "header") in
+     *     let buff = Bytes.create 1024 in
+     *     while true do
+     *       let n = input ic buff 0 1024 in
+     *       if n <= 0 then begin
+     *         close_in ic;
+     *         raise Exit
+     *       end;
+     *       output oc buff 0 n
+     *     done
+     *   with Exit | Sys_error _ -> ()
+     * end; *)
     (* The bytecode *)
-    let pos1 = pos_out oc in
+    let _pos1 = pos_out oc in
     abs_pos := 0;
     List.iter (link_object oc) tolink;
     output_byte oc Opcodes.stop;
     (* The table of global data *)
-    let pos2 = pos_out oc in
+    let _pos2 = pos_out oc in
     (* emit_data oc; *)
     (* Linker tables *)
-    let pos3 = pos_out oc in
+    let _pos3 = pos_out oc in
     (* if !write_debug_info then save_linker_tables oc; *)
     (* Debugging info (the events) *)
-    let pos4 = pos_out oc in
+    let _pos4 = pos_out oc in
     (* if !write_debug_info then output_compact_value oc !events; *)
     events := [];
     (* The trailer *)
-    let pos5 = pos_out oc in
-    output_binary_int oc (pos2 - pos1);
-    output_binary_int oc (pos3 - pos2);
-    output_binary_int oc (pos4 - pos3);
-    output_binary_int oc (pos5 - pos4);
-    output_string oc "CL07";
+    let _pos5 = pos_out oc in
+    (* output_binary_int oc (pos2 - pos1);
+     * output_binary_int oc (pos3 - pos2);
+     * output_binary_int oc (pos4 - pos3);
+     * output_binary_int oc (pos5 - pos4);
+     * output_string oc "CL07"; *)
     close_out oc
   with x ->
     close_out oc;
