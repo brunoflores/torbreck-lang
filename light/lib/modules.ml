@@ -107,6 +107,7 @@ let reset_opened_modules () =
 let add_table t1 t2 = Hashtbl.iter (Hashtbl.add t2) t1
 
 let open_module name =
+  Printf.printf "open module: %s\n" name;
   let m = find_module name in
   add_table m.mod_values !opened_modules.mod_values;
   add_table m.mod_constrs !opened_modules.mod_constrs;
@@ -174,6 +175,18 @@ let find_desc sel_fn = function
 let find_value_desc = find_desc values_of_module
 and find_constr_desc = find_desc constrs_of_module
 and find_type_desc = find_desc types_of_module
+
+let type_descr_of_type_constr cstr =
+  let rec select_type_descr = function
+    | [] -> raise Desc_not_found
+    | desc :: rest ->
+        if desc.info.ty_constr.info.ty_stamp = cstr.info.ty_stamp then desc
+        else select_type_descr rest
+  in
+  select_type_descr
+    (Hashtbl.find_all
+       (types_of_module (find_module cstr.qualid.qual))
+       cstr.qualid.qual)
 
 (* To write the interface of the module currently compiled *)
 let write_compiled_interface oc =
