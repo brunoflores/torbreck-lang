@@ -195,8 +195,10 @@ impl<'a> Machine<'a> {
         Instruction::Cur => {
           // Abstraction using the stack.
           self.step(None);
-          self.accu =
-            Value::Fn(Closure(self.pc + self.deref_pc(), self.env.clone()));
+          self.accu = Value::Fn(Closure(
+            self.pc + (self.mem[self.pc as usize] as u32), // TODO how to jump backward and forward?
+            self.env.clone(),
+          ));
           self.step(None);
         }
         Instruction::Return => {
