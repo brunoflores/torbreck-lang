@@ -63,9 +63,9 @@ impl Monitor {
   }
 }
 
-pub struct Machine<'a> {
+pub struct Machine<'machine> {
   pc: u32,                   // Code pointer.
-  mem: &'a [u8],             // Program memory in bytes.
+  mem: &'machine [u8],       // Program memory in bytes.
   env: Vec<Value>,           // Current environment.
   asp: Vec<AspValue>,        // Argument stack.
   rsp: Vec<Closure>,         // Return stack.
@@ -74,8 +74,11 @@ pub struct Machine<'a> {
   monitor: Monitor,
 }
 
-impl<'a> Machine<'a> {
-  pub fn new(mem: &'a [u8]) -> Self {
+// I know needless lifetimes are considered a bad practice.
+// Allow them because the transparency helps me understand the type-checker.
+#[allow(clippy::needless_lifetimes)]
+impl<'machine> Machine<'machine> {
+  pub fn new(mem: &'machine [u8]) -> Self {
     Machine {
       mem,
       pc: 0,
@@ -98,7 +101,7 @@ impl<'a> Machine<'a> {
     }
   }
 
-  pub fn interpret(&mut self) -> Value {
+  pub fn interpret<'a>(&'a mut self) -> Value {
     loop {
       let instr = self.decode();
       match instr {
