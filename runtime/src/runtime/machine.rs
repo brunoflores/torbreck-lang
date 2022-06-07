@@ -539,11 +539,27 @@ impl<'a> Machine<'a> {
           self.step(None);
           let pnum = self.mem[self.pc as usize] as usize;
           if let Some(prim) = self.prims.get(pnum) {
-            self.accu = Value::Int(prim(&self.accu));
+            self.accu = prim(&[&self.accu]);
           } else {
             panic!("primitive number {pnum} undefined");
           };
           self.step(None);
+        }
+        Instruction::Ccall2 => {
+          self.step(None);
+          let pnum = self.mem[self.pc as usize] as usize;
+          if let Some(prim) = self.prims.get(pnum) {
+            let arg1 = if let Some(AspValue::Val(v)) = self.asp.pop() {
+              v
+            } else {
+              panic!()
+            };
+            self.accu = prim(&[&self.accu, &arg1]);
+          } else {
+            panic!("primitive number {pnum} undefined");
+          };
+          self.step(None);
+          self.step(None); // TODO Why is the prim id duplicated? (look at linker)
         }
         Instruction::Makestring => {
           self.step(None);
