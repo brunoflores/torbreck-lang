@@ -100,6 +100,14 @@ let compile_expr _staticfail =
     | [] -> code
     | [ exp ] -> compexp exp code
     | exp :: rest -> compexplist rest (Kpush :: compexp exp code)
+  and comp_test2 cond ifso ifnot code =
+    let branch1, code1 = make_branch code in
+    let lbl2 = new_label () in
+    compexp cond
+      (Kbranchifnot lbl2
+      :: compexp ifso
+           (branch1 :: Klabel lbl2 :: compexp ifnot (Kreturn :: code1)))
+    (* TODO: I added a Kreturn :: code1 here. *)
   in
   compexp
 
