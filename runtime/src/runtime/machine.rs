@@ -86,7 +86,16 @@ impl<'a> Machine<'a> {
         Instruction::Stop => return self.accu.clone(),
         Instruction::Access => {
           self.step(None);
-          self.accu = self.access_nth(self.deref_pc()).clone();
+          self.accu =
+            self.access_nth(self.mem[self.pc as usize] as usize).clone();
+          self.step(None);
+        }
+        Instruction::Acc0 => {
+          self.accu = self.access_nth(0).clone();
+          self.step(None);
+        }
+        Instruction::Acc1 => {
+          self.accu = self.access_nth(1).clone();
           self.step(None);
         }
         Instruction::Appterm => {
