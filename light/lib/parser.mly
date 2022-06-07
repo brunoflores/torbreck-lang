@@ -24,6 +24,7 @@ open Builtins
 %token IF
 %token THEN
 %token ELSE
+%token PREF
 
 /* Special symbols */
 %token EQUAL
@@ -139,6 +140,13 @@ prim_decl:
 
 ide:
   | i = IDENT
+    { i }
+  | PREF i = infx
+    { i }
+
+infx:
+  | i = INFIX0
+  | i = INFIX2
     { i }
 
 ext_ident:
