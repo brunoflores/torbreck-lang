@@ -48,12 +48,18 @@ enum AspValue {
 }
 
 struct Monitor {
+  len_env_max: usize,
+  len_asp_max: usize,
   len_rsp_max: usize,
 }
 
 impl Monitor {
   fn new() -> Self {
-    Monitor { len_rsp_max: 0 }
+    Monitor {
+      len_rsp_max: 0,
+      len_asp_max: 0,
+      len_env_max: 0,
+    }
   }
 }
 
@@ -163,13 +169,13 @@ impl<'a> Machine<'a> {
           // Push the accumulator onto the argument stack,
           // leave the accumulator untouched, and
           // take a step.
-          self.asp.push(AspValue::Val(self.accu.clone()));
+          self.asp_push(AspValue::Val(self.accu.clone()));
           self.step(None);
         }
         Instruction::Pushmark => {
           // Push a mark onto the argument stack, and
           // take step.
-          self.asp.push(AspValue::Mark);
+          self.asp_push(AspValue::Mark);
           self.step(None);
         }
         Instruction::Grab => {
@@ -599,8 +605,13 @@ impl<'a> Machine<'a> {
   pub fn report(&self) -> String {
     format!(
       "accumulator: {:?}
+env max: {}
+asp max: {}
 rsp max: {}",
-      self.accu, self.monitor.len_rsp_max
+      self.accu,
+      self.monitor.len_env_max,
+      self.monitor.len_asp_max,
+      self.monitor.len_rsp_max
     )
   }
 
@@ -609,6 +620,14 @@ rsp max: {}",
     let len = self.rsp.len();
     if len > self.monitor.len_rsp_max {
       self.monitor.len_rsp_max = len;
+    };
+  }
+
+  fn asp_push(&mut self, val: AspValue) {
+    self.asp.push(val);
+    let len = self.asp.len();
+    if len > self.monitor.len_asp_max {
+      self.monitor.len_asp_max = len;
     };
   }
 
