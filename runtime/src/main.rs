@@ -73,8 +73,8 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
   // println!("{:?}", input);
 
   let mut machine = Machine::new(&input[0..]);
-  let accu = machine.interpret();
-  println!("returned - accumulator is: {:?}", accu);
+  let _accu = machine.interpret();
+  println!("{}", machine.report());
   Ok(())
 }
 

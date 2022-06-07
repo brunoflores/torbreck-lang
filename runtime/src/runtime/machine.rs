@@ -47,6 +47,16 @@ enum AspValue {
   Mark,
 }
 
+struct Monitor {
+  len_rsp_max: usize,
+}
+
+impl Monitor {
+  fn new() -> Self {
+    Monitor { len_rsp_max: 0 }
+  }
+}
+
 pub struct Machine<'a> {
   pc: u32,                   // Code pointer.
   mem: &'a [u8],             // Program memory in bytes.
@@ -55,6 +65,7 @@ pub struct Machine<'a> {
   rsp: Vec<Closure>,         // Return stack.
   accu: Value,               // Accumulator for intermediate results.
   prims: [prims::PrimFn; 4], // Primitives table
+  monitor: Monitor,
 }
 
 impl<'a> Machine<'a> {
@@ -76,10 +87,12 @@ impl<'a> Machine<'a> {
         prims::int_sub,
         prims::int_add,
       ],
+
+      monitor: Monitor::new(),
     }
   }
 
-  pub fn interpret(&'a mut self) -> Value {
+  pub fn interpret(&mut self) -> Value {
     loop {
       let instr = self.decode();
       match instr {
@@ -118,11 +131,9 @@ impl<'a> Machine<'a> {
         }
         Instruction::Apply => {
           // Application using the return stack.
-          if let Value::Fn(Closure(c1, e1)) = &self.accu {
-            // Read current state...
-            self.rsp.push(Closure(self.pc + 1, self.env.clone()));
+          self.rsp_push(Closure(self.pc + 1, self.env.clone()));
 
-            // now modify it...
+          if let Value::Fn(Closure(c1, e1)) = &self.accu {
             self.pc = *c1 as u32;
             self.env = {
               let mut e1 = e1.clone();
@@ -134,10 +145,6 @@ impl<'a> Machine<'a> {
               e1
             };
           } else if let Value::FnRec(Closure(c1, _)) = &self.accu {
-            // Read current state...
-            self.rsp.push(Closure(self.pc + 1, self.env.clone()));
-
-            // now modify it...
             self.pc = *c1 as u32;
             self.env = {
               let mut e1 = vec![self.accu.clone()];
@@ -589,6 +596,22 @@ impl<'a> Machine<'a> {
     }
   }
 
+  pub fn report(&self) -> String {
+    format!(
+      "accumulator: {:?}
+rsp max: {}",
+      self.accu, self.monitor.len_rsp_max
+    )
+  }
+
+  fn rsp_push(&mut self, val: Closure) {
+    self.rsp.push(val);
+    let len = self.rsp.len();
+    if len > self.monitor.len_rsp_max {
+      self.monitor.len_rsp_max = len;
+    };
+  }
+
   fn access_nth(&self, n: usize) -> &Value {
     let len = self.env.len();
     &self.env[(len - (n + 1))]
@@ -616,7 +639,7 @@ impl<'a> Machine<'a> {
 
 #[cfg(test)]
 mod tests {
-  use super::{Closure, Machine, Value};
+  use super::{Machine, Value};
   use crate::runtime::opcodes;
   use crate::runtime::opcodes::{Instruction, Instruction::*};
 
