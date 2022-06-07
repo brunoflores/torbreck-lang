@@ -47,7 +47,10 @@ type type_desc = {
 }
 [@@deriving show]
 
-and type_components = Abstract_type | Variant_type of constr_desc global list
+and type_components =
+  | Abstract_type
+  | Variant_type of constr_desc global list (* Sum type -> list of constr. *)
+  | Record_type of label_desc global list (* Record type -> list of labels *)
 
 (* Value constructors *)
 and constr_desc = {
@@ -66,6 +69,12 @@ and constr_kind =
   | Constr_superfluous of int (* Superfluous constructur with its arity *)
 
 (* Labels *)
+and label_desc = {
+  lbl_res : typ; (* Result type *)
+  lbl_arg : typ; (* Argument type *)
+  lbl_mut : mutable_flag; (* Mutable or not *)
+  lbl_pos : int; (* Position in the tuple *)
+}
 
 let generic = -1
 and notgeneric = 0
