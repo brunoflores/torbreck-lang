@@ -212,7 +212,7 @@ impl<'a> Machine<'a> {
             Some(AspValue::Mark) => {
               let Closure(c1, e1) = self.rsp.pop().unwrap();
               self.pc = c1;
-              self.env = e1;
+              self.env = e1.clone();
             }
             Some(AspValue::Val(v)) => {
               if let Value::Fn(Closure(c1, e1)) = &self.accu {
