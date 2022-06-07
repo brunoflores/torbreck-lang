@@ -40,5 +40,6 @@ type zam_phrase = {
   kph_init : zam_instruction list; (* initialization code *)
   kph_fcts : zam_instruction list; (* code for functions *)
 }
+[@@deriving show]
 
 let nolabel = -1
