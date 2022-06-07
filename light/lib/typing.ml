@@ -42,6 +42,32 @@ let type_of_type_expression strict_flag typexp =
   in
   type_of typexp
 
+(* Typing of patterns *)
+
+let typing_let = ref false
+
+let rec tpat new_env ((pat, ty, mut_flag) : pattern * typ * mutable_flag) =
+  pat.p_typ <- ty;
+  begin
+    match pat.p_desc with
+    | Zvarpat v ->
+        if List.mem_assoc v new_env then non_linear_pattern_err pat v
+        else (v, (ty, mut_flag)) :: new_env
+    | _ as p ->
+        Printf.printf "%s\n" (Syntax.show_pattern_desc p);
+        failwith ""
+  end
+
+and tpat_list new_env (pat_list : pattern list) (ty_list : typ list) =
+  match (pat_list, ty_list) with
+  | [], [] -> new_env
+  | pat :: patl, ty :: tyl ->
+      tpat_list (tpat new_env (pat, ty, Notmutable)) patl tyl
+  | _, _ -> failwith "Typing: arity error"
+
+let type_pattern = tpat []
+and type_pattern_list = tpat_list []
+
 (* Check if an expression is non-expansive, that is, the result of its
    evaluation cannot contain newly created mutable objects. *)
 let rec is_nonexpansive expr =
@@ -51,11 +77,13 @@ let rec is_nonexpansive expr =
   | Zconstruct0 _ -> true
   | Zfunction _ -> true
   | Zapply _ -> false
+  | Ztuple el -> List.for_all is_nonexpansive el
   | Zconstruct1 (cstr, e) -> cstr.info.cs_mut == Notmutable && is_nonexpansive e
   | Zlet (_rec_flag, bindings, body) ->
       List.for_all (fun (_pat, expr) -> is_nonexpansive expr) bindings
       && is_nonexpansive body
   | Zcondition (_e1, e2, e3) -> is_nonexpansive e2 && is_nonexpansive e3
+  | Zwhen (_cond, action) -> is_nonexpansive action
 
 let type_of_atomic_constant = function
   | ACint _ -> type_int
@@ -103,6 +131,36 @@ let rec type_expr env expr =
               type_args ty2 arg_rest
         in
         type_args ty_fn args
+    | Zlet (rec_flag, pat_expr_list, body) ->
+        type_expr (type_let_decl env rec_flag pat_expr_list) body
+    | Zfunction [] -> failwith "Typing.type_expr: empty matching"
+    | Zfunction ((patl1, _expr1) :: _ as matching) ->
+        let ty_args = List.map (fun _pat -> new_type_var ()) patl1 in
+        let ty_res = new_type_var () in
+        let tcase (patl, action) =
+          if List.length patl != List.length ty_args then
+            ill_shaped_match_err expr;
+          type_expect (type_pattern_list patl ty_args @ env) action ty_res
+        in
+        List.iter tcase matching;
+        List.fold_right
+          (fun ty_arg ty_res -> type_arrow (ty_arg, ty_res))
+          ty_args ty_res
+    | Zcondition (e1, e2, e3) ->
+        type_expect env e1 type_bool;
+        if
+          match e3.e_desc with
+          | Zconstruct0 cstr -> cstr == constr_void
+          | _ -> false
+        then begin
+          type_expect env e2 type_unit;
+          type_unit
+        end
+        else begin
+          let ty = type_expr env e2 in
+          type_expect env e3 ty;
+          ty
+        end
     | _ as d ->
         Printf.printf "%s\n" (Syntax.show_expression_desc d);
         failwith "Typing.type_expr"
@@ -127,3 +185,26 @@ and type_expect env exp expected_ty =
   (* To do: try...with, match...with ? *)
   (* https://github.com/brunoflores/camllight/blob/master/sources/src/compiler/typing.ml#L480 *)
   | _ -> unify_expr exp expected_ty (type_expr env exp)
+
+and type_let_decl env rec_flag pat_expr_list =
+  push_type_level ();
+  let ty_list = List.map (fun (_pat, _expr) -> new_type_var ()) pat_expr_list in
+  typing_let := true;
+  let add_env =
+    type_pattern_list (List.map (fun (pat, _expr) -> pat) pat_expr_list) ty_list
+  in
+  typing_let := false;
+  let new_env = add_env @ env in
+  List.iter2
+    (fun (_pat, exp) ty ->
+      type_expect (if rec_flag then new_env else env) exp ty)
+    pat_expr_list ty_list;
+  pop_type_level ();
+  let gen_type =
+    List.map2
+      (fun (_pat, expr) ty -> (is_nonexpansive expr, ty))
+      pat_expr_list ty_list
+  in
+  List.iter (fun (gen, ty) -> if not gen then nongen_type ty) gen_type;
+  List.iter (fun (gen, ty) -> if gen then generalize_type ty) gen_type;
+  new_env

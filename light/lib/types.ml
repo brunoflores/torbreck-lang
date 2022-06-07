@@ -1,6 +1,7 @@
 (* Basic operations over types *)
 
 open Globals
+open Modules
 
 (* Type constructor equality *)
 let same_type_constr cstr1 cstr2 =
@@ -87,6 +88,19 @@ and gen_type_list = function
 let generalize_type ty =
   let _ = gen_type ty in
   ()
+
+(* Lower the level of all generalizable variables of a type *)
+
+let rec nongen_type ty =
+  let ty = type_repr ty in
+  match ty.typ_desc with
+  | Tvar _ ->
+      if ty.typ_level > !current_level then ty.typ_level <- !current_level
+  | Tarrow (t1, t2) ->
+      nongen_type t1;
+      nongen_type t2
+  | Tproduct ty_list -> List.iter nongen_type ty_list
+  | Tconstr (_constr, ty_list) -> List.iter nongen_type ty_list
 
 (* Take an instance of a type *)
 
@@ -319,3 +333,15 @@ and filter_list = function
       filter (ty1, ty2);
       filter_list (rest1, rest2)
   | _ -> raise Unify
+
+(* Extract the list of labels of a record type *)
+let rec labels_of_type ty =
+  match (type_repr ty).typ_desc with
+  | Tconstr ({ info = { ty_abbr = Tabbrev (params, body); _ }; _ }, args) ->
+      labels_of_type (expand_abbrev params body args)
+  | Tconstr (cstr, _) -> begin
+      match (type_descr_of_type_constr cstr).info.ty_desc with
+      | Record_type lbl_list -> lbl_list
+      | _ -> failwith "Types.labels_of_type"
+    end
+  | _ -> failwith "Types.labels_of_type"
