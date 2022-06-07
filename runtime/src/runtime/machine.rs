@@ -221,12 +221,12 @@ impl<'a> Machine<'a> {
                   let mut e1 = e1.clone();
                   e1.push(v);
                   e1
-                }
+                };
               } else {
                 panic!();
               }
             }
-            None => panic!(),
+            None => panic!("asp empty"),
           }
         }
         Instruction::Let => {
