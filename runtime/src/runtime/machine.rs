@@ -40,21 +40,6 @@ impl Value {
   }
 }
 
-// impl Value {
-//   fn empty_from_tag(t: u8) -> Value {
-//     match t {
-//       0 => Value::Closure(Closure(0, vec![])),
-//       // 1 => Value::ConcreteTy {
-//       //   tag: 0,
-//       //   constructors: vec![],
-//       // },
-//       // 2 => Value::Record,
-//       // 3 => Value::Bytes(vec![]),
-//       _ => panic!("unknown tag: {}", t),
-//     }
-//   }
-// }
-
 // Value in the argument stack is either a value or a mark.
 #[derive(Debug)]
 enum AspValue {
