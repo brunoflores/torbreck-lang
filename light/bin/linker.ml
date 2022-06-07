@@ -15,6 +15,7 @@ let () =
     in
     object_files := name :: !object_files
   in
+  LightLib.Symtable.reset_linker_tables ();
   Arg.parse spec anonymous usage;
   link (List.rev !object_files) "a.out";
   exit 0
