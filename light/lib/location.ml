@@ -12,6 +12,7 @@ type location =
       * int (* Position of the next character following the last one *)
 [@@deriving show]
 
+let no_location = Loc (0, 0)
 let get_current_location () = Loc (symbol_start (), symbol_end ())
 
 let output_lines oc char1 char2 charline1 line1 line2 =
