@@ -120,7 +120,8 @@ impl<'a> Machine<'a> {
           // Application using the return stack.
           if let Value::Fn(Closure(c1, e1)) = &self.accu {
             // Read current state...
-            self.rsp.push(Closure(self.pc, self.env.clone()));
+            self.rsp.push(Closure(self.pc + 1, self.env.clone()));
+
             // now modify it...
             self.pc = *c1 as u32;
             self.env = {
