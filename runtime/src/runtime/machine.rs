@@ -589,17 +589,14 @@ impl<'a> Machine<'a> {
     }
   }
 
-  fn deref_pc(&self) -> i32 {
-    self.mem[self.pc as usize]
+  fn access_nth(&self, n: usize) -> &Value {
+    let len = self.env.len();
+    &self.env[(len - (n + 1))]
   }
 
-  fn access_nth(&self, n: i32) -> &Value {
-    &self.env[n as usize]
-  }
-
-  fn step(&mut self, n: Option<i32>) {
+  fn step(&mut self, n: Option<u8>) {
     match n {
-      Some(n) => self.pc += n,
+      Some(n) => self.pc += n as u32,
       None => self.pc += 1,
     }
   }
