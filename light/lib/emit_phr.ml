@@ -31,17 +31,21 @@ let emit_phrase oc is_pure phr =
   Reloc.reset ();
   Event.reset ();
   Buffcode.init_out_code ();
-  (* Labels.reset_label_table (); *)
+  Labels.reset_label_table ();
+  Printf.printf "\nZam phrase:\n%s\n" (Instruct.show_zam_phrase phr);
   begin
     match phr with
-    | { kph_fcts = []; kph_init = init; _ } ->
-        Printf.printf "Instructions list:\n%s"
-          (List.fold_left
-             (fun acc x ->
-               Printf.sprintf "%s\t%s\n" acc (show_zam_instruction x))
-             "" init);
-        emit init
-    | _ -> failwith "not implemented: Emit_phr.emit_phrase"
+    | { kph_fcts = []; _ } -> emit phr.kph_init
+    | { kph_rec = false; _ } ->
+        emit [ Kbranch 0 ];
+        emit phr.kph_fcts;
+        emit [ Klabel 0 ];
+        emit phr.kph_init
+    | { kph_rec = true; _ } ->
+        emit phr.kph_init;
+        emit [ Kbranch 0 ];
+        emit phr.kph_fcts;
+        emit [ Klabel 0 ]
   end;
   output oc !Buffcode.out_buffer 0 !Buffcode.out_position;
   compiled_phrase_index :=
