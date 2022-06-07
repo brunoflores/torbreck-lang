@@ -19,6 +19,13 @@ and pattern_desc =
   | Zwildpat
   | Zvarpat of string
   | Zconstruct0pat of constr_desc global
+  | Zconstruct1pat of constr_desc global * pattern
+  | Zconstantpat of atomic_constant
+  | Zorpat of pattern * pattern
+  | Zaliaspat of pattern * string
+  | Zconstraintpat of pattern * type_expression
+  | Ztuplepat of pattern list
+  | Zrecordpat of (label_desc global * pattern) list
 [@@deriving show]
 
 type expression = {
@@ -37,20 +44,20 @@ and expression_desc =
   | Zlet of bool * (pattern * expression) list * expression
   | Zfunction of (pattern list * expression) list
   | Zcondition of expression * expression * expression
-(* | Ztuple of expression list *)
+  | Zwhen of expression * expression
+  | Ztuple of expression list
+(* | Zconstraint of expression * type_expression *)
+(* | Zrecord of (label_desc global * expression) list *)
+(* | Zvector of expression list *)
+(* | Zparser of (stream_pattern list * expression) list *)
 (* | Ztrywith of expression * (pattern * expression) list *)
 (* | Zsequence of expression * expression *)
 (* | Zwhile of expression * expression *)
 (* | Zfor of string * expression * expression * bool * expression *)
-(* | Zconstraint of expression * type_expression *)
-(* | Zvector of expression list *)
 (* | Zassign of string * expression *)
-(* | Zrecord of (label_desc global * expression) list *)
 (* | Zrecord_access of expression * label_desc global *)
 (* | Zrecord_update of expression * label_desc global * expression *)
 (* | Zstream of stream_component list *)
-(* | Zparser of (stream_pattern list * expression) list *)
-(* | Zwhen of expression * expression *)
 [@@deriving show]
 
 and expr_ident = Zglobal of value_desc global | Zlocal of string
@@ -88,4 +95,25 @@ let rec expr_is_pure expr =
   | Zapply _ -> false
   | Zlet _ -> false
   | Zcondition _ -> false
+  | Zwhen _ -> false
+  | Ztuple el -> List.for_all expr_is_pure el
   | Zconstruct1 (_, arg) -> expr_is_pure arg
+
+let single_constructor cstr =
+  match cstr.info.cs_tag with
+  | ConstrRegular (_, span) -> span == 1
+  | ConstrExtensible (_, _) -> false
+
+let rec pat_irrefutable pat =
+  match pat.p_desc with
+  | Zwildpat -> true
+  | Zvarpat _ -> true
+  | Zaliaspat (pat, _) -> pat_irrefutable pat
+  | Zconstantpat _ -> false
+  | Ztuplepat patl -> List.for_all pat_irrefutable patl
+  | Zconstruct0pat cstr -> single_constructor cstr
+  | Zconstruct1pat (cstr, pat) -> single_constructor cstr && pat_irrefutable pat
+  | Zorpat (pat1, pat2) -> pat_irrefutable pat1 || pat_irrefutable pat2
+  | Zconstraintpat (pat, _) -> pat_irrefutable pat
+  | Zrecordpat lbl_pat_list ->
+      List.for_all (fun (_lbl, pat) -> pat_irrefutable pat) lbl_pat_list
