@@ -87,8 +87,7 @@ let link module_list exec_name =
       0o777 exec_name
   in
   try
-    output_string oc
-      "#!/home/bruno/devel/torbreck-lang/runtime/target/release/runtime\n";
+    output_string oc "#!/usr/bin/env breckrun\n";
 
     (* output_binary_int oc Opcodes.makestring;
      * String.iter (fun c -> output_binary_int oc @@ int_of_char c) "Bruno Flores";
