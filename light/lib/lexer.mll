@@ -10,6 +10,8 @@ let reservedWords = [
   ("else", ELSE);
   ("then", THEN);
   ("value", VALUE);
+  ("prefix", PREF);
+  ("and", AND);
 ]
 
 let (symbolTable : (string, token) Hashtbl.t) = Hashtbl.create 149
@@ -52,13 +54,14 @@ rule read = parse
     { INT (int_of_string (Lexing.lexeme lexbuf)) }
 
   | ['A'-'Z' 'a'-'z' '_']
-  | ['A'-'Z' 'a'-'z' '_' '0'-'9' '\'']*
+  | ['A'-'Z' 'a'-'z' '_' '0'-'9']*
     { let s = Lexing.lexeme lexbuf in
         try
           Hashtbl.find symbolTable s
         with Not_found ->
           IDENT s }
 
+  | "'" { QUOTE }
   | "(" { LPAREN }
   | ")" { RPAREN }
   | "=" { EQUAL }
