@@ -34,7 +34,7 @@ let write_compiled_interface intf_name =
   close_out oc
 
 let succeed_intf intf_name (p : Syntax.intf_phrase) =
-  (* Printf.printf "%s\n" @@ Syntax.show_intf_phrase p; *)
+  Printf.printf "%s\n" @@ Syntax.show_intf_phrase p;
   Compiler.compile_intf_phrase p;
   write_compiled_interface intf_name
 
@@ -55,9 +55,11 @@ let compile_impl filename suffix =
   Emit_phr.start_emit_phrase oc;
   begin
     try
-      Emit_phr.emit_phrase oc true
-      @@ Compiler.compile_impl_phrase
-      @@ parse Parser.Incremental.implementation succeed_impl lexbuf content
+      let zam_phr, is_pure =
+        Compiler.compile_impl_phrase
+        @@ parse Parser.Incremental.implementation succeed_impl lexbuf content
+      in
+      Emit_phr.emit_phrase oc is_pure zam_phr
     with Sys_error s | Failure s -> failwith s
   end;
   Emit_phr.end_emit_phrase oc;
@@ -83,5 +85,10 @@ let compile_implementation modname filename suffix =
               raise x
   end
   else begin
-    compile_impl filename suffix
+    let intf_name = filename ^ ".zi" in
+    try
+      Modules.start_compiling_interface modname;
+      compile_impl filename suffix;
+      write_compiled_interface intf_name
+    with x -> raise x
   end
