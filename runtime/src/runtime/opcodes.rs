@@ -289,7 +289,7 @@ impl fmt::Display for Instruction {
 //     substr(tolower($1), 4) " => " i ","
 //   }'
 #[cfg(test)]
-pub fn encode(i: &Instruction) -> i32 {
+pub fn encode(i: &Instruction) -> u8 {
   match i {
     Instruction::Constbyte => 1,
     Instruction::Constshort => 2,
@@ -431,7 +431,7 @@ pub fn encode(i: &Instruction) -> i32 {
 //     print i " => Instruction::"
 //     substr(toupper($1), 3,1) substr(tolower($1), 4) ","
 //   }'
-pub fn decode(i: i32) -> Instruction {
+pub fn decode(i: u8) -> Instruction {
   match i {
     1 => Instruction::Constbyte,
     2 => Instruction::Constshort,
