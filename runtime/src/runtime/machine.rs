@@ -569,6 +569,21 @@ impl<'a> Machine<'a> {
           self.step(Some(len.try_into().unwrap()));
           self.step(None);
         }
+        Instruction::Branch => {
+          self.step(None);
+          let jump = self.pc + (self.mem[self.pc as usize] as u32);
+          self.pc = jump as u32;
+        }
+        Instruction::Branchifnot => {
+          self.step(None);
+          if let Value::False = self.accu {
+            let jump = self.pc + (self.mem[self.pc as usize] as u32);
+            self.pc = jump as u32;
+          } else {
+            self.step(None);
+            self.step(None);
+          }
+        }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
     }
