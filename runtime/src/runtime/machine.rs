@@ -4,7 +4,7 @@ use crate::runtime::prims;
 
 // TODO Public?
 #[derive(Debug, Clone)]
-pub struct Closure(i32, Vec<Value>);
+pub struct Closure(u32, Vec<Value>);
 
 // TODO Public?
 // Value is either a closure representing a function, or a constant.
@@ -24,7 +24,7 @@ pub enum Value {
 }
 
 impl Value {
-  fn string_from_bytes(bs: &[i32]) -> (Value, usize) {
+  fn string_from_bytes(bs: &[u8]) -> (Value, usize) {
     let mut buff: Vec<u8> = vec![];
     let mut i: usize = 0;
     loop {
@@ -66,8 +66,8 @@ enum AspValue {
 }
 
 pub struct Machine<'a> {
-  pc: i32,                   // Code pointer.
-  mem: &'a [i32],            // Program memory in bytes.
+  pc: u32,                   // Code pointer.
+  mem: &'a [u8],             // Program memory in bytes.
   env: Vec<Value>,           // Current environment.
   asp: Vec<AspValue>,        // Argument stack.
   rsp: Vec<Closure>,         // Return stack.
@@ -76,7 +76,7 @@ pub struct Machine<'a> {
 }
 
 impl<'a> Machine<'a> {
-  pub fn new(mem: &'a [i32]) -> Self {
+  pub fn new(mem: &'a [u8]) -> Self {
     Machine {
       mem,
       pc: 0,
@@ -106,7 +106,7 @@ impl<'a> Machine<'a> {
           // Application in tail-call position.
           // There is no need to push a mark in the argument stack.
           if let Value::Fn(Closure(c1, e1)) = &self.accu {
-            self.pc = *c1;
+            self.pc = *c1 as u32;
             self.env = {
               let mut e1 = e1.clone();
               e1.push(if let AspValue::Val(v) = self.asp.pop().unwrap() {
@@ -126,7 +126,7 @@ impl<'a> Machine<'a> {
             // Read current state...
             self.rsp.push(Closure(self.pc, self.env.clone()));
             // now modify it...
-            self.pc = *c1;
+            self.pc = *c1 as u32;
             self.env = {
               let mut e1 = e1.clone();
               e1.push(if let AspValue::Val(v) = self.asp.pop().unwrap() {
@@ -740,11 +740,11 @@ mod tests {
 
   enum Code {
     I(Instruction), // Instruction
-    D(i32),         // Data
+    D(u8),          // Data
   }
 
   impl Code {
-    fn encode(c: &Code) -> i32 {
+    fn encode(c: &Code) -> u8 {
       match c {
         Code::I(i) => opcodes::encode(i),
         D(d) => *d,
@@ -756,7 +756,7 @@ mod tests {
 
   #[test]
   fn machine_halts() {
-    let program: Vec<i32> = vec![I(Constbyte), D(42), I(Stop)]
+    let program: Vec<u8> = vec![I(Constbyte), D(42), I(Stop)]
       .iter()
       .map(Code::encode)
       .collect();
@@ -771,7 +771,7 @@ mod tests {
 
   #[test]
   fn machine_can_add() {
-    let program: Vec<i32> = vec![
+    let program: Vec<u8> = vec![
       I(Constbyte),
       D(42),
       I(Push),
@@ -794,7 +794,7 @@ mod tests {
 
   #[test]
   fn machine_can_sub() {
-    let program: Vec<i32> = vec![
+    let program: Vec<u8> = vec![
       I(Constbyte),
       D(1),
       I(Push),
@@ -817,7 +817,7 @@ mod tests {
 
   #[test]
   fn machine_can_mul() {
-    let program: Vec<i32> = vec![
+    let program: Vec<u8> = vec![
       I(Constbyte),
       D(2),
       I(Push),
@@ -840,7 +840,7 @@ mod tests {
 
   #[test]
   fn machine_can_div() {
-    let program: Vec<i32> = vec![
+    let program: Vec<u8> = vec![
       I(Constbyte),
       D(2),
       I(Push),
@@ -864,7 +864,7 @@ mod tests {
   // (\lambda x. x) 42
   #[test]
   fn machine_can_apply() {
-    let program: Vec<i32> = vec![
+    let program: Vec<u8> = vec![
       I(Constbyte),
       D(42),
       I(Push),
