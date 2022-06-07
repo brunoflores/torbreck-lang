@@ -7,18 +7,15 @@ use crate::runtime::prims;
 pub struct Closure(u32, Vec<Value>);
 
 // TODO Public?
-// Value is either a closure representing a function, or a constant.
 #[derive(Debug, Clone)]
 pub enum Value {
   Fn(Closure),
-  // ConcreteTy { tag: u8, constructors: Vec<Value> },
+  FnRec(Closure),
   Int(i32),
   Float(f32),
   String(String),
   True,
   False,
-  // Record,         // TODO
-  // Bytes(Vec<u8>), // Sequence of bytes.
   Dummy,
   Atom0,
 }
@@ -136,8 +133,23 @@ impl<'a> Machine<'a> {
               });
               e1
             };
+          } else if let Value::FnRec(Closure(c1, _)) = &self.accu {
+            // Read current state...
+            self.rsp.push(Closure(self.pc + 1, self.env.clone()));
+
+            // now modify it...
+            self.pc = *c1 as u32;
+            self.env = {
+              let mut e1 = vec![self.accu.clone()];
+              e1.push(if let AspValue::Val(v) = self.asp.pop().unwrap() {
+                v
+              } else {
+                panic!();
+              });
+              e1
+            };
           } else {
-            panic!();
+            panic!("not a closure in the accumulator: {:?}", self.accu);
           }
         }
         Instruction::Push => {
@@ -220,16 +232,17 @@ impl<'a> Machine<'a> {
           self.env.push(self.accu.clone());
           self.step(None);
         }
-        // TODO
-        // Instruction::Letrec1 => {
-        //   // Same as [Dummy; Cur ofs; Update], a frequent sequence
-        //   // corresponding to [let ref f = function .. in ..].
-        //   self.step(None);
-        //   self.rsp.push(Closure(self.pc, self.env.clone()));
-        //   self.step(None);
-        //   self.pc = self.pc + self.mem[self.pc as usize];
-        //   self.step(None);
-        // }
+        Instruction::Letrec1 => {
+          // Same as [Dummy; Cur ofs; Update], a frequent sequence
+          // corresponding to [let rec f = function .. in ..].
+          self.step(None);
+          self.env = vec![Value::FnRec(Closure(
+            self.pc - (self.mem[self.pc as usize] as u32),
+            vec![],
+          ))];
+          self.step(None); // TODO Why? There's an extra zero here. Skip over it.
+          self.step(None);
+        }
         Instruction::Endlet => {
           // Throw away the first n local variables from the environment.
           self.step(None);
