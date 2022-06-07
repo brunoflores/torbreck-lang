@@ -54,7 +54,7 @@ pub struct Machine<'a> {
   asp: Vec<AspValue>,        // Argument stack.
   rsp: Vec<Closure>,         // Return stack.
   accu: Value,               // Accumulator for intermediate results.
-  prims: [prims::PrimFn; 1], // Primitives table
+  prims: [prims::PrimFn; 4], // Primitives table
 }
 
 impl<'a> Machine<'a> {
@@ -70,7 +70,12 @@ impl<'a> Machine<'a> {
       rsp: vec![],
 
       // Feed the primitives table
-      prims: [prims::print_string],
+      prims: [
+        prims::print_string,
+        prims::less_than,
+        prims::int_sub,
+        prims::int_add,
+      ],
     }
   }
 
