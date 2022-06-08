@@ -17,5 +17,6 @@ let () =
   in
   LightLib.Symtable.reset_linker_tables ();
   Arg.parse spec anonymous usage;
-  link (List.rev !object_files) "a.out";
+  link (List.rev !object_files)
+    (Filename.chop_extension (List.hd !object_files) ^ ".out");
   exit 0
