@@ -125,7 +125,7 @@ impl<'machine> Machine<'machine> {
           // There is no need to push a mark in the argument stack.
           if let Value::Fn(Closure(c1, e1)) = &self.accu {
             self.pc = *c1 as u32;
-            self.env = {
+            let new_env = {
               let mut e1 = e1.clone();
               e1.push(if let AspValue::Val(v) = self.asp.pop().unwrap() {
                 v
@@ -134,6 +134,7 @@ impl<'machine> Machine<'machine> {
               });
               e1
             };
+            self.env_replace(new_env);
           } else {
             panic!();
           }
@@ -144,7 +145,7 @@ impl<'machine> Machine<'machine> {
 
           if let Value::Fn(Closure(c1, e1)) = &self.accu {
             self.pc = *c1 as u32;
-            self.env = {
+            let new_env = {
               let mut e1 = e1.clone();
               e1.push(if let AspValue::Val(v) = self.asp.pop().unwrap() {
                 v
@@ -153,9 +154,10 @@ impl<'machine> Machine<'machine> {
               });
               e1
             };
+            self.env_replace(new_env);
           } else if let Value::FnRec(Closure(c1, _)) = &self.accu {
             self.pc = *c1 as u32;
-            self.env = {
+            let new_env = {
               let mut e1 = vec![self.accu.clone()];
               e1.push(if let AspValue::Val(v) = self.asp.pop().unwrap() {
                 v
@@ -164,6 +166,7 @@ impl<'machine> Machine<'machine> {
               });
               e1
             };
+            self.env_replace(new_env);
           } else {
             panic!("not a closure in the accumulator: {:?}", self.accu);
           }
@@ -189,7 +192,7 @@ impl<'machine> Machine<'machine> {
             //    of the environment.
             //    Pc simply takes a step.
             Some(AspValue::Val(v)) => {
-              self.env.push(v);
+              self.env_push(v);
               self.step(None);
             }
             // 2) Got a mark so must build a closure.
@@ -203,7 +206,7 @@ impl<'machine> Machine<'machine> {
               self.accu = Value::Fn(Closure(self.pc, self.env.clone()));
               // now modify it...
               self.pc = c1;
-              self.env = e1;
+              self.env_replace(e1);
             }
             _ => self.panic_pc("argument stack is empty", instr),
           }
@@ -228,16 +231,17 @@ impl<'machine> Machine<'machine> {
             Some(AspValue::Mark) => {
               let Closure(c1, e1) = self.rsp.pop().unwrap();
               self.pc = c1;
-              self.env = e1.clone();
+              self.env_replace(e1);
             }
             Some(AspValue::Val(v)) => {
               if let Value::Fn(Closure(c1, e1)) = &self.accu {
                 self.pc = *c1;
-                self.env = {
+                let new_env = {
                   let mut e1 = e1.clone();
                   e1.push(v);
                   e1
                 };
+                self.env_replace(new_env);
               } else {
                 panic!();
               }
@@ -247,17 +251,18 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Let => {
           // Put the value of the accumulator in front of the environment.
-          self.env.push(self.accu.clone());
+          self.env_push(self.accu.clone());
           self.step(None);
         }
         Instruction::Letrec1 => {
           // Same as [Dummy; Cur ofs; Update], a frequent sequence
           // corresponding to [let rec f = function .. in ..].
           self.step(None);
-          self.env = vec![Value::FnRec(Closure(
+          let new_env = vec![Value::FnRec(Closure(
             self.pc - (self.mem[self.pc as usize] as u32),
             vec![],
           ))];
+          self.env_replace(new_env);
           self.step(None); // TODO Why? There's an extra zero here. Skip over it.
           self.step(None);
         }
@@ -277,14 +282,14 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Dummy => {
           // Place a Dummy in the environment.
-          self.env.push(Value::Dummy);
+          self.env_push(Value::Dummy);
           self.step(None);
         }
         Instruction::Update => {
           // Replace the head of the environment with the value in the
           // accumulator.
           if let Value::Dummy = self.env.pop().unwrap() {
-            self.env.push(self.accu.clone());
+            self.env_push(self.accu.clone());
           } else {
             panic!("expected a Dummy in the environment");
           }
@@ -631,6 +636,22 @@ rsp max: {}",
     let len = self.asp.len();
     if len > self.monitor.len_asp_max {
       self.monitor.len_asp_max = len;
+    };
+  }
+
+  fn env_replace(&mut self, val: Vec<Value>) {
+    self.env = val;
+    let len = self.env.len();
+    if len > self.monitor.len_env_max {
+      self.monitor.len_env_max = len;
+    };
+  }
+
+  fn env_push(&mut self, val: Value) {
+    self.env.push(val);
+    let len = self.env.len();
+    if len > self.monitor.len_env_max {
+      self.monitor.len_env_max = len;
     };
   }
 
