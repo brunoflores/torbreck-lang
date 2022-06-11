@@ -138,6 +138,11 @@ let compiled_module_name () = !defined_module.mod_name
 let defined_global name desc =
   { qualid = { qual = compiled_module_name (); id = name }; info = desc }
 
+let new_type_stamp () =
+  let s = succ !defined_module.mod_type_stamp in
+  !defined_module.mod_type_stamp <- s;
+  s
+
 (* Additions to the module being compiled *)
 
 let add_global_info sel_fct glob =
@@ -192,10 +197,4 @@ let type_descr_of_type_constr cstr =
        cstr.qualid.qual)
 
 (* To write the interface of the module currently compiled *)
-let write_compiled_interface oc =
-  print_endline "write_compiled_interface:";
-  Hashtbl.iter
-    (fun name { info = desc; _ } ->
-      Printf.printf "%s: %s\n" name (Globals.show_value_desc desc))
-    !defined_module.mod_values;
-  output_value oc !defined_module
+let write_compiled_interface oc = output_value oc !defined_module

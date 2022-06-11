@@ -25,6 +25,7 @@ open Builtins
 %token THEN
 %token ELSE
 %token PREF
+%token TYPE
 
 /* Special symbols */
 %token EQUAL
@@ -69,6 +70,10 @@ implementation:
 interface:
   | VALUE v = value_decl SEMISEMI
     { make_intf (Zvaluedecl v) }
+  | TYPE ty = type_decl SEMISEMI
+    { make_intf (Ztypedecl ty) }
+  | EOF
+    { raise End_of_file }
 
 /* Expressions */
 
@@ -126,6 +131,12 @@ value_decl:
   | v = value1_decl
     { [v] }
 
+type_decl:
+  | ty = type1_decl AND more = type_decl
+    { ty :: more }
+  | ty = type1_decl
+    { [ty] }
+
 value1_decl:
   | id = ide COLON ty = typ
     { (id, ty, ValueNotPrim) }
@@ -135,6 +146,18 @@ value1_decl:
 prim_decl:
   | i = INT s = STRING
     { find_primitive i s }
+
+type1_decl:
+  | params = type_params id = IDENT ty_def = type1_def
+    { (id, params, ty_def) }
+
+type1_def:
+  | /* pesilon */
+    { Zabstract_type }
+
+type_params:
+  | /* empty */
+    { [] }
 
 /* Identifiers */
 

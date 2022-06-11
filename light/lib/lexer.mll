@@ -15,6 +15,7 @@ let reservedWords = [
   ("value", VALUE);
   ("prefix", PREF);
   ("and", AND);
+  ("type", TYPE);
 ]
 
 let (symbolTable : (string, token) Hashtbl.t) = Hashtbl.create 149

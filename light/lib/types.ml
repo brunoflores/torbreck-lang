@@ -345,3 +345,33 @@ let rec labels_of_type ty =
       | _ -> failwith "Types.labels_of_type"
     end
   | _ -> failwith "Types.labels_of_type"
+
+(* Check whether a type constructor is a recursive abbrev *)
+exception Recursive_abbrev
+
+let check_recursive_abbrev cstr =
+  match cstr.info.ty_abbr with
+  | Tnotabbrev -> ()
+  | Tabbrev (_params, body) ->
+      let rec check_abbrev seen ty =
+        begin
+          match (type_repr ty).typ_desc with
+          | Tvar _ -> ()
+          | Tarrow (t1, t2) -> begin
+              check_abbrev seen t1;
+              check_abbrev seen t2
+            end
+          | Tproduct tlist -> List.iter (check_abbrev seen) tlist
+          | Tconstr (c, tlist) ->
+              if List.memq c seen then raise Recursive_abbrev
+              else begin
+                List.iter (check_abbrev seen) tlist;
+                begin
+                  match c.info.ty_abbr with
+                  | Tnotabbrev -> ()
+                  | Tabbrev (_params, body) -> check_abbrev (c :: seen) body
+                end
+              end
+        end
+      in
+      check_abbrev [ cstr ] body

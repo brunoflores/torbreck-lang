@@ -9,8 +9,23 @@ open Types
 open Modules
 
 (* To convert type expressions to types *)
+
 let type_expr_vars = ref ([] : (string * typ) list)
 let reset_type_expression_vars () = type_expr_vars := []
+
+let bind_type_expression_vars var_list =
+  type_expr_vars := [];
+  List.map
+    (function
+      | v ->
+          if List.mem_assoc v !type_expr_vars then
+            failwith "bind_type_expression_vars"
+          else begin
+            let t = new_global_type_var () in
+            type_expr_vars := (v, t) :: !type_expr_vars;
+            t
+          end)
+    var_list
 
 let type_of_type_expression strict_flag typexp =
   let rec type_of typexp =

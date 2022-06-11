@@ -63,6 +63,8 @@ and expression_desc =
 and expr_ident = Zglobal of value_desc global | Zlocal of string
 [@@deriving show]
 
+type type_decl = Zabstract_type [@@deriving show]
+
 type impl_phrase = { im_desc : impl_desc; im_loc : location }
 
 and impl_desc =
@@ -75,10 +77,10 @@ and impl_desc =
 
 type intf_phrase = { in_desc : intf_desc; in_loc : location }
 
-and intf_desc = Zvaluedecl of (string * type_expression * prim_desc) list
+and intf_desc =
+  | Zvaluedecl of (string * type_expression * prim_desc) list
+  | Ztypedecl of (string * string list * type_decl) list
 [@@deriving show]
-
-(* type intf_phrase = { in_desc : intf_desc; in_loc : location } *)
 
 (* and intf_desc = *)
 (*   | Zvaluedecl of (string * type_expression * prim_desc) list *)

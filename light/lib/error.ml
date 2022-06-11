@@ -106,3 +106,24 @@ let illegal_letrec_expr _loc =
   Printf.eprintf
     "This kind of expression is not allowed in right-hand sides of \"let rec\".\n";
   failwith "illegal_letrec_expr"
+
+let duplicate_param_in_type_decl_err _loc =
+  Printf.eprintf "Repeated type parameter in type declaration.\n";
+  failwith "duplicate_param_in_type_decl_err"
+
+let illegal_type_redefinition _loc _ty_desc =
+  Printf.eprintf
+    "The type is exported as an abstract type by this module and defined \
+     several times in the implementation. Please define it only once.";
+  failwith "illegal_type_redefinition"
+
+let type_decl_arity_err _loc ty_desc1 ty_desc2 =
+  Printf.eprintf
+    "The type has been declared with %d parameter(s) but is here defined with \
+     %d parameter(s).\n"
+    ty_desc1.info.ty_arity ty_desc2.info.ty_arity;
+  failwith "type_decl_arity_err"
+
+let recursive_abbrev_err _loc _ty_cstr =
+  Printf.eprintf "The type abbreviation is a cyclic (infinite) type.\n";
+  failwith "recursive_abbrev_err"
