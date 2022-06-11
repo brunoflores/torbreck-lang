@@ -1,6 +1,7 @@
 (* Command-line parsing *)
 
 open LightLib.Compiler_driver
+module Modules = LightLib.Modules
 
 let () =
   let usage = "light [-d] <file1> [<file2>] ..." in
@@ -14,10 +15,10 @@ let () =
   in
   let anonymous fname =
     (* Prepare environment *)
-    LightLib.Modules.default_used_modules := [ "builtin" ];
+    Modules.default_used_modules := [ "builtin" ];
     if not !no_stdlib then
-      LightLib.Modules.default_used_modules :=
-        !LightLib.Modules.default_used_modules @ [ "eq"; "int"; "string"; "io" ];
+      Modules.default_used_modules :=
+        !Modules.default_used_modules @ [ "eq"; "int"; "string"; "io" ];
 
     (* The business *)
     if Filename.check_suffix fname ".ml" then
