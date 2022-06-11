@@ -1,1 +1,1 @@
-print_string "42";;
+print_endline "42";;
