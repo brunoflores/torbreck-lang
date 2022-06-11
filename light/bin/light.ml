@@ -13,10 +13,13 @@ let () =
     ]
   in
   let anonymous fname =
+    (* Prepare environment *)
     LightLib.Modules.default_used_modules := [ "builtin" ];
     if not !no_stdlib then
       LightLib.Modules.default_used_modules :=
         !LightLib.Modules.default_used_modules @ [ "eq"; "int"; "string"; "io" ];
+
+    (* The business *)
     if Filename.check_suffix fname ".ml" then
       let filename = Filename.chop_suffix fname ".ml" in
       compile_implementation (Filename.basename filename) filename ".ml"
