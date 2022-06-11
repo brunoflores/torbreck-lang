@@ -34,6 +34,8 @@ let get_slot_for_literal cst =
   literal_table := (c, cst) :: !literal_table;
   c
 
+let number_of_globals () = !global_table.num_cnt
+
 (* The C primitives *)
 
 let get_num_of_prim name =
