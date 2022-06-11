@@ -4,8 +4,6 @@ module Errors = MenhirLib.ErrorReports
 module LexerUtil = MenhirLib.LexerUtil
 module Interpreter = Parser.MenhirInterpreter
 
-let succeed_impl (p : Syntax.impl_phrase) = p
-
 let show text positions =
   Errors.extract text positions
   |> Errors.sanitize |> Errors.compress |> Errors.shorten 20
@@ -33,10 +31,6 @@ let write_compiled_interface intf_name =
   Modules.write_compiled_interface oc;
   close_out oc
 
-let succeed_intf (p : Syntax.intf_phrase) =
-  Printf.printf "%s\n" @@ Syntax.show_intf_phrase p;
-  Compiler.compile_intf_phrase p
-
 let compile_interface modname filename =
   let source_name = filename ^ ".mli" in
   let intf_name = filename ^ ".zi" in
@@ -44,7 +38,8 @@ let compile_interface modname filename =
   try
     Modules.start_compiling_interface modname;
     while true do
-      parse Parser.Incremental.interface succeed_intf lexbuf content
+      parse Parser.Incremental.interface Compiler.compile_intf_phrase lexbuf
+        content
     done
   with
   | End_of_file -> write_compiled_interface intf_name
@@ -55,18 +50,20 @@ let compile_impl filename suffix =
   let obj_name = filename ^ ".zo" in
   let oc = open_out_bin obj_name in
   let lexbuf, content = get_contents source_name in
-  Emit_phr.start_emit_phrase oc;
   begin
+    Emit_phr.start_emit_phrase oc;
     try
-      let zam_phr, is_pure =
-        Compiler.compile_impl_phrase
-        @@ parse Parser.Incremental.implementation succeed_impl lexbuf content
-      in
-      Emit_phr.emit_phrase oc is_pure zam_phr
-    with Sys_error s | Failure s -> failwith s
-  end;
-  Emit_phr.end_emit_phrase oc;
-  close_out oc
+      while true do
+        parse Parser.Incremental.implementation
+          (Compiler.compile_impl_phrase oc)
+          lexbuf content
+      done
+    with
+    | End_of_file ->
+        Emit_phr.end_emit_phrase oc;
+        close_out oc
+    | Sys_error s | Failure s -> failwith s
+  end
 
 let compile_implementation modname filename suffix =
   if Sys.file_exists (filename ^ ".mli") then begin
