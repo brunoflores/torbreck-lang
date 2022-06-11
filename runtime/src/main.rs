@@ -74,7 +74,10 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 
   let mut machine = Machine::new(&input[0..]);
   let _accu = machine.interpret();
-  println!("{}", machine.report());
+
+  // Debug:
+  // println!("{}", machine.report());
+
   Ok(())
 }
 

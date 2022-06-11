@@ -34,5 +34,5 @@ let reset_linker_tables () =
   c_prim_table := new_numtable 10;
   List.iter
     (fun name -> reserve_in_numtable !c_prim_table name)
-    [ "print_string"; "lessthan"; "-int"; "+int" ];
+    [ "print_endline"; "lessthan"; "-int"; "+int"; "string_of_int" ];
   ()

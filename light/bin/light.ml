@@ -14,7 +14,8 @@ let () =
   Arg.parse spec readfname usage;
   match !filename with
   | Some f ->
-      LightLib.Modules.default_used_modules := [ "builtin"; "eq"; "int" ];
+      LightLib.Modules.default_used_modules :=
+        [ "builtin"; "eq"; "int"; "string"; "io" ];
       if Filename.check_suffix f ".ml" then
         let filename = Filename.chop_suffix f ".ml" in
         compile_implementation (Filename.basename filename) filename ".ml"

@@ -58,7 +58,7 @@ pub struct Machine<'machine> {
   asp: usize,                     // Argument stack pointer
   rsp: usize,                     // Return stack pointer
   accu: Value,                    // Accumulator for intermediate results.
-  prims: [prims::PrimFn; 4],      // Primitives table
+  prims: [prims::PrimFn; 5],      // Primitives table
                                   // cache size TODO
 }
 
@@ -88,10 +88,11 @@ impl<'machine> Machine<'machine> {
 
       // Feed the primitives table
       prims: [
-        prims::print_string,
+        prims::print_endline,
         prims::less_than,
         prims::int_sub,
         prims::int_add,
+        prims::string_of_int,
       ],
     }
   }
@@ -99,6 +100,8 @@ impl<'machine> Machine<'machine> {
   pub fn interpret<'a>(&'a mut self) -> Value {
     loop {
       let instr = self.decode();
+      // Debug:
+      // println!("{:?}", self.accu);
       match instr {
         Instruction::Stop => return self.accu.clone(),
         Instruction::Access => {
@@ -613,6 +616,7 @@ impl<'machine> Machine<'machine> {
             panic!("primitive number {pnum} undefined");
           };
           self.step(None);
+          self.step(None); // TODO Why is the prim id duplicated? (look at linker)
         }
         Instruction::Ccall2 => {
           self.step(None);
