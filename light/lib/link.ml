@@ -4,7 +4,6 @@ open Emit_phr
 open Reloc
 open Lambda
 open Patch
-open Tr_const
 
 (* First pass: determine which phrases are required *)
 
@@ -80,17 +79,25 @@ let link_object oc (name, required) =
     raise x
 
 (* Build the initial table of globals *)
-
 let emit_data oc =
   Printf.printf "number of globals: %d\n" (Symtable.number_of_globals ());
-  let globals = Array.make (Symtable.number_of_globals ()) (Obj.repr 0) in
+  output_binary_int oc (Symtable.number_of_globals ());
   List.iter
-    (function n, sc -> globals.(n) <- transl_structured_const sc)
-    !Symtable.literal_table;
-  output_value oc globals
+    (function
+      | n, sc -> (
+          Printf.printf "%d %s\n" n (Const.show_struct_constant sc);
+          match sc with
+          | Const.SCatom (Const.ACstring s) -> begin
+              output_string oc s;
+              output_binary_int oc 0
+            end
+          | _ as x ->
+              failwith
+              @@ Format.sprintf "Link.emit_data: not implemented %s"
+                   (Const.show_struct_constant x)))
+    !Symtable.literal_table
 
 (* Build a bytecode executable file *)
-
 let link module_list exec_name =
   let tolink = List.fold_left scan_file [] (List.rev module_list) in
   let oc =
