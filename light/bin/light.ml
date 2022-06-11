@@ -1,28 +1,28 @@
 (* Command-line parsing *)
 
 open LightLib.Compiler_driver
-(* open LightLib.Modules *)
 
 let () =
   let usage = "light [-d] <file1> [<file2>] ..." in
   let debug = ref false in
-  let filename = ref None in
-  let spec = [ ("-d", Arg.Set debug, "Print debug information") ] in
-  let readfname fname =
-    filename := if String.length fname > 0 then Some fname else None
+  let no_stdlib = ref false in
+  let spec =
+    [
+      ("-d", Arg.Set debug, "Print debug information");
+      ("-no-stdlib", Arg.Set no_stdlib, "Do not include the standard library");
+    ]
   in
-  Arg.parse spec readfname usage;
-  match !filename with
-  | Some f ->
+  let anonymous fname =
+    LightLib.Modules.default_used_modules := [ "builtin" ];
+    if not !no_stdlib then
       LightLib.Modules.default_used_modules :=
-        [ "builtin"; "eq"; "int"; "string"; "io" ];
-      if Filename.check_suffix f ".ml" then
-        let filename = Filename.chop_suffix f ".ml" in
-        compile_implementation (Filename.basename filename) filename ".ml"
-      else if Filename.check_suffix f ".mli" then
-        let filename = Filename.chop_suffix f ".mli" in
-        compile_interface (Filename.basename filename) filename
-      else failwith @@ Printf.sprintf "Don't know what to do with file %s." f
-  | None ->
-      print_endline usage;
-      exit 0
+        !LightLib.Modules.default_used_modules @ [ "eq"; "int"; "string"; "io" ];
+    if Filename.check_suffix fname ".ml" then
+      let filename = Filename.chop_suffix fname ".ml" in
+      compile_implementation (Filename.basename filename) filename ".ml"
+    else if Filename.check_suffix fname ".mli" then
+      let filename = Filename.chop_suffix fname ".mli" in
+      compile_interface (Filename.basename filename) filename
+    else failwith @@ Printf.sprintf "Don't know what to do with file %s." fname
+  in
+  Arg.parse spec anonymous usage
