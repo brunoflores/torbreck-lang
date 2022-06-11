@@ -33,10 +33,9 @@ let write_compiled_interface intf_name =
   Modules.write_compiled_interface oc;
   close_out oc
 
-let succeed_intf intf_name (p : Syntax.intf_phrase) =
+let succeed_intf (p : Syntax.intf_phrase) =
   Printf.printf "%s\n" @@ Syntax.show_intf_phrase p;
-  Compiler.compile_intf_phrase p;
-  write_compiled_interface intf_name
+  Compiler.compile_intf_phrase p
 
 let compile_interface modname filename =
   let source_name = filename ^ ".mli" in
@@ -44,8 +43,12 @@ let compile_interface modname filename =
   let lexbuf, content = get_contents source_name in
   try
     Modules.start_compiling_interface modname;
-    parse Parser.Incremental.interface (succeed_intf intf_name) lexbuf content
-  with Sys_error s | Failure s -> failwith s
+    while true do
+      parse Parser.Incremental.interface succeed_intf lexbuf content
+    done
+  with
+  | End_of_file -> write_compiled_interface intf_name
+  | Sys_error s | Failure s -> failwith s
 
 let compile_impl filename suffix =
   let source_name = filename ^ suffix in
