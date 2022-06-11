@@ -55,15 +55,14 @@ let read_module _basename filename =
          "Modules.read_module: corrupted compiled interface file %s." filename
 
 let load_module name =
-  let fullname = name ^ ".zi" in
-  let _ =
-    if Sys.file_exists fullname = false then
-      failwith
-      @@ Printf.sprintf
-           "Modules.load_module: cannot find the compiled interface file %s."
-           fullname
-  in
-  read_module name fullname
+  try
+    let fullname = Misc.find_in_path (name ^ ".zi") in
+    read_module name fullname
+  with Misc.Cannot_find_file _ ->
+    failwith
+    @@ Printf.sprintf
+         "Modules.load_module: cannot find the compiled interface file %s.zi."
+         name
 
 (* To find an interface by its name *)
 

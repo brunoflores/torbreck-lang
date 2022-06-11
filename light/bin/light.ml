@@ -2,15 +2,20 @@
 
 open LightLib.Compiler_driver
 module Modules = LightLib.Modules
+module Misc = LightLib.Misc
 
 let () =
   let usage = "light [-d] [-no-stdlib] <file1> [<file2>] ..." in
   let debug = ref false in
   let no_stdlib = ref false in
+  let add_include d = Misc.load_path := d :: !Misc.load_path in
   let spec =
     [
       ("-d", Arg.Set debug, "Print debug information");
       ("-no-stdlib", Arg.Set no_stdlib, "Do not include the standard library");
+      ( "-I",
+        Arg.String add_include,
+        "Add directory to list of included libraries" );
     ]
   in
   let anonymous fname =
