@@ -59,12 +59,16 @@ pub struct Machine<'machine> {
   rsp: usize,                     // Return stack pointer
   accu: Value,                    // Accumulator for intermediate results.
   prims: [prims::PrimFn; 5],      // Primitives table
+                                  // globals: Vec<Value>,            //
                                   // cache size TODO
 }
 
 #[allow(clippy::needless_lifetimes)]
 impl<'machine> Machine<'machine> {
-  pub fn new(mem: &'machine [u8]) -> Self {
+  pub fn new(mem: &'machine [u8], globals: &'machine [u8]) -> Self {
+    // Debug:
+    // println!("{:?}", mem);
+    // println!("{:?}", globals);
     Machine {
       mem,
       pc: 0,

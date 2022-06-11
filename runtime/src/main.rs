@@ -69,10 +69,19 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     process::exit(1);
   };
 
-  // Print input bytes:
+  // Debug:
   // println!("{:?}", input);
+  // println!("size of bytecode: {}", &input[input.len() - 5]);
+  // println!("size of globals: {}", &input[input.len() - 1]);
 
-  let mut machine = Machine::new(&input[0..]);
+  // Read sizes from the trailer:
+  let size_of_bytecode: usize = input[input.len() - 5] as usize;
+  let size_of_globals: usize = input[input.len() - 1] as usize;
+
+  let mut machine = Machine::new(
+    &input[0..size_of_bytecode],
+    &input[size_of_bytecode..(size_of_bytecode + size_of_globals)],
+  );
   let _accu = machine.interpret();
 
   // Debug:
