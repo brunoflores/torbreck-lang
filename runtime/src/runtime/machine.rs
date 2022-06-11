@@ -50,13 +50,16 @@ enum AspValue {
 }
 
 pub struct Machine<'machine> {
-  pc: u32,                   // Code pointer.
-  mem: &'machine [u8],       // Program memory in bytes.
-  env: Vec<Value>,           // Current environment.
-  asp: Vec<AspValue>,        // Argument stack.
-  rsp: Vec<Closure>,         // Return stack.
-  accu: Value,               // Accumulator for intermediate results.
-  prims: [prims::PrimFn; 4], // Primitives table
+  pc: u32,                        // Code pointer.
+  mem: &'machine [u8],            // Program memory in bytes.
+  env: Vec<Value>,                // Current environment (heap allocated).
+  astack: [Option<AspValue>; 60], // Argument stack.
+  rstack: [Option<Closure>; 30],  // Return stack.
+  asp: usize,                     // Argument stack pointer
+  rsp: usize,                     // Return stack pointer
+  accu: Value,                    // Accumulator for intermediate results.
+  prims: [prims::PrimFn; 4],      // Primitives table
+                                  // cache size TODO
 }
 
 #[allow(clippy::needless_lifetimes)]
@@ -67,10 +70,21 @@ impl<'machine> Machine<'machine> {
       pc: 0,
       accu: Value::Atom0,
 
-      // TODO Consider Vec::with_capacity
       env: Vec::with_capacity(100),
-      asp: Vec::with_capacity(100),
-      rsp: Vec::with_capacity(100),
+      astack: [
+        None, None, None, None, None, None, None, None, None, None, None, None,
+        None, None, None, None, None, None, None, None, None, None, None, None,
+        None, None, None, None, None, None, None, None, None, None, None, None,
+        None, None, None, None, None, None, None, None, None, None, None, None,
+        None, None, None, None, None, None, None, None, None, None, None, None,
+      ],
+      rstack: [
+        None, None, None, None, None, None, None, None, None, None, None, None,
+        None, None, None, None, None, None, None, None, None, None, None, None,
+        None, None, None, None, None, None,
+      ],
+      asp: 0,
+      rsp: 0,
 
       // Feed the primitives table
       prims: [
@@ -108,11 +122,15 @@ impl<'machine> Machine<'machine> {
             self.pc = *c1 as u32;
             let mut new_env = {
               let mut e1 = e1.clone();
-              e1.push(if let AspValue::Val(v) = self.asp.pop().unwrap() {
-                v
-              } else {
-                panic!();
-              });
+              e1.push(
+                if let AspValue::Val(v) = self.astack[self.asp].take().unwrap()
+                {
+                  self.asp -= 1;
+                  v
+                } else {
+                  panic!("not a value in the asp");
+                },
+              );
               e1
             };
             self.env = mem::take(&mut new_env);
@@ -127,31 +145,34 @@ impl<'machine> Machine<'machine> {
             self.pc = *c1 as u32;
             let new_env = {
               let mut e1 = e1.clone();
-              e1.push(if let AspValue::Val(v) = self.asp.pop().unwrap() {
-                v
-              } else {
-                panic!();
-              });
+              e1.push(
+                if let AspValue::Val(v) = self.astack[self.asp].take().unwrap()
+                {
+                  self.asp -= 1;
+                  v
+                } else {
+                  panic!("not a value in the asp");
+                },
+              );
               e1
             };
-            self
-              .rsp
-              .push(Closure(oldpc + 1, mem::replace(&mut self.env, new_env)));
+            self.rsp += 1;
+            self.rstack[self.rsp] =
+              Some(Closure(oldpc + 1, mem::replace(&mut self.env, new_env)));
           } else if let Value::FnRec(Closure(c1, _)) = &self.accu {
             self.pc = *c1 as u32;
             let new_env = {
-              let mut e1 = Vec::with_capacity(10);
+              let mut e1 = Vec::with_capacity(10); // TODO
               e1.push(self.accu.clone());
-              e1.push(if let AspValue::Val(v) = self.asp.pop().unwrap() {
-                v
-              } else {
-                panic!();
-              });
+              if let Some(AspValue::Val(v)) = self.astack[self.asp].take() {
+                e1.push(v);
+                self.asp -= 1;
+              };
               e1
             };
-            self
-              .rsp
-              .push(Closure(oldpc + 1, mem::replace(&mut self.env, new_env)));
+            self.rsp += 1;
+            self.rstack[self.rsp] =
+              Some(Closure(oldpc + 1, mem::replace(&mut self.env, new_env)));
           } else {
             panic!("not a closure in the accumulator: {:?}", self.accu);
           }
@@ -160,18 +181,20 @@ impl<'machine> Machine<'machine> {
           // Push the accumulator onto the argument stack,
           // leave the accumulator untouched, and
           // take a step.
-          self.asp.push(AspValue::Val(self.accu.clone()));
+          self.asp += 1;
+          self.astack[self.asp] = Some(AspValue::Val(self.accu.clone()));
           self.step(None);
         }
         Instruction::Pushmark => {
           // Push a mark onto the argument stack, and
           // take step.
-          self.asp.push(AspValue::Mark);
+          self.asp += 1;
+          self.astack[self.asp] = Some(AspValue::Mark);
           self.step(None);
         }
         Instruction::Grab => {
           // Abstraction in tail-call position.
-          match self.asp.pop() {
+          match self.astack[self.asp].take() {
             // 1) In tail-call position.
             //    Simply pops one from the argumeht stack and puts it in front
             //    of the environment.
@@ -186,7 +209,8 @@ impl<'machine> Machine<'machine> {
             //    environment and returns it to the caller while popping
             //    the mark.
             Some(AspValue::Mark) => {
-              let Closure(c1, mut e1) = self.rsp.pop().unwrap();
+              let Closure(c1, mut e1) = self.rstack[self.rsp].take().unwrap();
+              self.rsp -= 1;
               // Read current state...
               self.accu = Value::Fn(Closure(self.pc, self.env.clone()));
               // now modify it...
@@ -194,7 +218,8 @@ impl<'machine> Machine<'machine> {
               self.env = mem::take(&mut e1);
             }
             _ => self.panic_pc("argument stack is empty", instr),
-          }
+          };
+          self.asp -= 1;
         }
         Instruction::Cur => {
           // Abstraction using the stack.
@@ -212,9 +237,10 @@ impl<'machine> Machine<'machine> {
           // the caller. Otherwise, jump to the closure contained in the
           // accumulator.
           //
-          match self.asp.pop() {
+          match self.astack[self.asp].take() {
             Some(AspValue::Mark) => {
-              let Closure(c1, mut e1) = self.rsp.pop().unwrap();
+              let Closure(c1, mut e1) = self.rstack[self.rsp].take().unwrap();
+              self.rsp -= 1;
               self.pc = c1;
               self.env = mem::take(&mut e1);
             }
@@ -233,6 +259,7 @@ impl<'machine> Machine<'machine> {
             }
             None => panic!("asp empty"),
           }
+          self.asp -= 1;
         }
         Instruction::Let => {
           // Put the value of the accumulator in front of the environment.
@@ -306,12 +333,16 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Addint => {
           if let Value::Int(i) = self.accu {
-            self.accu = match self.asp.pop().unwrap() {
-              AspValue::Val(Value::Int(y)) => Value::Int(i + y),
+            self.accu = match self.astack[self.asp].take().unwrap() {
+              AspValue::Val(Value::Int(y)) => {
+                self.asp -= 1;
+                Value::Int(i + y)
+              }
               y => {
                 self.panic_pc(&format!("not an integer in asp: {:?}", y), instr)
               }
-            }
+            };
+            self.asp -= 1;
           } else {
             self.panic_pc("not an integer", instr);
           }
@@ -319,12 +350,14 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Subint => {
           if let Value::Int(i) = self.accu {
-            self.accu =
-              if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
-                Value::Int(i - y)
-              } else {
-                self.panic_pc("not an integer in asp", instr);
-              }
+            self.accu = if let Some(AspValue::Val(Value::Int(y))) =
+              self.astack[self.asp]
+            {
+              self.asp -= 1;
+              Value::Int(i - y)
+            } else {
+              self.panic_pc("not an integer in asp", instr);
+            }
           } else {
             self.panic_pc("not an integer", instr);
           }
@@ -332,12 +365,14 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Mulint => {
           if let Value::Int(i) = self.accu {
-            self.accu =
-              if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
-                Value::Int(i * y)
-              } else {
-                self.panic_pc("not an integer in asp", instr);
-              }
+            self.accu = if let Some(AspValue::Val(Value::Int(y))) =
+              self.astack[self.asp]
+            {
+              self.asp -= 1;
+              Value::Int(i * y)
+            } else {
+              self.panic_pc("not an integer in asp", instr);
+            }
           } else {
             self.panic_pc("not an integer", instr);
           }
@@ -345,8 +380,11 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Divint => {
           if let Value::Int(i) = self.accu {
-            self.accu = match self.asp.pop() {
-              Some(AspValue::Val(Value::Int(y))) if y > 0 => Value::Int(i / y),
+            self.accu = match self.astack[self.asp] {
+              Some(AspValue::Val(Value::Int(y))) if y > 0 => {
+                self.asp -= 1;
+                Value::Int(i / y)
+              }
               Some(AspValue::Val(Value::Int(_))) => {
                 self.panic_pc("division by zero", instr)
               }
@@ -359,8 +397,11 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Modint => {
           if let Value::Int(i) = self.accu {
-            self.accu = match self.asp.pop() {
-              Some(AspValue::Val(Value::Int(y))) if y > 0 => Value::Int(i % y),
+            self.accu = match self.astack[self.asp] {
+              Some(AspValue::Val(Value::Int(y))) if y > 0 => {
+                self.asp -= 1;
+                Value::Int(i % y)
+              }
               Some(AspValue::Val(Value::Int(_))) => {
                 self.panic_pc("division by zero", instr)
               }
@@ -373,12 +414,14 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Andint => {
           if let Value::Int(i) = self.accu {
-            self.accu =
-              if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
-                Value::Int(i & y)
-              } else {
-                self.panic_pc("not an integer in asp", instr);
-              }
+            self.accu = if let Some(AspValue::Val(Value::Int(y))) =
+              self.astack[self.asp]
+            {
+              self.asp -= 1;
+              Value::Int(i & y)
+            } else {
+              self.panic_pc("not an integer in asp", instr);
+            }
           } else {
             self.panic_pc("not an integer", instr);
           }
@@ -386,12 +429,14 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Orint => {
           if let Value::Int(i) = self.accu {
-            self.accu =
-              if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
-                Value::Int(i | y)
-              } else {
-                self.panic_pc("not an integer in asp", instr);
-              }
+            self.accu = if let Some(AspValue::Val(Value::Int(y))) =
+              self.astack[self.asp]
+            {
+              self.asp -= 1;
+              Value::Int(i | y)
+            } else {
+              self.panic_pc("not an integer in asp", instr);
+            }
           } else {
             self.panic_pc("not an integer", instr);
           }
@@ -399,12 +444,14 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Xorint => {
           if let Value::Int(i) = self.accu {
-            self.accu =
-              if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
-                Value::Int(i ^ y)
-              } else {
-                self.panic_pc("not an integer in asp", instr);
-              }
+            self.accu = if let Some(AspValue::Val(Value::Int(y))) =
+              self.astack[self.asp]
+            {
+              self.asp -= 1;
+              Value::Int(i ^ y)
+            } else {
+              self.panic_pc("not an integer in asp", instr);
+            }
           } else {
             self.panic_pc("not an integer", instr);
           }
@@ -412,12 +459,14 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Shiftleftint => {
           if let Value::Int(i) = self.accu {
-            self.accu =
-              if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
-                Value::Int(i << y)
-              } else {
-                self.panic_pc("not an integer in asp", instr);
-              }
+            self.accu = if let Some(AspValue::Val(Value::Int(y))) =
+              self.astack[self.asp]
+            {
+              self.asp -= 1;
+              Value::Int(i << y)
+            } else {
+              self.panic_pc("not an integer in asp", instr);
+            }
           } else {
             self.panic_pc("not an integer", instr);
           }
@@ -425,12 +474,14 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Shiftrightintsigned => {
           if let Value::Int(i) = self.accu {
-            self.accu =
-              if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
-                Value::Int(i >> y)
-              } else {
-                self.panic_pc("not an integer in asp", instr);
-              }
+            self.accu = if let Some(AspValue::Val(Value::Int(y))) =
+              self.astack[self.asp]
+            {
+              self.asp -= 1;
+              Value::Int(i >> y)
+            } else {
+              self.panic_pc("not an integer in asp", instr);
+            }
           } else {
             self.panic_pc("not an integer", instr);
           }
@@ -438,12 +489,14 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Shiftrightintunsigned => {
           if let Value::Int(i) = self.accu {
-            self.accu =
-              if let Some(AspValue::Val(Value::Int(y))) = self.asp.pop() {
-                Value::Int(((i as u8) >> y) as i32) // Can crash.
-              } else {
-                self.panic_pc("not an integer in asp", instr);
-              }
+            self.accu = if let Some(AspValue::Val(Value::Int(y))) =
+              self.astack[self.asp]
+            {
+              self.asp -= 1;
+              Value::Int(((i as u8) >> y) as i32) // Can crash.
+            } else {
+              self.panic_pc("not an integer in asp", instr);
+            }
           } else {
             self.panic_pc("not an integer", instr);
           }
@@ -468,7 +521,10 @@ impl<'machine> Machine<'machine> {
             }
             Instruction::Addfloat => {
               if let Value::Float(x) = self.accu {
-                if let Some(AspValue::Val(Value::Float(y))) = self.asp.pop() {
+                if let Some(AspValue::Val(Value::Float(y))) =
+                  self.astack[self.asp]
+                {
+                  self.asp -= 1;
                   Value::Float(x + y)
                 } else {
                   self.panic_pc("not a float in asp", instr);
@@ -479,7 +535,10 @@ impl<'machine> Machine<'machine> {
             }
             Instruction::Subfloat => {
               if let Value::Float(x) = self.accu {
-                if let Some(AspValue::Val(Value::Float(y))) = self.asp.pop() {
+                if let Some(AspValue::Val(Value::Float(y))) =
+                  self.astack[self.asp]
+                {
+                  self.asp -= 1;
                   Value::Float(x - y)
                 } else {
                   self.panic_pc("not a float in asp", instr);
@@ -490,7 +549,10 @@ impl<'machine> Machine<'machine> {
             }
             Instruction::Mulfloat => {
               if let Value::Float(x) = self.accu {
-                if let Some(AspValue::Val(Value::Float(y))) = self.asp.pop() {
+                if let Some(AspValue::Val(Value::Float(y))) =
+                  self.astack[self.asp]
+                {
+                  self.asp -= 1;
                   Value::Float(x * y)
                 } else {
                   self.panic_pc("not a float in asp", instr);
@@ -501,8 +563,9 @@ impl<'machine> Machine<'machine> {
             }
             Instruction::Divfloat => {
               if let Value::Float(x) = self.accu {
-                match self.asp.pop() {
+                match self.astack[self.asp] {
                   Some(AspValue::Val(Value::Float(y))) if y > 0.0 => {
+                    self.asp -= 1;
                     Value::Float(x / y)
                   }
                   Some(AspValue::Val(Value::Float(_))) => {
@@ -555,11 +618,14 @@ impl<'machine> Machine<'machine> {
           self.step(None);
           let pnum = self.mem[self.pc as usize] as usize;
           if let Some(prim) = self.prims.get(pnum) {
-            let arg1 = if let Some(AspValue::Val(v)) = self.asp.pop() {
+            let arg1 = if let Some(AspValue::Val(v)) =
+              self.astack[self.asp].take()
+            {
               v
             } else {
-              panic!()
+              panic!("Ccall2 expects the second argument in the argument stack")
             };
+            self.asp -= 1;
             self.accu = prim(&[&self.accu, &arg1]);
           } else {
             panic!("primitive number {pnum} undefined");
@@ -594,6 +660,20 @@ impl<'machine> Machine<'machine> {
       };
     }
   }
+
+  // #[inline(always)]
+  // fn pop_asp(&mut self) -> &Option<AspValue> {
+  //   // TODO check not empty to handle gracefully?
+  //   let val = &self.astack[self.asp];
+  //   self.asp -= 1;
+  //   val
+  // }
+
+  // #[inline(always)]
+  // fn push_asp(&mut self, val: AspValue) {
+  //   self.asp += 1;
+  //   self.astack[self.asp] = Some(val);
+  // }
 
   pub fn report(&self) -> String {
     format!("accumulator: {:?}", self.accu)
