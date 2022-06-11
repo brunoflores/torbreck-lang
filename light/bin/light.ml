@@ -4,7 +4,7 @@ open LightLib.Compiler_driver
 module Modules = LightLib.Modules
 
 let () =
-  let usage = "light [-d] <file1> [<file2>] ..." in
+  let usage = "light [-d] [-no-stdlib] <file1> [<file2>] ..." in
   let debug = ref false in
   let no_stdlib = ref false in
   let spec =
