@@ -2,6 +2,9 @@
 
 open Parser
 
+(* For nested comments *)
+let comment_depth = ref 0
+
 let reservedWords = [
   ("let", LET);
   ("rec", REC);
@@ -61,6 +64,11 @@ rule read = parse
         with Not_found ->
           IDENT s }
 
+  | "(*"
+    { comment_depth := 1;
+      comment lexbuf;
+      read lexbuf }
+
   | "'" { QUOTE }
   | "(" { LPAREN }
   | ")" { RPAREN }
@@ -78,6 +86,18 @@ rule read = parse
     { EOF }
   | _
     { raise (Failure ("Lexer: Illegal character: '" ^ (Lexing.lexeme lexbuf) ^ "'")) }
+
+and comment = parse
+  | "(*"
+    { comment_depth := succ !comment_depth;
+      comment lexbuf }
+  | "*)"
+    { comment_depth := pred !comment_depth;
+      if !comment_depth > 0 then comment lexbuf }
+  | eof
+    { raise (Failure "Lexer: unterminated comment") }
+  | _
+    { comment lexbuf }
 
 and string = parse
   | '"'
