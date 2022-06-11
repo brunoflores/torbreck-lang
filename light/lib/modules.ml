@@ -50,14 +50,18 @@ let read_module _basename filename =
     md
   with End_of_file | Failure _ ->
     close_in ic;
-    failwith @@ Printf.sprintf "Corrupted compiled interface file %s." filename
+    failwith
+    @@ Printf.sprintf
+         "Modules.read_module: corrupted compiled interface file %s." filename
 
 let load_module name =
   let fullname = name ^ ".zi" in
   let _ =
     if Sys.file_exists fullname = false then
       failwith
-      @@ Printf.sprintf "Cannot find the compiled interface file %s." fullname
+      @@ Printf.sprintf
+           "Modules.load_module: cannot find the compiled interface file %s."
+           fullname
   in
   read_module name fullname
 
