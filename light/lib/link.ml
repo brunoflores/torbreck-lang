@@ -4,6 +4,7 @@ open Emit_phr
 open Reloc
 open Lambda
 open Patch
+open Tr_const
 
 (* First pass: determine which phrases are required *)
 
@@ -51,6 +52,7 @@ let scan_file tolink name =
   (name, required) :: tolink
 
 (* Second pass: link in the required phrases *)
+
 let events = ref ([] : event list)
 let abs_pos = ref 0
 
@@ -76,6 +78,16 @@ let link_object oc (name, required) =
     Printf.eprintf "error while liinking file %s.\n" name;
     close_in ic;
     raise x
+
+(* Build the initial table of globals *)
+
+let emit_data oc =
+  Printf.printf "number of globals: %d\n" (Symtable.number_of_globals ());
+  let globals = Array.make (Symtable.number_of_globals ()) (Obj.repr 0) in
+  List.iter
+    (function n, sc -> globals.(n) <- transl_structured_const sc)
+    !Symtable.literal_table;
+  output_value oc globals
 
 (* Build a bytecode executable file *)
 
@@ -108,21 +120,27 @@ let link module_list exec_name =
      *     done
      *   with Exit | Sys_error _ -> ()
      * end; *)
+
     (* The bytecode *)
     let _pos1 = pos_out oc in
     abs_pos := 0;
     List.iter (link_object oc) tolink;
     output_byte oc Opcodes.stop;
+
     (* The table of global data *)
     let _pos2 = pos_out oc in
-    (* emit_data oc; *)
+    emit_data oc;
+
     (* Linker tables *)
     let _pos3 = pos_out oc in
+
     (* if !write_debug_info then save_linker_tables oc; *)
+
     (* Debugging info (the events) *)
     let _pos4 = pos_out oc in
     (* if !write_debug_info then output_compact_value oc !events; *)
     events := [];
+
     (* The trailer *)
     let _pos5 = pos_out oc in
     (* output_binary_int oc (pos2 - pos1);
