@@ -1,5 +1,7 @@
 (* Assign numbers to global variables *)
 
+open Const
+
 type 'a numtable = {
   mutable num_cnt : int; (* The current number *)
   mutable num_tbl : ('a, int) Hashtbl.t; (* The table *)
@@ -21,6 +23,19 @@ let reserve_in_numtable nt key =
   let _ = enter_in_numtable nt key in
   ()
 
+(* Global variables *)
+
+let global_table = ref (new_numtable 1 : qualified_ident numtable)
+let literal_table = ref ([] : (int * struct_constant) list)
+
+let get_slot_for_literal cst =
+  let c = !global_table.num_cnt in
+  !global_table.num_cnt <- succ !global_table.num_cnt;
+  literal_table := (c, cst) :: !literal_table;
+  c
+
+(* The C primitives *)
+
 let get_num_of_prim name =
   try find_in_numtable !c_prim_table name
   with Not_found ->
@@ -29,6 +44,8 @@ let get_num_of_prim name =
       Printf.eprintf "C primitive not available: %s\n" name;
       failwith "Symtable.get_num_of_prim"
     end
+
+(* Initialization *)
 
 let reset_linker_tables () =
   c_prim_table := new_numtable 10;
