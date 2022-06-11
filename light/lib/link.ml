@@ -129,20 +129,18 @@ let link module_list exec_name =
      * end; *)
 
     (* The bytecode *)
-    let _pos1 = pos_out oc in
+    let pos1 = pos_out oc in
     abs_pos := 0;
     List.iter (link_object oc) tolink;
     output_byte oc Opcodes.stop;
 
     (* The table of global data *)
-    let _pos2 = pos_out oc in
+    let pos2 = pos_out oc in
     emit_data oc;
 
     (* Linker tables *)
-    let _pos3 = pos_out oc in
-
+    let pos3 = pos_out oc in
     (* if !write_debug_info then save_linker_tables oc; *)
-
     (* Debugging info (the events) *)
     let _pos4 = pos_out oc in
     (* if !write_debug_info then output_compact_value oc !events; *)
@@ -150,6 +148,10 @@ let link module_list exec_name =
 
     (* The trailer *)
     let _pos5 = pos_out oc in
+    let size_of_bytecode = pos2 - pos1 in
+    let size_of_globals = pos3 - pos2 in
+    output_binary_int oc size_of_bytecode;
+    output_binary_int oc size_of_globals;
     (* output_binary_int oc (pos2 - pos1);
      * output_binary_int oc (pos3 - pos2);
      * output_binary_int oc (pos4 - pos3);
