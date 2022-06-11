@@ -19,4 +19,7 @@ let patch_object buff offset =
      *     Bytes.set buff (pos + offset) (char_of_int (get_num_of_exn (id, stamp))) *)
     | Reloc_primitive name, pos ->
         patch_short buff (pos + offset) (get_num_of_prim name)
-    | _ -> failwith "not implemented: Patch.patch_object")
+    | x, _ ->
+        failwith
+        @@ Format.sprintf "not implemented: Patch.patch_object: %s"
+             (Reloc.show_info x))

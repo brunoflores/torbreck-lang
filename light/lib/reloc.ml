@@ -9,6 +9,7 @@ type info =
   | Reloc_setglobal of qualified_ident  (** definition of a global *)
   | Reloc_tag of qualified_ident * int  (** exception tag*)
   | Reloc_primitive of string  (** C primitive *)
+[@@deriving show]
 
 let reloc_info = ref ([] : (info * int) list)
 let reset () = reloc_info := []
