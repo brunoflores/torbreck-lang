@@ -1,5 +1,9 @@
 (* Operations on vectors, with sanity checks *)
 
+#open "bool";;
+#open "eq";;
+#open "exc";;
+
 let vect_item v i =
   if i < 0 || i >= vect_length v
   then invalid_arg "vect_item"
