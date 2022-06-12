@@ -13,6 +13,7 @@ let constr_type_exn = builtin "exn" { ty_stamp = 3; ty_abbr = Tnotabbrev }
 let constr_type_bool = builtin "bool" { ty_stamp = 4; ty_abbr = Tnotabbrev }
 let constr_type_int = builtin "int" { ty_stamp = 5; ty_abbr = Tnotabbrev }
 let constr_type_string = builtin "string" { ty_stamp = 7; ty_abbr = Tnotabbrev }
+let constr_type_vect = builtin "vect" { ty_stamp = 10; ty_abbr = Tnotabbrev }
 let type_arrow (t1, t2) = { typ_desc = Tarrow (t1, t2); typ_level = notgeneric }
 let type_product tlist = { typ_desc = Tproduct tlist; typ_level = notgeneric }
 
@@ -27,6 +28,9 @@ let type_string =
 
 let type_bool =
   { typ_desc = Tconstr (constr_type_bool, []); typ_level = notgeneric }
+
+let type_vect t =
+  { typ_desc = Tconstr (constr_type_vect, [ t ]); typ_level = notgeneric }
 
 (* Some constructors that must be known to the parser *)
 
@@ -108,6 +112,9 @@ let () =
           ty_arity = 0;
           ty_desc = Variant_type [ constr_false; constr_true ];
         } );
+      ( "vect",
+        { ty_constr = constr_type_vect; ty_arity = 1; ty_desc = Abstract_type }
+      );
     ];
   List.iter
     (fun desc -> Hashtbl.add module_builtin.mod_constrs desc.qualid.id desc)
