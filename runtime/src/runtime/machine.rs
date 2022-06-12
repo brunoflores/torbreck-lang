@@ -59,7 +59,7 @@ pub struct Machine<'machine> {
   rsp: usize,                     // Return stack pointer
   accu: Value,                    // Accumulator for intermediate results.
   prims: [prims::PrimFn; 5],      // Primitives table
-                                  // globals: Vec<Value>,            //
+  globals: Vec<Value>,            // Table of global values
                                   // cache size TODO
 }
 
@@ -69,6 +69,31 @@ impl<'machine> Machine<'machine> {
     // Debug:
     // println!("{:?}", mem);
     // println!("{:?}", globals);
+
+    let mut globals_iter = globals.iter();
+    let mut number_of_globals: u32 = 0;
+    for p in 0..4 {
+      let n = globals_iter.next().unwrap();
+      number_of_globals = (n >> (8 * p)) as u32;
+    }
+    let mut global_vals: Vec<Value> =
+      Vec::with_capacity(number_of_globals as usize);
+    let mut pos = 4;
+    for _ in 0..number_of_globals {
+      // TODO: Do not assume always strings in the globals section.
+      let (val, len) = Value::string_from_bytes(&globals[pos..]);
+      pos += len;
+      pos += 1; // Skip the null byte
+
+      global_vals.push(val);
+
+      // Debug:
+      // println!("{} {:?}", len, val);
+    }
+
+    // Debug:
+    // println!("{:?}", global_vals);
+
     Machine {
       mem,
       pc: 0,
@@ -98,6 +123,8 @@ impl<'machine> Machine<'machine> {
         prims::int_add,
         prims::string_of_int,
       ],
+
+      globals: global_vals,
     }
   }
 
