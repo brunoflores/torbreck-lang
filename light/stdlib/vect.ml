@@ -7,7 +7,7 @@ let vect_item v i =
 ;;
 
 let vect_assign v i e =
-  if i < 0 || i > vect_length v
+  if i < 0 || i >= vect_length v
   then invalid_arg "vect_assign"
   else fvect__vect_assign v i e
 ;;
