@@ -691,6 +691,12 @@ impl<'machine> Machine<'machine> {
             self.step(None);
           }
         }
+        Instruction::Getglobal => {
+          self.step(None);
+          self.accu = self.globals[self.mem[self.pc as usize] as usize].clone();
+          self.step(None); // TODO: global id is duplicated.
+          self.step(None);
+        }
         _ => self.panic_pc("not implemented", instr), // TODO
       };
     }
