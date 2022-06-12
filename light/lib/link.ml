@@ -89,7 +89,7 @@ let emit_data oc =
           match sc with
           | Const.SCatom (Const.ACstring s) -> begin
               output_string oc s;
-              output_binary_int oc 0
+              output_byte oc 0
             end
           | _ as x ->
               failwith
