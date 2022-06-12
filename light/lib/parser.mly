@@ -36,6 +36,7 @@ open Builtins
 %token AND
 %token MINUSGREATER
 %token QUOTE
+%token BARBAR         /* "||" */
 
 /* The end-of-file marker */
 %token EOF
@@ -45,6 +46,7 @@ open Builtins
 %right prec_let
 %right MINUSGREATER
 %right prec_if
+%left BARBAR
 %left INFIX0 /* comparisons */
 %left INFIX2 /* additives, subtractives */
 
@@ -60,8 +62,10 @@ open Builtins
 implementation:
   | e = expr SEMISEMI
     { make_impl (Zexpr e) }
-  /* | LET REC b = binding_list SEMISEMI */
-  /*   { make_impl (Zletdef (true, b)) } */
+  | LET bs = binding_list SEMISEMI
+    { make_impl (Zletdef (false, bs)) }
+  | LET REC bs = binding_list SEMISEMI
+    { make_impl (Zletdef (true, bs)) }
   | EOF
     { raise End_of_file }
 
@@ -86,6 +90,8 @@ expr:
     { make_binop i e1 e2 }
   | e1 = expr i = INFIX0 e2 = expr
     { make_binop i e1 e2 }
+  | e1 = expr BARBAR e2 = expr
+    { make_binop "||" e1 e2 }
   | IF e1 = expr THEN e2 = expr ELSE e3 = expr %prec prec_if
     { make_expr (Zcondition (e1, e2, e3)) }
   | LET REC b = binding_list IN e = expr %prec prec_let
@@ -171,6 +177,8 @@ infx:
   | i = INFIX0
   | i = INFIX2
     { i }
+  | BARBAR
+    { "||" }
 
 ext_ident:
   | id = ide
@@ -199,6 +207,8 @@ type_var:
 /* Definitions by pattern matchings */
 
 binding_list:
+  | b = binding AND bs = binding_list
+    { b :: bs }
   | b = binding
     { [b] }
 
@@ -209,6 +219,8 @@ binding:
 /* Patterns */
 
 simple_pattern_list:
+  | pat = simple_pattern pats = simple_pattern_list
+    { pat :: pats }
   | pat = simple_pattern
     { [pat] }
 

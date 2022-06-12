@@ -46,6 +46,7 @@ let getstr () = Bytes.sub_string (!string_buff) 0 (!string_end)
 
 let white = [' ' '\t']+
 let line_break = [' ' '\009' '\012']*"\n"
+let symbols = ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
 
 rule read = parse
   | white
@@ -76,9 +77,13 @@ rule read = parse
   | "=" { EQUAL }
   | ";;" { SEMISEMI }
   | ":" { COLON }
+  | "||" { BARBAR }
   | "->" { MINUSGREATER }
   | ['<'] { INFIX0 (Lexing.lexeme lexbuf) }
   | ['+' '-'] { INFIX2 (Lexing.lexeme lexbuf) }
+
+  | [ '=' '<' '>' '|' '&' '~' '$' ] symbols *
+    { INFIX0 (Lexing.lexeme lexbuf) }
 
   | "\""
     { resetstr(); string lexbuf }
