@@ -22,8 +22,8 @@ and new_label () =
 
 (* Generate a branch to the given list of instructions *)
 let make_branch = function
-  | Kreturn :: (_ as code) -> (Kreturn, code)
-  | (Kbranch _ as branch) :: (_ as code) -> (branch, code)
+  | Kreturn :: _ as code -> (Kreturn, code)
+  | (Kbranch _ as branch) :: _ as code -> (branch, code)
   | code ->
       let lbl = new_label () in
       (Kbranch lbl, Klabel lbl :: code)
