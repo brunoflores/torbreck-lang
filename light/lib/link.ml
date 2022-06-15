@@ -64,11 +64,10 @@ let link_object oc (name, required) =
         let buff = Bytes.create phr.cph_len in
         really_input ic buff 0 phr.cph_len;
         patch_object buff 0 phr.cph_reloc;
-        (* add_events phr.cph_events; *)
-        Printf.printf "output bytes: %s\n"
-        @@ Bytes.fold_left
-             (fun acc c -> acc ^ string_of_int (int_of_char c) ^ ", ")
-             "" buff;
+        (* Printf.printf "output bytes: %s\n"
+         * @@ Bytes.fold_left
+         *      (fun acc c -> acc ^ string_of_int (int_of_char c) ^ ", ")
+         *      "" buff; *)
         output oc buff 0 phr.cph_len;
         abs_pos := !abs_pos + phr.cph_len)
       required;
