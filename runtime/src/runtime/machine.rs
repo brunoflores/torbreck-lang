@@ -370,10 +370,7 @@ impl<'machine> Machine<'machine> {
         Instruction::Addint => {
           if let Value::Int(i) = self.accu {
             self.accu = match self.astack[self.asp].take().unwrap() {
-              AspValue::Val(Value::Int(y)) => {
-                self.asp -= 1;
-                Value::Int(i + y)
-              }
+              AspValue::Val(Value::Int(y)) => Value::Int(i + y),
               y => {
                 self.panic_pc(&format!("not an integer in asp: {:?}", y), instr)
               }
