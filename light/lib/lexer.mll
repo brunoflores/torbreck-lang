@@ -16,6 +16,9 @@ let reservedWords = [
   ("prefix", PREF);
   ("and", AND);
   ("type", TYPE);
+  ("of", OF);
+  ("mutable", MUTABLE);
+  ("exception", EXCEPTION);
 ]
 
 let (symbolTable : (string, token) Hashtbl.t) = Hashtbl.create 149
@@ -58,14 +61,6 @@ rule read = parse
   | ['0'-'9']+
     { INT (int_of_string (Lexing.lexeme lexbuf)) }
 
-  | ['A'-'Z' 'a'-'z' '_']
-  | ['A'-'Z' 'a'-'z' '_' '0'-'9']*
-    { let s = Lexing.lexeme lexbuf in
-        try
-          Hashtbl.find symbolTable s
-        with Not_found ->
-          IDENT s }
-
   | "(*"
     { comment_depth := 1;
       comment lexbuf;
@@ -77,10 +72,21 @@ rule read = parse
   | "=" { EQUAL }
   | ";;" { SEMISEMI }
   | ":" { COLON }
+  | "#" { SHARP }
+  | ".(" { DOTLPAREN }
   | "||" { BARBAR }
+  | "__" { UNDERUNDER }
   | "->" { MINUSGREATER }
   | ['<'] { INFIX0 (Lexing.lexeme lexbuf) }
   | ['+' '-'] { INFIX2 (Lexing.lexeme lexbuf) }
+
+  | ['A'-'Z' 'a'-'z']
+    ( '_' ? ['A'-'Z' 'a'-'z' '0'-'9'] ) *
+    { let s = Lexing.lexeme lexbuf in
+        try
+          Hashtbl.find symbolTable s
+        with Not_found ->
+          IDENT s }
 
   | [ '=' '<' '>' '|' '&' '~' '$' ] symbols *
     { INFIX0 (Lexing.lexeme lexbuf) }
