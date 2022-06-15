@@ -29,17 +29,13 @@ pub fn less_than(vals: &[&Value]) -> Value {
   }
 }
 
-pub fn int_add(vals: &[&Value]) -> Value {
+pub fn greaterequal(vals: &[&Value]) -> Value {
   if let (Value::Int(v1), Value::Int(v2)) = (vals[0], vals[1]) {
-    Value::Int(v1 + v2)
-  } else {
-    panic!()
-  }
-}
-
-pub fn int_sub(vals: &[&Value]) -> Value {
-  if let (Value::Int(v1), Value::Int(v2)) = (vals[0], vals[1]) {
-    Value::Int(v1 - v2)
+    if v1 >= v2 {
+      Value::True
+    } else {
+      Value::False
+    }
   } else {
     panic!()
   }
