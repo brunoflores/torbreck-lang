@@ -50,6 +50,7 @@ enum AspValue {
 }
 
 pub struct Machine<'machine> {
+  instr: Instruction,
   pc: u32,                        // Code pointer.
   mem: &'machine [u8],            // Program memory in bytes.
   env: Vec<Value>,                // Current environment (heap allocated).
@@ -95,6 +96,7 @@ impl<'machine> Machine<'machine> {
     // println!("{:?}", global_vals);
 
     Machine {
+      instr: Instruction::Stop,
       mem,
       pc: 0,
       accu: Value::Atom0,
@@ -129,141 +131,48 @@ impl<'machine> Machine<'machine> {
 
   pub fn interpret<'a>(&'a mut self) -> Value {
     loop {
-      let instr = self.decode();
+      self.instr = self.decode();
       // Debug:
       // println!("{:?}", self.accu);
       // println!("{}", instr);
-      match instr {
+      match self.instr {
         Instruction::Stop => return self.accu.clone(),
         Instruction::Access => {
-          self.step(None);
-          self.accu =
-            self.access_nth(self.mem[self.pc as usize] as usize).clone();
-          self.step(None);
+          self.exec_access();
         }
         Instruction::Acc0 => {
-          self.accu = self.access_nth(0).clone();
-          self.step(None);
+          self.exec_access_0();
         }
         Instruction::Acc1 => {
-          self.accu = self.access_nth(1).clone();
-          self.step(None);
+          self.exec_access_1();
         }
         Instruction::Appterm => {
           // Application in tail-call position.
           // There is no need to push a mark in the argument stack.
-          if let Value::Fn(Closure(c1, e1)) = &self.accu {
-            self.pc = *c1 as u32;
-            let mut new_env = {
-              let mut e1 = e1.clone();
-              e1.push(
-                if let AspValue::Val(v) = self.astack[self.asp].take().unwrap()
-                {
-                  self.asp -= 1;
-                  v
-                } else {
-                  panic!("not a value in the asp");
-                },
-              );
-              e1
-            };
-            self.env = mem::take(&mut new_env);
-          } else {
-            panic!();
-          }
+          self.exec_appterm();
         }
         Instruction::Apply => {
           // Application using the return stack.
-          let oldpc = self.pc;
-          if let Value::Fn(Closure(c1, e1)) = &self.accu {
-            self.pc = *c1 as u32;
-            let new_env = {
-              let mut e1 = e1.clone();
-              e1.push(
-                if let AspValue::Val(v) = self.astack[self.asp].take().unwrap()
-                {
-                  self.asp -= 1;
-                  v
-                } else {
-                  panic!("not a value in the asp");
-                },
-              );
-              e1
-            };
-            self.rsp += 1;
-            self.rstack[self.rsp] =
-              Some(Closure(oldpc + 1, mem::replace(&mut self.env, new_env)));
-          } else if let Value::FnRec(Closure(c1, _)) = &self.accu {
-            self.pc = *c1 as u32;
-            let new_env = {
-              let mut e1 = Vec::with_capacity(10); // TODO
-              e1.push(self.accu.clone());
-              if let Some(AspValue::Val(v)) = self.astack[self.asp].take() {
-                e1.push(v);
-                self.asp -= 1;
-              };
-              e1
-            };
-            self.rsp += 1;
-            self.rstack[self.rsp] =
-              Some(Closure(oldpc + 1, mem::replace(&mut self.env, new_env)));
-          } else {
-            panic!("not a closure in the accumulator: {:?}", self.accu);
-          }
+          self.exec_apply();
         }
         Instruction::Push => {
           // Push the accumulator onto the argument stack,
           // leave the accumulator untouched, and
           // take a step.
-          self.asp += 1;
-          self.astack[self.asp] = Some(AspValue::Val(self.accu.clone()));
-          self.step(None);
+          self.exec_push();
         }
         Instruction::Pushmark => {
           // Push a mark onto the argument stack, and
           // take step.
-          self.asp += 1;
-          self.astack[self.asp] = Some(AspValue::Mark);
-          self.step(None);
+          self.exec_pushmark();
         }
         Instruction::Grab => {
           // Abstraction in tail-call position.
-          match self.astack[self.asp].take() {
-            // 1) In tail-call position.
-            //    Simply pops one from the argumeht stack and puts it in front
-            //    of the environment.
-            //    Pc simply takes a step.
-            Some(AspValue::Val(v)) => {
-              self.env.push(v);
-              self.step(None);
-            }
-            // 2) Got a mark so must build a closure.
-            //    All arguments have already been consumed.
-            //    Builds a closure of the current code with the current
-            //    environment and returns it to the caller while popping
-            //    the mark.
-            Some(AspValue::Mark) => {
-              let Closure(c1, mut e1) = self.rstack[self.rsp].take().unwrap();
-              self.rsp -= 1;
-              // Read current state...
-              self.accu = Value::Fn(Closure(self.pc, self.env.clone()));
-              // now modify it...
-              self.pc = c1;
-              self.env = mem::take(&mut e1);
-            }
-            _ => self.panic_pc("argument stack is empty", instr),
-          };
-          self.asp -= 1;
+          self.exec_grab();
         }
         Instruction::Cur => {
           // Abstraction using the stack.
-          self.step(None);
-          self.accu = Value::Fn(Closure(
-            // TODO how to jump backward and forward?
-            self.pc + (self.mem[self.pc as usize] as u32),
-            self.env.clone(),
-          ));
-          self.step(None);
+          self.exec_cur();
         }
         Instruction::Return => {
           // Page 80:
@@ -272,82 +181,39 @@ impl<'machine> Machine<'machine> {
           // the caller. Otherwise, jump to the closure contained in the
           // accumulator.
           //
-          match self.astack[self.asp].take() {
-            Some(AspValue::Mark) => {
-              let Closure(c1, mut e1) = self.rstack[self.rsp].take().unwrap();
-              self.rsp -= 1;
-              self.pc = c1;
-              self.env = mem::take(&mut e1);
-            }
-            Some(AspValue::Val(v)) => {
-              if let Value::Fn(Closure(c1, e1)) = &self.accu {
-                self.pc = *c1;
-                let mut new_env = {
-                  let mut e1 = e1.clone();
-                  e1.push(v);
-                  e1
-                };
-                self.env = mem::take(&mut new_env);
-              } else {
-                panic!("not a closure in the accumulator");
-              }
-            }
-            None => panic!("asp empty: {}", self.asp),
-          }
-          self.asp -= 1;
+          self.exec_return();
         }
         Instruction::Let => {
           // Put the value of the accumulator in front of the environment.
-          self.env.push(self.accu.clone());
-          self.step(None);
+          self.exec_let();
         }
         Instruction::Letrec1 => {
           // Same as [Dummy; Cur ofs; Update], a frequent sequence
           // corresponding to [let rec f = function .. in ..].
-          self.step(None);
-          self.env.clear();
-          self.env.push(Value::FnRec(Closure(
-            self.pc - (self.mem[self.pc as usize] as u32),
-            Vec::with_capacity(0), // TODO
-          )));
-          // TODO Why? There's an extra zero here. Skip over it.
-          self.step(None);
-          self.step(None);
+          self.exec_letrec1();
         }
         Instruction::Endlet => {
           // Throw away the first n local variables from the environment.
-          self.step(None);
-          let valofpc = self.mem[self.pc as usize];
-          for _ in 0..valofpc {
-            let _ = self.env.pop();
-          }
-          self.step(None);
+          self.exec_endlet();
         }
         Instruction::Endlet1 => {
           // Throw away the head of the environment.
-          let _ = self.env.pop();
-          self.step(None);
+          self.exec_endlet1();
         }
         Instruction::Dummy => {
           // Place a Dummy in the environment.
-          self.env.push(Value::Dummy);
-          self.step(None);
+          self.exec_dummy();
         }
         Instruction::Update => {
           // Replace the head of the environment with the value in the
           // accumulator.
-          if let Value::Dummy = self.env.pop().unwrap() {
-            self.env.push(self.accu.clone());
-          } else {
-            panic!("expected a Dummy in the environment");
-          }
-          self.step(None);
+          self.exec_update();
         }
         Instruction::Succint => {
           if let Value::Int(i) = self.accu {
             self.accu = Value::Int(i + 1);
           } else {
-            self.panic_pc("not an integer", instr);
+            self.panic_pc("not an integer", self.instr);
           }
           self.step(None);
         }
@@ -355,7 +221,7 @@ impl<'machine> Machine<'machine> {
           if let Value::Int(i) = self.accu {
             self.accu = Value::Int(i - 1);
           } else {
-            self.panic_pc("not an integer", instr);
+            self.panic_pc("not an integer", self.instr);
           }
           self.step(None);
         }
@@ -363,7 +229,7 @@ impl<'machine> Machine<'machine> {
           if let Value::Int(i) = self.accu {
             self.accu = Value::Int(-i);
           } else {
-            self.panic_pc("not an integer", instr);
+            self.panic_pc("not an integer", self.instr);
           }
           self.step(None);
         }
@@ -371,13 +237,14 @@ impl<'machine> Machine<'machine> {
           if let Value::Int(i) = self.accu {
             self.accu = match self.astack[self.asp].take().unwrap() {
               AspValue::Val(Value::Int(y)) => Value::Int(i + y),
-              y => {
-                self.panic_pc(&format!("not an integer in asp: {:?}", y), instr)
-              }
+              y => self.panic_pc(
+                &format!("not an integer in asp: {:?}", y),
+                self.instr,
+              ),
             };
             self.asp -= 1;
           } else {
-            self.panic_pc("not an integer", instr);
+            self.panic_pc("not an integer", self.instr);
           }
           self.step(None);
         }
@@ -389,10 +256,10 @@ impl<'machine> Machine<'machine> {
               self.asp -= 1;
               Value::Int(i - y)
             } else {
-              self.panic_pc("not an integer in asp", instr);
+              self.panic_pc("not an integer in asp", self.instr);
             }
           } else {
-            self.panic_pc("not an integer", instr);
+            self.panic_pc("not an integer", self.instr);
           }
           self.step(None);
         }
@@ -404,10 +271,10 @@ impl<'machine> Machine<'machine> {
               self.asp -= 1;
               Value::Int(i * y)
             } else {
-              self.panic_pc("not an integer in asp", instr);
+              self.panic_pc("not an integer in asp", self.instr);
             }
           } else {
-            self.panic_pc("not an integer", instr);
+            self.panic_pc("not an integer", self.instr);
           }
           self.step(None);
         }
@@ -419,12 +286,12 @@ impl<'machine> Machine<'machine> {
                 Value::Int(i / y)
               }
               Some(AspValue::Val(Value::Int(_))) => {
-                self.panic_pc("division by zero", instr)
+                self.panic_pc("division by zero", self.instr)
               }
-              _ => self.panic_pc("not an integer in asp", instr),
+              _ => self.panic_pc("not an integer in asp", self.instr),
             }
           } else {
-            self.panic_pc("not an integer", instr);
+            self.panic_pc("not an integer", self.instr);
           }
           self.step(None);
         }
@@ -436,12 +303,12 @@ impl<'machine> Machine<'machine> {
                 Value::Int(i % y)
               }
               Some(AspValue::Val(Value::Int(_))) => {
-                self.panic_pc("division by zero", instr)
+                self.panic_pc("division by zero", self.instr)
               }
-              _ => self.panic_pc("not an integer in asp", instr),
+              _ => self.panic_pc("not an integer in asp", self.instr),
             }
           } else {
-            self.panic_pc("not an integer", instr);
+            self.panic_pc("not an integer", self.instr);
           }
           self.step(None);
         }
@@ -453,10 +320,10 @@ impl<'machine> Machine<'machine> {
               self.asp -= 1;
               Value::Int(i & y)
             } else {
-              self.panic_pc("not an integer in asp", instr);
+              self.panic_pc("not an integer in asp", self.instr);
             }
           } else {
-            self.panic_pc("not an integer", instr);
+            self.panic_pc("not an integer", self.instr);
           }
           self.step(None);
         }
@@ -468,10 +335,10 @@ impl<'machine> Machine<'machine> {
               self.asp -= 1;
               Value::Int(i | y)
             } else {
-              self.panic_pc("not an integer in asp", instr);
+              self.panic_pc("not an integer in asp", self.instr);
             }
           } else {
-            self.panic_pc("not an integer", instr);
+            self.panic_pc("not an integer", self.instr);
           }
           self.step(None);
         }
@@ -483,10 +350,10 @@ impl<'machine> Machine<'machine> {
               self.asp -= 1;
               Value::Int(i ^ y)
             } else {
-              self.panic_pc("not an integer in asp", instr);
+              self.panic_pc("not an integer in asp", self.instr);
             }
           } else {
-            self.panic_pc("not an integer", instr);
+            self.panic_pc("not an integer", self.instr);
           }
           self.step(None);
         }
@@ -498,10 +365,10 @@ impl<'machine> Machine<'machine> {
               self.asp -= 1;
               Value::Int(i << y)
             } else {
-              self.panic_pc("not an integer in asp", instr);
+              self.panic_pc("not an integer in asp", self.instr);
             }
           } else {
-            self.panic_pc("not an integer", instr);
+            self.panic_pc("not an integer", self.instr);
           }
           self.step(None);
         }
@@ -513,10 +380,10 @@ impl<'machine> Machine<'machine> {
               self.asp -= 1;
               Value::Int(i >> y)
             } else {
-              self.panic_pc("not an integer in asp", instr);
+              self.panic_pc("not an integer in asp", self.instr);
             }
           } else {
-            self.panic_pc("not an integer", instr);
+            self.panic_pc("not an integer", self.instr);
           }
           self.step(None);
         }
@@ -528,10 +395,10 @@ impl<'machine> Machine<'machine> {
               self.asp -= 1;
               Value::Int(((i as u8) >> y) as i32) // Can crash.
             } else {
-              self.panic_pc("not an integer in asp", instr);
+              self.panic_pc("not an integer in asp", self.instr);
             }
           } else {
-            self.panic_pc("not an integer", instr);
+            self.panic_pc("not an integer", self.instr);
           }
           self.step(None);
         }
@@ -542,14 +409,14 @@ impl<'machine> Machine<'machine> {
               if let Value::Int(v) = self.accu {
                 Value::Float(v as f32)
               } else {
-                self.panic_pc("not an integer", instr);
+                self.panic_pc("not an integer", self.instr);
               }
             }
             Instruction::Negfloat => {
               if let Value::Float(f) = self.accu {
                 Value::Float(-f)
               } else {
-                self.panic_pc("not a float", instr);
+                self.panic_pc("not a float", self.instr);
               }
             }
             Instruction::Addfloat => {
@@ -560,10 +427,10 @@ impl<'machine> Machine<'machine> {
                   self.asp -= 1;
                   Value::Float(x + y)
                 } else {
-                  self.panic_pc("not a float in asp", instr);
+                  self.panic_pc("not a float in asp", self.instr);
                 }
               } else {
-                self.panic_pc("not a float in accu", instr);
+                self.panic_pc("not a float in accu", self.instr);
               }
             }
             Instruction::Subfloat => {
@@ -574,10 +441,10 @@ impl<'machine> Machine<'machine> {
                   self.asp -= 1;
                   Value::Float(x - y)
                 } else {
-                  self.panic_pc("not a float in asp", instr);
+                  self.panic_pc("not a float in asp", self.instr);
                 }
               } else {
-                self.panic_pc("not a float in accu", instr);
+                self.panic_pc("not a float in accu", self.instr);
               }
             }
             Instruction::Mulfloat => {
@@ -588,10 +455,10 @@ impl<'machine> Machine<'machine> {
                   self.asp -= 1;
                   Value::Float(x * y)
                 } else {
-                  self.panic_pc("not a float in asp", instr);
+                  self.panic_pc("not a float in asp", self.instr);
                 }
               } else {
-                self.panic_pc("not a float in accu", instr);
+                self.panic_pc("not a float in accu", self.instr);
               }
             }
             Instruction::Divfloat => {
@@ -602,17 +469,16 @@ impl<'machine> Machine<'machine> {
                     Value::Float(x / y)
                   }
                   Some(AspValue::Val(Value::Float(_))) => {
-                    self.panic_pc("division by zero", instr);
+                    self.panic_pc("division by zero", self.instr);
                   }
-                  _ => self.panic_pc("not a float in asp", instr),
+                  _ => self.panic_pc("not a float in asp", self.instr),
                 }
               } else {
-                self.panic_pc("not a float in accu", instr);
+                self.panic_pc("not a float in accu", self.instr);
               }
             }
-            _ => {
-              self.panic_pc("not an instruction supported with floats", instr)
-            }
+            _ => self
+              .panic_pc("not an instruction supported with floats", self.instr),
           };
           self.step(None);
         }
@@ -620,7 +486,7 @@ impl<'machine> Machine<'machine> {
           self.accu = if let Value::Float(f) = self.accu {
             Value::Int(f as i32)
           } else {
-            self.panic_pc("not a float", instr);
+            self.panic_pc("not a float", self.instr);
           };
           self.step(None);
         }
@@ -696,9 +562,222 @@ impl<'machine> Machine<'machine> {
           self.step(None); // TODO: global id is duplicated.
           self.step(None);
         }
-        _ => self.panic_pc("not implemented", instr), // TODO
+        _ => self.panic_pc("not implemented", self.instr), // TODO
       };
     }
+  }
+
+  #[inline(always)]
+  fn exec_access(&mut self) {
+    self.step(None);
+    self.accu = self.access_nth(self.mem[self.pc as usize] as usize).clone();
+    self.step(None);
+  }
+
+  #[inline(always)]
+  fn exec_access_0(&mut self) {
+    self.accu = self.access_nth(0).clone();
+    self.step(None);
+  }
+
+  #[inline(always)]
+  fn exec_access_1(&mut self) {
+    self.accu = self.access_nth(1).clone();
+    self.step(None);
+  }
+
+  #[inline(always)]
+  fn exec_appterm(&mut self) {
+    if let Value::Fn(Closure(c1, e1)) = &self.accu {
+      self.pc = *c1 as u32;
+      let mut new_env = {
+        let mut e1 = e1.clone();
+        e1.push(
+          if let AspValue::Val(v) = self.astack[self.asp].take().unwrap() {
+            self.asp -= 1;
+            v
+          } else {
+            panic!("not a value in the asp");
+          },
+        );
+        e1
+      };
+      self.env = mem::take(&mut new_env);
+    } else {
+      panic!();
+    }
+  }
+
+  #[inline(always)]
+  fn exec_apply(&mut self) {
+    let oldpc = self.pc;
+    if let Value::Fn(Closure(c1, e1)) = &self.accu {
+      self.pc = *c1 as u32;
+      let new_env = {
+        let mut e1 = e1.clone();
+        e1.push(
+          if let AspValue::Val(v) = self.astack[self.asp].take().unwrap() {
+            self.asp -= 1;
+            v
+          } else {
+            panic!("not a value in the asp");
+          },
+        );
+        e1
+      };
+      self.rsp += 1;
+      self.rstack[self.rsp] =
+        Some(Closure(oldpc + 1, mem::replace(&mut self.env, new_env)));
+    } else if let Value::FnRec(Closure(c1, _)) = &self.accu {
+      self.pc = *c1 as u32;
+      let new_env = {
+        let mut e1 = Vec::with_capacity(10); // TODO
+        e1.push(self.accu.clone());
+        if let Some(AspValue::Val(v)) = self.astack[self.asp].take() {
+          e1.push(v);
+          self.asp -= 1;
+        };
+        e1
+      };
+      self.rsp += 1;
+      self.rstack[self.rsp] =
+        Some(Closure(oldpc + 1, mem::replace(&mut self.env, new_env)));
+    } else {
+      panic!("not a closure in the accumulator: {:?}", self.accu);
+    }
+  }
+
+  #[inline(always)]
+  fn exec_push(&mut self) {
+    self.asp += 1;
+    self.astack[self.asp] = Some(AspValue::Val(self.accu.clone()));
+    self.step(None);
+  }
+
+  #[inline(always)]
+  fn exec_pushmark(&mut self) {
+    self.asp += 1;
+    self.astack[self.asp] = Some(AspValue::Mark);
+    self.step(None);
+  }
+
+  #[inline(always)]
+  fn exec_grab(&mut self) {
+    match self.astack[self.asp].take() {
+      // 1) In tail-call position.
+      //    Simply pops one from the argumeht stack and puts it in front
+      //    of the environment.
+      //    Pc simply takes a step.
+      Some(AspValue::Val(v)) => {
+        self.env.push(v);
+        self.step(None);
+      }
+      // 2) Got a mark so must build a closure.
+      //    All arguments have already been consumed.
+      //    Builds a closure of the current code with the current
+      //    environment and returns it to the caller while popping
+      //    the mark.
+      Some(AspValue::Mark) => {
+        let Closure(c1, mut e1) = self.rstack[self.rsp].take().unwrap();
+        self.rsp -= 1;
+        // Read current state...
+        self.accu = Value::Fn(Closure(self.pc, self.env.clone()));
+        // now modify it...
+        self.pc = c1;
+        self.env = mem::take(&mut e1);
+      }
+      _ => self.panic_pc("argument stack is empty", self.instr),
+    };
+    self.asp -= 1;
+  }
+
+  #[inline(always)]
+  fn exec_cur(&mut self) {
+    self.step(None);
+    self.accu = Value::Fn(Closure(
+      // TODO how to jump backward and forward?
+      self.pc + (self.mem[self.pc as usize] as u32),
+      self.env.clone(),
+    ));
+    self.step(None);
+  }
+
+  #[inline(always)]
+  fn exec_return(&mut self) {
+    match self.astack[self.asp].take() {
+      Some(AspValue::Mark) => {
+        let Closure(c1, mut e1) = self.rstack[self.rsp].take().unwrap();
+        self.rsp -= 1;
+        self.pc = c1;
+        self.env = mem::take(&mut e1);
+      }
+      Some(AspValue::Val(v)) => {
+        if let Value::Fn(Closure(c1, e1)) = &self.accu {
+          self.pc = *c1;
+          let mut new_env = {
+            let mut e1 = e1.clone();
+            e1.push(v);
+            e1
+          };
+          self.env = mem::take(&mut new_env);
+        } else {
+          panic!("not a closure in the accumulator");
+        }
+      }
+      None => panic!("asp empty: {}", self.asp),
+    }
+    self.asp -= 1;
+  }
+
+  #[inline(always)]
+  fn exec_let(&mut self) {
+    self.env.push(self.accu.clone());
+    self.step(None);
+  }
+
+  #[inline(always)]
+  fn exec_letrec1(&mut self) {
+    self.step(None);
+    self.env.clear();
+    self.env.push(Value::FnRec(Closure(
+      self.pc - (self.mem[self.pc as usize] as u32),
+      Vec::with_capacity(0), // TODO
+    )));
+    // TODO Why? There's an extra zero here. Skip over it.
+    self.step(None);
+    self.step(None);
+  }
+
+  #[inline(always)]
+  fn exec_endlet(&mut self) {
+    self.step(None);
+    let valofpc = self.mem[self.pc as usize];
+    for _ in 0..valofpc {
+      let _ = self.env.pop();
+    }
+    self.step(None);
+  }
+
+  #[inline(always)]
+  fn exec_endlet1(&mut self) {
+    let _ = self.env.pop();
+    self.step(None);
+  }
+
+  #[inline(always)]
+  fn exec_dummy(&mut self) {
+    self.env.push(Value::Dummy);
+    self.step(None);
+  }
+
+  #[inline(always)]
+  fn exec_update(&mut self) {
+    if let Value::Dummy = self.env.pop().unwrap() {
+      self.env.push(self.accu.clone());
+    } else {
+      panic!("expected a Dummy in the environment");
+    }
+    self.step(None);
   }
 
   // #[inline(always)]
@@ -724,6 +803,7 @@ impl<'machine> Machine<'machine> {
     &self.env[(len - (n + 1))]
   }
 
+  #[inline(always)]
   fn step(&mut self, n: Option<u8>) {
     match n {
       Some(n) => self.pc += n as u32,
@@ -731,6 +811,7 @@ impl<'machine> Machine<'machine> {
     }
   }
 
+  #[inline(always)]
   fn decode(&self) -> Instruction {
     if let Some(i) = self.mem.get(self.pc as usize) {
       opcodes::decode(*i)
