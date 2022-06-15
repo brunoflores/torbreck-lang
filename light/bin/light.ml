@@ -23,7 +23,8 @@ let () =
     Modules.default_used_modules := [ "builtin" ];
     if not !no_stdlib then
       Modules.default_used_modules :=
-        !Modules.default_used_modules @ [ "eq"; "int"; "string"; "io" ];
+        !Modules.default_used_modules
+        @ [ "eq"; "int"; "string"; "io"; "exc"; "vect"; "bool"; "sys" ];
 
     (* The business *)
     if Filename.check_suffix fname ".ml" then
