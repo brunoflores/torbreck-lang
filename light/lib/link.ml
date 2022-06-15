@@ -109,6 +109,7 @@ let emit_data oc =
 (* Build a bytecode executable file *)
 let link module_list exec_name =
   let tolink = List.fold_left scan_file [] (List.rev module_list) in
+  List.iter (fun (name, _) -> Printf.printf "to link: %s\n" name) tolink;
   let oc =
     open_out_gen
       [ Open_wronly; Open_trunc; Open_creat; Open_binary ]
