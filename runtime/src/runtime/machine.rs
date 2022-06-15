@@ -715,9 +715,9 @@ impl<'machine> Machine<'machine> {
   //   self.astack[self.asp] = Some(val);
   // }
 
-  pub fn report(&self) -> String {
-    format!("accumulator: {:?}", self.accu)
-  }
+  // pub fn report(&self) -> String {
+  //   format!("accumulator: {:?}", self.accu)
+  // }
 
   fn access_nth(&self, n: usize) -> &Value {
     let len = self.env.len();
