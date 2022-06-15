@@ -65,14 +65,21 @@ and expr_ident = Zglobal of value_desc global | Zlocal of string
 
 type type_decl = Zabstract_type [@@deriving show]
 
+type constr_decl =
+  | Zconstr0decl of string
+  | Zconstr1decl of string * type_expression * mutable_flag
+[@@deriving show]
+
+type directiveu = Zdir of string * string [@@deriving show]
+
 type impl_phrase = { im_desc : impl_desc; im_loc : location }
 
 and impl_desc =
   | Zexpr of expression
   | Zletdef of bool * (pattern * expression) list
+  | Zimpldirective of directiveu
+  | Zexcdef of constr_decl list
 (* | Ztypedef of (string * string list * type_decl) list *)
-(* | Zexcdef of constr_decl list *)
-(* | Zimpldirective of directiveu *)
 [@@deriving show]
 
 type intf_phrase = { in_desc : intf_desc; in_loc : location }
@@ -80,13 +87,27 @@ type intf_phrase = { in_desc : intf_desc; in_loc : location }
 and intf_desc =
   | Zvaluedecl of (string * type_expression * prim_desc) list
   | Ztypedecl of (string * string list * type_decl) list
+  | Zintfdirective of directiveu
+  | Zexcdecl of constr_decl list
 [@@deriving show]
 
 (* and intf_desc = *)
 (*   | Zvaluedecl of (string * type_expression * prim_desc) list *)
 (*   | Ztypedecl of (string * string list * type_decl) list *)
-(*   | Zexcdecl of constr_decl list *)
-(*   | Zintfdirective of directiveu *)
+
+let rec free_vars_of_pat pat =
+  match pat.p_desc with
+  | Zwildpat -> []
+  | Zconstantpat _ -> []
+  | Zconstruct0pat _ -> []
+  | Zvarpat v -> [ v ]
+  | Zaliaspat (pat, v) -> v :: free_vars_of_pat pat
+  | Ztuplepat patl -> List.concat_map free_vars_of_pat patl
+  | Zconstruct1pat (_, pat) -> free_vars_of_pat pat
+  | Zorpat (pat1, pat2) -> free_vars_of_pat pat1 @ free_vars_of_pat pat2
+  | Zconstraintpat (pat, _) -> free_vars_of_pat pat
+  | Zrecordpat lbl_pat_list ->
+      List.concat_map (fun (_lbl, pat) -> free_vars_of_pat pat) lbl_pat_list
 
 let rec expr_is_pure expr =
   match expr.e_desc with
@@ -100,6 +121,9 @@ let rec expr_is_pure expr =
   | Zwhen _ -> false
   | Ztuple el -> List.for_all expr_is_pure el
   | Zconstruct1 (_, arg) -> expr_is_pure arg
+
+let letdef_is_pure pat_expr_list =
+  List.for_all (fun (_pat, expr) -> expr_is_pure expr) pat_expr_list
 
 let single_constructor cstr =
   match cstr.info.cs_tag with
