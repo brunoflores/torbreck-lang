@@ -431,6 +431,7 @@ pub fn encode(i: &Instruction) -> u8 {
 //     print i " => Instruction::"
 //     substr(toupper($1), 3,1) substr(tolower($1), 4) ","
 //   }'
+#[inline(always)]
 pub fn decode(i: u8) -> Instruction {
   match i {
     1 => Instruction::Constbyte,
