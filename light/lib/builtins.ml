@@ -32,6 +32,9 @@ let type_bool =
 let type_vect t =
   { typ_desc = Tconstr (constr_type_vect, [ t ]); typ_level = notgeneric }
 
+let type_exn =
+  { typ_desc = Tconstr (constr_type_exn, []); typ_level = notgeneric }
+
 (* Some constructors that must be known to the parser *)
 
 let constr_void =
@@ -114,6 +117,9 @@ let () =
         } );
       ( "vect",
         { ty_constr = constr_type_vect; ty_arity = 1; ty_desc = Abstract_type }
+      );
+      ( "exn",
+        { ty_constr = constr_type_exn; ty_arity = 0; ty_desc = Variant_type [] }
       );
     ];
   List.iter
