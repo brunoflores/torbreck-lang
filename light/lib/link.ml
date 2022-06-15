@@ -121,22 +121,6 @@ let link module_list exec_name =
     output_string oc
       "#!/home/bruno/devel/torbreck-lang/runtime/target/release/runtime\n";
 
-    (* The header *)
-    (* begin
-     *   try
-     *     let ic = open_in_bin (Filename.concat !path_library "header") in
-     *     let buff = Bytes.create 1024 in
-     *     while true do
-     *       let n = input ic buff 0 1024 in
-     *       if n <= 0 then begin
-     *         close_in ic;
-     *         raise Exit
-     *       end;
-     *       output oc buff 0 n
-     *     done
-     *   with Exit | Sys_error _ -> ()
-     * end; *)
-
     (* The bytecode *)
     let pos1 = pos_out oc in
     abs_pos := 0;
@@ -147,16 +131,8 @@ let link module_list exec_name =
     let pos2 = pos_out oc in
     emit_data oc;
 
-    (* Linker tables *)
-    let pos3 = pos_out oc in
-    (* if !write_debug_info then save_linker_tables oc; *)
-    (* Debugging info (the events) *)
-    let _pos4 = pos_out oc in
-    (* if !write_debug_info then output_compact_value oc !events; *)
-    events := [];
-
     (* The trailer *)
-    let _pos5 = pos_out oc in
+    let pos3 = pos_out oc in
     let size_of_bytecode = pos2 - pos1 in
     let size_of_globals = pos3 - pos2 in
     output_binary_int oc size_of_bytecode;
