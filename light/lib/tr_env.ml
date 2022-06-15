@@ -145,3 +145,8 @@ let add_let_rec_to_env env pat_expr_list =
     | _ -> illegal_letrec_pat pat.p_loc
   in
   List.fold_left add env pat_expr_list
+
+let env_for_toplevel_let patl =
+  List.fold_left
+    (fun env pat -> Tenv (paths_of_pat Path_root pat, env))
+    Tnullenv patl
