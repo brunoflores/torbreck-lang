@@ -5,6 +5,49 @@ open Typing
 open Modules
 open Globals
 open Syntax
+open Const
+
+let enter_new_variant is_extensible _loc (_ty_constr, ty_res, constrs) =
+  let nbr_constrs = List.length constrs in
+  let rec make_constrs constr_idx = function
+    | [] -> []
+    | Zconstr0decl _ :: _ -> failwith ""
+    | Zconstr1decl (constr_name, arg, mut_flag) :: rest ->
+        let ty_arg = type_of_type_expression true arg in
+        let constr_tag =
+          if is_extensible then
+            ConstrExtensible
+              ( { qual = compiled_module_name (); id = constr_name },
+                Modules.new_exc_stamp () )
+          else ConstrRegular (constr_idx, nbr_constrs)
+        in
+        let kind =
+          match type_repr ty_arg with
+          | { typ_desc = Tproduct tylist; _ } -> begin
+              match mut_flag with
+              | Notmutable -> Constr_superfluous (List.length tylist)
+              | Mutable -> Constr_regular
+            end
+          | _ -> Constr_regular
+        in
+        let constr_glob =
+          defined_global constr_name
+            {
+              cs_res = ty_res;
+              cs_arg = ty_arg;
+              cs_mut = mut_flag;
+              cs_tag = constr_tag;
+              cs_kind = kind;
+            }
+        in
+        add_constr constr_glob;
+        constr_glob :: make_constrs (succ constr_idx) rest
+  in
+  let constr_descs = make_constrs 0 constrs in
+  pop_type_level ();
+  generalize_type ty_res;
+  List.iter (fun cstr -> generalize_type cstr.info.cs_arg) constr_descs;
+  Variant_type constr_descs
 
 type external_type = {
   et_descr : type_desc global;
@@ -89,3 +132,34 @@ let type_typedecl loc decl =
   let res = List.map (define_new_type loc) newdecl in
   List.iter (check_recursive_abbrev loc) newdecl;
   res
+
+let type_excdecl loc decl =
+  push_type_level ();
+  reset_type_expression_vars ();
+  enter_new_variant true loc (Builtins.constr_type_exn, Builtins.type_exn, decl)
+
+let type_letdef _loc rec_flag pat_expr_list =
+  push_type_level ();
+  let ty_list = List.map (fun (_pat, _expr) -> new_type_var ()) pat_expr_list in
+  typing_let := true;
+  let env =
+    type_pattern_list (List.map (fun (pat, _expr) -> pat) pat_expr_list) ty_list
+  in
+  typing_let := false;
+  let enter_val =
+    List.iter (fun (name, (ty, _mut_flag)) ->
+        add_value
+          (defined_global name { val_typ = ty; val_prim = ValueNotPrim }))
+  in
+  if rec_flag then enter_val env;
+  List.iter2 (fun (_pat, exp) ty -> type_expect [] exp ty) pat_expr_list ty_list;
+  pop_type_level ();
+  let gen_type =
+    List.map2
+      (fun (_pat, expr) ty -> (is_nonexpansive expr, ty))
+      pat_expr_list ty_list
+  in
+  List.iter (fun (gen, ty) -> if not gen then nongen_type ty) gen_type;
+  List.iter (fun (gen, ty) -> if gen then generalize_type ty) gen_type;
+  if not rec_flag then enter_val env;
+  env
