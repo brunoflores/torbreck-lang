@@ -26,6 +26,9 @@ open Builtins
 %token ELSE
 %token PREF
 %token TYPE
+%token EXCEPTION
+%token OF
+%token MUTABLE
 
 /* Special symbols */
 %token EQUAL
@@ -36,7 +39,10 @@ open Builtins
 %token AND
 %token MINUSGREATER
 %token QUOTE
+%token DOTLPAREN      /* ".(" */
 %token BARBAR         /* "||" */
+%token SHARP          /* "#" */
+%token UNDERUNDER     /* "__" */
 
 /* The end-of-file marker */
 %token EOF
@@ -66,6 +72,10 @@ implementation:
     { make_impl (Zletdef (false, bs)) }
   | LET REC bs = binding_list SEMISEMI
     { make_impl (Zletdef (true, bs)) }
+  | SHARP d = directive SEMISEMI
+    { make_impl (Zimpldirective d) }
+  | EXCEPTION e = exc_decl SEMISEMI
+    { make_impl (Zexcdef e) }
   | EOF
     { raise End_of_file }
 
@@ -76,6 +86,10 @@ interface:
     { make_intf (Zvaluedecl v) }
   | TYPE ty = type_decl SEMISEMI
     { make_intf (Ztypedecl ty) }
+  | SHARP d = directive SEMISEMI
+    { make_intf (Zintfdirective d) }
+  | EXCEPTION e = exc_decl SEMISEMI
+    { make_intf (Zexcdecl e) }
   | EOF
     { raise End_of_file }
 
@@ -104,6 +118,8 @@ simple_expr:
     { expr_constr_or_ident e }
   | LPAREN e = opt_expr RPAREN
     { e }
+  | lexpr = simple_expr DOTLPAREN rexpr = expr RPAREN
+    { make_binop "vect_item" lexpr rexpr }
 
 simple_expr_list:
   | s = simple_expr more = simple_expr_list
@@ -143,6 +159,12 @@ type_decl:
   | ty = type1_decl
     { [ty] }
 
+exc_decl:
+  | c = constr1_decl AND cs = exc_decl
+    { c :: cs }
+  | c = constr1_decl
+    { [c] }
+
 value1_decl:
   | id = ide COLON ty = typ
     { (id, ty, ValueNotPrim) }
@@ -150,8 +172,8 @@ value1_decl:
     { (id, ty, d) }
 
 prim_decl:
-  | i = INT s = STRING
-    { find_primitive i s }
+  | arity = INT name = STRING
+    { find_primitive arity name }
 
 type1_decl:
   | params = type_params id = IDENT ty_def = type1_def
@@ -164,6 +186,18 @@ type1_def:
 type_params:
   | /* empty */
     { [] }
+
+constr1_decl:
+  | i = ide OF m = mutable_option ty = typ
+    { Zconstr1decl (i, ty, m) }
+  | i = ide
+    { Zconstr0decl i }
+
+mutable_option:
+  | MUTABLE
+    { Mutable }
+  | /* epsilon */
+    { Notmutable }
 
 /* Identifiers */
 
@@ -180,7 +214,13 @@ infx:
   | BARBAR
     { "||" }
 
+qual_ident:
+  | qual = IDENT UNDERUNDER id = ide
+    { {qual; id} }
+
 ext_ident:
+  | id = qual_ident
+    { GRmodname id }
   | id = ide
     { GRname id }
 
@@ -233,3 +273,9 @@ simple_pattern:
     { pat_constr_or_var id }
   | LPAREN pat = pattern RPAREN
     { pat }
+
+/* Directives */
+
+directive:
+  | id = IDENT s = STRING
+    { Zdir (id, s) }
