@@ -133,6 +133,16 @@ let rec type_expr env expr =
           end
       end
     | Zconstant c -> type_of_structured_constant c
+    | Zconstruct1 (cstr, arg) -> begin
+        match cstr.info.cs_kind with
+        | Constr_constant -> Error.constant_constr_err cstr expr.e_loc
+        | _ ->
+            let ty_res, ty_arg =
+              type_pair_instance (cstr.info.cs_res, cstr.info.cs_arg)
+            in
+            type_expect env arg ty_arg;
+            ty_res
+      end
     | Zapply (fn, args) ->
         let ty_fn = type_expr env fn in
         let rec type_args ty_res = function
