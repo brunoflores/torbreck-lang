@@ -80,31 +80,25 @@ let link_object oc (name, required) =
 
 (* Build the initial table of globals *)
 let emit_data oc =
-  Printf.printf "number of globals: %d\n" (Symtable.number_of_globals ());
-  (* The globals table has stacked globals with an index value, but it is
-     actually in reverse order.
-     Allocate an array of actions here so that we put them in order first. *)
-  let sorted = Array.make (Symtable.number_of_globals ()) (fun unit -> unit) in
-  output_binary_int oc (Symtable.number_of_globals ());
-  List.iter
-    (function
-      | n, sc -> (
-          Printf.printf "%d %s\n" n (Const.show_struct_constant sc);
-          match sc with
-          | Const.SCatom (Const.ACstring s) -> begin
-              sorted.(n) <-
-                (fun () ->
-                  output_string oc s;
-                  (* Terminate string with a null byte *)
-                  output_byte oc 0)
-            end
-          | _ as x ->
-              failwith
-              @@ Format.sprintf "Link.emit_data: not implemented %s"
-                   (Const.show_struct_constant x)))
-    !Symtable.literal_table;
-  (* Now call the actions. *)
-  Array.iter (fun action -> action ()) sorted
+  (* TODO: review *)
+  (* output_binary_int oc (Symtable.number_of_globals ()); *)
+  output_binary_int oc (List.length !Symtable.literal_table);
+  List.iteri
+    begin
+      fun n sc ->
+        Printf.printf "%d %s\n" n (Const.show_struct_constant sc);
+        match sc with
+        | Const.SCatom (Const.ACstring s) -> begin
+            output_string oc s;
+            (* Terminate string with a null byte *)
+            output_byte oc 0
+          end
+        | _ ->
+            failwith
+            @@ Format.sprintf "Link.emit_data: not implemented %s"
+                 (Const.show_struct_constant sc)
+    end
+    (List.rev !Symtable.literal_table)
 
 (* Build a bytecode executable file *)
 let link module_list exec_name =
