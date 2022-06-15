@@ -2,6 +2,7 @@
 
 open Instruct
 open Lambda
+open Prim
 
 (* Determine if we are in tail call position *)
 let rec is_return = function
@@ -20,7 +21,16 @@ and new_label () =
   incr label_counter;
   !label_counter
 
-(* Generate a branch to the given list of instructions *)
+(* Add a label to a list of instructions *)
+let label_code = function
+  | Kbranch lbl :: _ as code -> (lbl, code)
+  | Klabel lbl :: _ as code -> (lbl, code)
+  | code ->
+      let lbl = new_label () in
+      (lbl, Klabel lbl :: code)
+
+(* Generate a branch to the given list of instructions.
+   Note that [as] has a lower precedence level than cons [::]. *)
 let make_branch = function
   | Kreturn :: _ as code -> (Kreturn, code)
   | (Kbranch _ as branch) :: _ as code -> (branch, code)
@@ -28,12 +38,33 @@ let make_branch = function
       let lbl = new_label () in
       (Kbranch lbl, Klabel lbl :: code)
 
-(* Discard all instructions up to the next label *)
+(* Discard all instructions up to the next label.
+   Note that [as] has a lower precedence level than cons [::]. *)
 let rec discard_dead_code = function
   | [] -> []
-  | Klabel _ :: (_ as code) -> code
-  | Kset_global _ :: (_ as code) -> code
-  | _ :: rest -> discard_dead_code rest
+  | Klabel _ :: _ as code -> code (* Actually [(Klabel _ :: _) as code] *)
+  | Kset_global _ :: _ as code ->
+      code (* Actually [(Kset_global _ :: _) as code] *)
+  | _ :: code -> discard_dead_code code
+
+(* Inversion of a boolean test ( < becomes >= and so on ) *)
+let invert_bool_test =
+  let invert_prim_test = function
+    | PTeq -> PTnoteq
+    | PTnoteq -> PTeq
+    | PTnoteqimm _ -> failwith "Back.invert_prim_test"
+    | PTlt -> PTge
+    | PTle -> PTgt
+    | PTgt -> PTle
+    | PTge -> PTlt
+  in
+  function
+  | Peq_test -> Pnoteq_test
+  | Pnoteq_test -> Peq_test
+  | Pint_test t -> Pint_test (invert_prim_test t)
+  | Pfloat_test t -> Pfloat_test (invert_prim_test t)
+  | Pstring_test t -> Pstring_test (invert_prim_test t)
+  | Pnoteqtag_test _ -> failwith "Back.invert_bool_test"
 
 (* To keep track of function bodies that remain to be compiled. *)
 let still_to_compile = (Stack.create () : (lambda * int) Stack.t)
@@ -49,6 +80,56 @@ let compile_expr _staticfail =
         | (Kquote _ | Kget_global _ | Kaccess _ | Kpushmark) :: _ -> code
         | _ -> Kquote c :: code
       end
+    | Lprim (Pget_global qualid, []) -> Kget_global qualid :: code
+    | Lprim (Pset_global qualid, [ exp ]) ->
+        compexp exp (Kset_global qualid :: code)
+    | Lprim (Pmakeblock tag, explist) ->
+        compexplist explist (Kmakeblock (tag, List.length explist) :: code)
+    | Lprim (Pnot, [ exp ]) -> begin
+        match code with
+        | Kbranchif lbl :: code' -> compexp exp (Kbranchifnot lbl :: code')
+        | Kbranchifnot lbl :: code' -> compexp exp (Kbranchif lbl :: code')
+        | _ -> compexp exp (Kprim Pnot :: code)
+      end
+    | Lprim (Psequand, [ exp1; exp2 ]) -> begin
+        match code with
+        | Kbranch lbl :: _ ->
+            compexp exp1 (Kstrictbranchifnot lbl :: compexp exp2 code)
+        | Kbranchifnot lbl :: _ ->
+            compexp exp1 (Kbranchifnot lbl :: compexp exp2 code)
+        | Kbranchif lbl :: code' ->
+            let lbl1, code1 = label_code code' in
+            compexp exp1
+              (Kbranchifnot lbl1 :: compexp exp2 (Kbranchif lbl :: code1))
+        | _ ->
+            let lbl = new_label () in
+            compexp exp1
+              (Kstrictbranchifnot lbl :: compexp exp2 (Klabel lbl :: code))
+      end
+    | Lprim (Psequor, [ exp1; exp2 ]) -> begin
+        match code with
+        | Kbranch lbl :: _ ->
+            compexp exp1 (Kstrictbranchif lbl :: compexp exp2 code)
+        | Kbranchif lbl :: _ -> compexp exp1 (Kbranchif lbl :: compexp exp2 code)
+        | Kbranchifnot lbl :: code' ->
+            let lbl1, code1 = label_code code' in
+            compexp exp1
+              (Kbranchif lbl1 :: compexp exp2 (Kbranchifnot lbl :: code1))
+        | _ ->
+            let lbl = new_label () in
+            compexp exp1
+              (Kstrictbranchif lbl :: compexp exp2 (Klabel lbl :: code))
+      end
+    | Lprim ((Ptest tst as p), explist) -> begin
+        match code with
+        | Kbranchif lbl :: code' ->
+            compexplist explist (Ktest (tst, lbl) :: code')
+        | Kbranchifnot lbl :: code' ->
+            compexplist explist (Ktest (invert_bool_test tst, lbl) :: code')
+        | _ -> compexplist explist (Kprim p :: code)
+      end
+    | Lprim (Praise, explist) ->
+        compexplist explist (Kprim Praise :: discard_dead_code code)
     | Lprim (p, explist) -> compexplist explist (Kprim p :: code)
     | Lapply (body, args) ->
         if is_return code then
@@ -63,6 +144,15 @@ let compile_expr _staticfail =
           Stack.push (body, lbl) still_to_compile;
           Kclosure lbl :: code
         end
+    | Llet (args, body) ->
+        let code1 =
+          if is_return code then code else Kendlet (List.length args) :: code
+        in
+        let rec comp_args = function
+          | [] -> compexp body code1
+          | exp :: rest -> compexp exp (Klet :: comp_args rest)
+        in
+        comp_args args
     | Lletrec ([ (Lfunction f, _) ], body) ->
         let code1 = if is_return code then code else Kendlet 1 :: code in
         let lbl = new_label () in
@@ -91,6 +181,7 @@ let compile_expr _staticfail =
           Kbranch !lbl_ref :: discard_dead_code code
         end
     | Lifthenelse (cond, ifso, ifnot) -> comp_test2 cond ifso ifnot code
+    | Lsequence (exp1, exp2) -> compexp exp1 (compexp exp2 code)
     | Lcond _ -> failwith "here"
     | x ->
         Printf.printf "%s\n" (Lambda.show_lambda x);
@@ -105,9 +196,7 @@ let compile_expr _staticfail =
     let lbl2 = new_label () in
     compexp cond
       (Kbranchifnot lbl2
-      :: compexp ifso
-           (branch1 :: Klabel lbl2 :: compexp ifnot (Kreturn :: code1)))
-    (* TODO: I added a Kreturn :: code1 here. *)
+      :: compexp ifso (branch1 :: Klabel lbl2 :: compexp ifnot code1))
   in
   compexp
 
@@ -118,7 +207,7 @@ let rec compile_rest code =
   with Stack.Empty -> code
 
 let compile_lambda rec_flag expr =
-  Printf.printf "\n%s\n" (Lambda.show_lambda expr);
+  (* Printf.printf "\n%s\n" (Lambda.show_lambda expr); *)
   Stack.clear still_to_compile;
   reset_label ();
   let init_code = compile_expr nolabel expr [] in
