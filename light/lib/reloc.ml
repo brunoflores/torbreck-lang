@@ -23,6 +23,18 @@ and slot_for_c_prim name =
   enter (Reloc_primitive name);
   out_short 0
 
+and slot_for_get_global id =
+  enter (Reloc_getglobal id);
+  out_short 0
+
+and slot_for_set_global id =
+  enter (Reloc_setglobal id);
+  out_short 0
+
+and slot_for_tag id stamp =
+  enter (Reloc_tag (id, stamp));
+  out 0
+
 let get_info () =
   let res = !reloc_info in
   reloc_info := [];
