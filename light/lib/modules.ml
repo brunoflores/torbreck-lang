@@ -143,6 +143,11 @@ let new_type_stamp () =
   !defined_module.mod_type_stamp <- s;
   s
 
+let new_exc_stamp () =
+  let s = succ !defined_module.mod_exc_stamp in
+  !defined_module.mod_exc_stamp <- s;
+  s
+
 (* Additions to the module being compiled *)
 
 let add_global_info sel_fct glob =
