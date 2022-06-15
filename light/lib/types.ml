@@ -165,6 +165,13 @@ let type_instance ty =
   cleanup_type ty;
   ty'
 
+and type_pair_instance (ty1, ty2) =
+  let ty1' = copy_type ty1 in
+  let ty2' = copy_type ty2 in
+  cleanup_type ty1;
+  cleanup_type ty2;
+  (ty1', ty2')
+
 (* Expansion of an abbreviation *)
 
 let bind_variable ty1 ty2 =
