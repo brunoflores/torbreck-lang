@@ -127,3 +127,7 @@ let type_decl_arity_err _loc ty_desc1 ty_desc2 =
 let recursive_abbrev_err _loc _ty_cstr =
   Printf.eprintf "The type abbreviation is a cyclic (infinite) type.\n";
   failwith "recursive_abbrev_err"
+
+let constant_constr_err _cstr _loc =
+  Printf.eprintf "The constant constructor cannot accept an argument.\n";
+  failwith "constant_constr_err"
