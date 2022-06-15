@@ -132,6 +132,7 @@ impl<'machine> Machine<'machine> {
       let instr = self.decode();
       // Debug:
       // println!("{:?}", self.accu);
+      // println!("{}", instr);
       match instr {
         Instruction::Stop => return self.accu.clone(),
         Instruction::Access => {
@@ -258,7 +259,8 @@ impl<'machine> Machine<'machine> {
           // Abstraction using the stack.
           self.step(None);
           self.accu = Value::Fn(Closure(
-            self.pc + (self.mem[self.pc as usize] as u32), // TODO how to jump backward and forward?
+            // TODO how to jump backward and forward?
+            self.pc + (self.mem[self.pc as usize] as u32),
             self.env.clone(),
           ));
           self.step(None);
@@ -287,10 +289,10 @@ impl<'machine> Machine<'machine> {
                 };
                 self.env = mem::take(&mut new_env);
               } else {
-                panic!();
+                panic!("not a closure in the accumulator");
               }
             }
-            None => panic!("asp empty"),
+            None => panic!("asp empty: {}", self.asp),
           }
           self.asp -= 1;
         }
@@ -308,7 +310,8 @@ impl<'machine> Machine<'machine> {
             self.pc - (self.mem[self.pc as usize] as u32),
             Vec::with_capacity(0), // TODO
           )));
-          self.step(None); // TODO Why? There's an extra zero here. Skip over it.
+          // TODO Why? There's an extra zero here. Skip over it.
+          self.step(None);
           self.step(None);
         }
         Instruction::Endlet => {
