@@ -123,13 +123,12 @@ let open_module name =
 let default_used_modules = ref ([] : string list)
 let defined_module = ref (new_module "")
 
-let start_compiling_interface name =
+let reset name =
   defined_module := new_module name;
   reset_opened_modules ();
   List.iter open_module !default_used_modules
 
-let start_compiling_implementation name intf =
-  start_compiling_interface name;
+let start_compiling_implementation (intf : module') =
   !defined_module.mod_type_stamp <- intf.mod_type_stamp;
   !defined_module.mod_exc_stamp <- intf.mod_exc_stamp
 
