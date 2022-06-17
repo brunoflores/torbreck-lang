@@ -99,7 +99,7 @@ let compile_interface (modname : string) (filename : string) : unit =
     done
   with
   | End_of_file -> write_compiled_interface intf_name
-  | Sys_error s | Failure s -> failwith s
+  | Sys_error s | Failure s -> failwith @@ "compile_interface: " ^ s
 
 let compile_implementation (modname : string) (filename : string) : unit =
   let intf_name = filename ^ ".zi" in
