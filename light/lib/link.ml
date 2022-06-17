@@ -3,7 +3,6 @@
 open Emit_phr
 open Reloc
 open Lambda
-open Patch
 
 (* First pass: determine which phrases are required *)
 
@@ -68,7 +67,7 @@ let link_object oc ((name, required) : string * compiled_phrase list) : unit =
         seek_in ic phr.cph_pos;
         let buff = Bytes.create phr.cph_len in
         really_input ic buff 0 phr.cph_len;
-        patch_object buff 0 phr.cph_reloc;
+        Patch.patch_object buff 0 phr.cph_reloc;
         (* Printf.printf "output bytes: %s\n"
          * @@ Bytes.fold_left
          *      (fun acc c -> acc ^ string_of_int (int_of_char c) ^ ", ")
