@@ -46,8 +46,8 @@ let scan_file tolink object_filename =
     let ic = open_in_bin actual_filename in
     let abs_out_position = input_binary_int ic in
     seek_in ic abs_out_position;
-    let phrase_index = (input_value ic : compiled_phrase list) in
-    let required = List.fold_left scan_phrase [] phrase_index in
+    let compiled_phrase_index = (input_value ic : compiled_phrase list) in
+    let required = List.fold_left scan_phrase [] compiled_phrase_index in
     close_in ic;
     (actual_filename, required) :: tolink
   with Misc.Cannot_find_file name ->
