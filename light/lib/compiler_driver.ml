@@ -81,8 +81,9 @@ let compile_implementation modname filename suffix =
       Ty_intf.enter_interface_definitions intf;
       compile_impl filename suffix;
       Ty_intf.check_interface intf
-    with x -> (* Sys.remove (filename ^ ".zo"); *)
-              raise x
+    with x ->
+      Sys.remove (filename ^ ".zo");
+      raise x
   end
   else begin
     let intf_name = filename ^ ".zi" in
