@@ -61,8 +61,9 @@ let scan_file tolink object_filename =
 let events = ref ([] : event list)
 let abs_pos = ref 0
 
-let link_object oc ((name, required) : string * compiled_phrase list) : unit =
-  let ic = open_in_bin name in
+let link_object oc ((object_filename, phrases) : string * compiled_phrase list)
+    : unit =
+  let ic = open_in_bin object_filename in
   try
     List.iter
       (fun phr ->
@@ -76,10 +77,10 @@ let link_object oc ((name, required) : string * compiled_phrase list) : unit =
          *      "" buff; *)
         output oc buff 0 phr.cph_len;
         abs_pos := !abs_pos + phr.cph_len)
-      required;
+      phrases;
     close_in ic
   with x ->
-    Printf.eprintf "error while liinking file %s.\n" name;
+    Printf.eprintf "error while liinking file %s.\n" object_filename;
     close_in ic;
     raise x
 
