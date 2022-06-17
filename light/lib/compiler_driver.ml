@@ -66,17 +66,17 @@ let compile_impl filename suffix =
   end
 
 let compile_implementation modname filename suffix =
+  let intf_name = filename ^ ".zi" in
   if Sys.file_exists (filename ^ ".mli") then begin
     try
-      let intfname = filename ^ ".zi" in
       let _ =
-        if Sys.file_exists intfname = false then
+        if Sys.file_exists intf_name = false then
           failwith
           @@ Printf.sprintf
                "Cannot find file %s.zi. Please compile %s.mli first." filename
                filename
       in
-      let intf = Modules.read_module modname intfname in
+      let intf = Modules.read_module modname intf_name in
       Modules.start_compiling_implementation modname intf;
       Ty_intf.enter_interface_definitions intf;
       compile_impl filename suffix;
@@ -86,7 +86,6 @@ let compile_implementation modname filename suffix =
       raise x
   end
   else begin
-    let intf_name = filename ^ ".zi" in
     try
       Modules.start_compiling_interface modname;
       compile_impl filename suffix;
