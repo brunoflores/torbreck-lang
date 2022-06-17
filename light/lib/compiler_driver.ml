@@ -76,11 +76,11 @@ let compile_implementation modname filename suffix =
                "Cannot find file %s.zi. Please compile %s.mli first." filename
                filename
       in
-      let intf = Modules.read_module modname intf_name in
-      Modules.start_compiling_implementation modname intf;
-      Ty_intf.enter_interface_definitions intf;
+      let intf_mod = Modules.read_module modname intf_name in
+      Modules.start_compiling_implementation modname intf_mod;
+      Ty_intf.enter_interface_definitions intf_mod;
       compile_impl filename suffix;
-      Ty_intf.check_interface intf
+      Ty_intf.check_interface intf_mod
     with x ->
       Sys.remove (filename ^ ".zo");
       raise x
