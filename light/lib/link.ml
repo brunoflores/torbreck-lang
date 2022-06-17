@@ -71,10 +71,6 @@ let link_object oc ((object_filename, phrases) : string * compiled_phrase list)
         let buff = Bytes.create phr.cph_len in
         really_input ic buff 0 phr.cph_len;
         Patch.patch_object buff 0 phr.cph_reloc;
-        (* Printf.printf "output bytes: %s\n"
-         * @@ Bytes.fold_left
-         *      (fun acc c -> acc ^ string_of_int (int_of_char c) ^ ", ")
-         *      "" buff; *)
         output oc buff 0 phr.cph_len;
         abs_pos := !abs_pos + phr.cph_len)
       phrases;
