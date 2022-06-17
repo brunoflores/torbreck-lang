@@ -69,19 +69,6 @@ let write_compiled_interface intf_name =
   Modules.write_compiled_interface oc;
   close_out oc
 
-let compile_interface modname filename =
-  let source_name = filename ^ ".mli" in
-  let intf_name = filename ^ ".zi" in
-  let lexbuf, content = get_contents source_name in
-  try
-    Modules.start_compiling_interface modname;
-    while true do
-      parse Parser.Incremental.interface compile_intf_phrase lexbuf content
-    done
-  with
-  | End_of_file -> write_compiled_interface intf_name
-  | Sys_error s | Failure s -> failwith s
-
 let compile_impl filename suffix =
   let source_name = filename ^ suffix in
   let obj_name = filename ^ ".zo" in
@@ -101,7 +88,21 @@ let compile_impl filename suffix =
     | Sys_error s | Failure s -> failwith s
   end
 
-let compile_implementation modname filename suffix =
+let compile_interface (modname : string) (filename : string) : unit =
+  let source_name = filename ^ ".mli" in
+  let intf_name = filename ^ ".zi" in
+  let lexbuf, content = get_contents source_name in
+  try
+    Modules.start_compiling_interface modname;
+    while true do
+      parse Parser.Incremental.interface compile_intf_phrase lexbuf content
+    done
+  with
+  | End_of_file -> write_compiled_interface intf_name
+  | Sys_error s | Failure s -> failwith s
+
+let compile_implementation (modname : string) (filename : string)
+    (suffix : string) : unit =
   let intf_name = filename ^ ".zi" in
   if Sys.file_exists (filename ^ ".mli") then begin
     try
