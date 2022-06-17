@@ -8,7 +8,7 @@ type compiled_phrase = {
   cph_len : int; (* Length of code *)
   cph_reloc : (Reloc.info * int) list; (* What to patch *)
   cph_pure : bool; (* Can be omitted or not *)
-  cph_events : Lambda.event list;
+  cph_events : Lambda.event list; (* Debug events *)
 }
 
 let abs_out_position = ref 0
