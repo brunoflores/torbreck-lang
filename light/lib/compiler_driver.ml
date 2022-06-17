@@ -92,7 +92,7 @@ let compile_interface (modname : string) (filename : string) : unit =
   let source_name = filename ^ ".mli" in
   let intf_name = filename ^ ".zi" in
   let lexbuf, content = get_contents source_name in
-  Modules.reset modname;
+  let _ = Modules.reset modname in
   try
     while true do
       parse Parser.Incremental.interface compile_intf_phrase lexbuf content
@@ -104,7 +104,7 @@ let compile_interface (modname : string) (filename : string) : unit =
 let compile_implementation (modname : string) (filename : string) : unit =
   let intf_name = filename ^ ".zi" in
   let suffix = ".ml" in
-  Modules.reset modname;
+  let _ = Modules.reset modname in
   if Sys.file_exists (filename ^ ".mli") then begin
     (* Module interface provided by the user as .mli *)
     try
