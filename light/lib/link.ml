@@ -2,7 +2,6 @@
 
 open Emit_phr
 open Reloc
-open Lambda
 
 (* First pass: determine which phrases are required *)
 
@@ -58,7 +57,6 @@ let scan_file tolink object_filename =
 
 (* Second pass: link in the required phrases *)
 
-let events = ref ([] : event list)
 let abs_pos = ref 0
 
 let link_object oc ((object_filename, phrases) : string * compiled_phrase list)
