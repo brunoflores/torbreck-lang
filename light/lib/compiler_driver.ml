@@ -21,7 +21,7 @@ let compile_intf_phrase (phr : Syntax.intf_phrase) =
       ()
 
 let compile_impl_phrase oc (phr : Syntax.impl_phrase) =
-  (* reset_type_expression_vars(); *)
+  let _ = Typing.reset_type_expression_vars () in
   match phr.im_desc with
   | Zexpr expr ->
       let _ty = Ty_decl.type_expression phr.im_loc expr in
