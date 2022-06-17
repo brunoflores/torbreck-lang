@@ -47,7 +47,9 @@ let scan_file tolink object_filename =
     let abs_out_position = input_binary_int ic in
     seek_in ic abs_out_position;
     let compiled_phrase_index = (input_value ic : compiled_phrase list) in
-    let required = List.fold_left scan_phrase [] compiled_phrase_index in
+    let required : compiled_phrase list =
+      List.fold_left scan_phrase [] compiled_phrase_index
+    in
     close_in ic;
     (actual_filename, required) :: tolink
   with Misc.Cannot_find_file name ->
@@ -105,7 +107,9 @@ let emit_data oc =
 
 (* Build a bytecode executable file *)
 let link object_files exec_name =
-  let tolink = List.fold_left scan_file [] (List.rev object_files) in
+  let tolink : (string * compiled_phrase list) list =
+    List.fold_left scan_file [] (List.rev object_files)
+  in
   List.iter (fun (name, _) -> Printf.printf "to link: %s\n" name) tolink;
   let oc =
     open_out_gen
