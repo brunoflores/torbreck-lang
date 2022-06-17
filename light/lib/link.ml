@@ -62,8 +62,8 @@ let link_object oc ((object_filename, phrases) : string * compiled_phrase list)
   let ic = open_in_bin object_filename in
   try
     let link phr =
-      seek_in ic phr.cph_pos;
       let buff = Bytes.create phr.cph_len in
+      seek_in ic phr.cph_pos;
       really_input ic buff 0 phr.cph_len;
       Patch.patch_object buff 0 phr.cph_reloc;
       output oc buff 0 phr.cph_len
