@@ -37,7 +37,7 @@ depends: [
   "ocaml-variants" {= "4.14.0+options"}
   "ocaml-version" {= "3.4.0"}
   "ocamlbuild" {= "0.14.1"}
-  "ocamlfind" {= "1.9.3"}
+  "ocamlfind" {= "1.9.5"}
   "ocamlformat" {= "0.22.4"}
   "ocp-indent" {= "1.8.1"}
   "odoc-parser" {= "1.0.0"}
@@ -74,12 +74,12 @@ depends: [
   "ppx_string" {= "v0.15.0"}
   "ppx_typerep_conv" {= "v0.15.0"}
   "ppx_variants_conv" {= "v0.15.0"}
-  "ppxlib" {= "0.26.0"}
+  "ppxlib" {= "0.27.0"}
   "re" {= "1.10.4"}
   "result" {= "1.5"}
   "seq" {= "base"}
   "sexplib" {= "v0.15.0"}
-  "sexplib0" {= "v0.15.0"}
+  "sexplib0" {= "v0.15.1"}
   "splittable_random" {= "v0.15.0"}
   "stdio" {= "v0.15.0"}
   "stdlib-shims" {= "0.3.0"}
