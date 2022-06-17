@@ -65,15 +65,15 @@ let link_object oc ((object_filename, phrases) : string * compiled_phrase list)
     : unit =
   let ic = open_in_bin object_filename in
   try
-    List.iter
-      (fun phr ->
-        seek_in ic phr.cph_pos;
-        let buff = Bytes.create phr.cph_len in
-        really_input ic buff 0 phr.cph_len;
-        Patch.patch_object buff 0 phr.cph_reloc;
-        output oc buff 0 phr.cph_len;
-        abs_pos := !abs_pos + phr.cph_len)
-      phrases;
+    let link phr =
+      seek_in ic phr.cph_pos;
+      let buff = Bytes.create phr.cph_len in
+      really_input ic buff 0 phr.cph_len;
+      Patch.patch_object buff 0 phr.cph_reloc;
+      output oc buff 0 phr.cph_len;
+      abs_pos := !abs_pos + phr.cph_len
+    in
+    List.iter link phrases;
     close_in ic
   with x ->
     Printf.eprintf "error while liinking file %s.\n" object_filename;
