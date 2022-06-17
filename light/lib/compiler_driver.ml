@@ -101,9 +101,9 @@ let compile_interface (modname : string) (filename : string) : unit =
   | End_of_file -> write_compiled_interface intf_name
   | Sys_error s | Failure s -> failwith s
 
-let compile_implementation (modname : string) (filename : string)
-    (suffix : string) : unit =
+let compile_implementation (modname : string) (filename : string) : unit =
   let intf_name = filename ^ ".zi" in
+  let suffix = ".ml" in
   if Sys.file_exists (filename ^ ".mli") then begin
     try
       let _ =

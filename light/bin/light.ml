@@ -29,7 +29,7 @@ let () =
     (* The business *)
     if Filename.check_suffix fname ".ml" then
       let filename = Filename.chop_suffix fname ".ml" in
-      compile_implementation (Filename.basename filename) filename ".ml"
+      compile_implementation (Filename.basename filename) filename
     else if Filename.check_suffix fname ".mli" then
       let filename = Filename.chop_suffix fname ".mli" in
       compile_interface (Filename.basename filename) filename
