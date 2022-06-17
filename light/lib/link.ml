@@ -40,16 +40,16 @@ let scan_phrase tolink phr =
   end
   else tolink
 
-let scan_file tolink name =
+let scan_file tolink object_filename =
   try
-    let truename = Misc.find_in_path name in
-    let ic = open_in_bin truename in
-    let n = input_binary_int ic in
-    seek_in ic n;
+    let actual_filename = Misc.find_in_path object_filename in
+    let ic = open_in_bin actual_filename in
+    let abs_out_position = input_binary_int ic in
+    seek_in ic abs_out_position;
     let phrase_index = (input_value ic : compiled_phrase list) in
     let required = List.fold_left scan_phrase [] phrase_index in
     close_in ic;
-    (truename, required) :: tolink
+    (actual_filename, required) :: tolink
   with Misc.Cannot_find_file name ->
     Printf.eprintf "Cannot find file %s.\n" name;
     failwith "Link.scan_file"
@@ -104,8 +104,8 @@ let emit_data oc =
     (List.rev !Symtable.literal_table)
 
 (* Build a bytecode executable file *)
-let link module_list exec_name =
-  let tolink = List.fold_left scan_file [] (List.rev module_list) in
+let link object_files exec_name =
+  let tolink = List.fold_left scan_file [] (List.rev object_files) in
   List.iter (fun (name, _) -> Printf.printf "to link: %s\n" name) tolink;
   let oc =
     open_out_gen
