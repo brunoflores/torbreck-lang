@@ -105,6 +105,7 @@ let compile_implementation (modname : string) (filename : string) : unit =
   let intf_name = filename ^ ".zi" in
   let suffix = ".ml" in
   if Sys.file_exists (filename ^ ".mli") then begin
+    (* Module interface provided by the user as .mli *)
     try
       let _ =
         if Sys.file_exists intf_name = false then
@@ -123,6 +124,7 @@ let compile_implementation (modname : string) (filename : string) : unit =
       raise x
   end
   else begin
+    (* No module interface provided: export all symbols *)
     try
       Modules.start_compiling_interface modname;
       compile_impl filename suffix;
