@@ -110,7 +110,6 @@ let reset_opened_modules () =
 let add_table t1 t2 = Hashtbl.iter (Hashtbl.add t2) t1
 
 let open_module name =
-  Printf.printf "open module: %s\n" name;
   let m = find_module name in
   add_table m.mod_values !opened_modules.mod_values;
   add_table m.mod_constrs !opened_modules.mod_constrs;
@@ -154,7 +153,6 @@ let add_global_info sel_fct glob =
   (* if !toplevel then begin *)
   add_rollback (fun () -> Hashtbl.remove tbl glob.qualid.id);
   (* end *)
-  Printf.printf "add_global_info: %s\n" glob.qualid.id;
   Hashtbl.add tbl glob.qualid.id glob
 
 let add_value = add_global_info values_of_module
