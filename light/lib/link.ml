@@ -60,7 +60,7 @@ let scan_file tolink name =
 let events = ref ([] : event list)
 let abs_pos = ref 0
 
-let link_object oc (name, required) =
+let link_object oc ((name, required) : string * compiled_phrase list) : unit =
   let ic = open_in_bin name in
   try
     List.iter
