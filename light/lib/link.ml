@@ -76,7 +76,8 @@ let link_object oc ((object_filename, phrases) : string * compiled_phrase list)
     List.iter link phrases;
     close_in ic
   with x ->
-    Printf.eprintf "error while liinking file %s.\n" object_filename;
+    Printf.eprintf "Link.link_object: error while linking file %s.\n"
+      object_filename;
     close_in ic;
     raise x
 
