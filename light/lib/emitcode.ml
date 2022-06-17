@@ -26,11 +26,9 @@ let rec emit instructions =
   match instructions with
   | [] -> ()
   | Kquote (SCatom (ACint i)) :: code ->
-      Printf.printf "out_int_const %d\n" i;
       out_int_const i;
       emit code
   | Kquote sc :: code ->
-      Printf.printf "out %s\n" "getglobal";
       out Opcodes.getglobal;
       Reloc.slot_for_literal sc;
       emit code
@@ -44,13 +42,10 @@ let rec emit instructions =
       emit code
   | Kaccess n :: code ->
       if n < 6 then begin
-        Printf.printf "out access %d\n" n;
         out (acc0 + n)
       end
       else begin
-        Printf.printf "out %s\n" "access";
         out access;
-        Printf.printf "out n %d\n" n;
         out n
       end;
       emit code
@@ -59,12 +54,10 @@ let rec emit instructions =
       out_label lbl;
       emit code
   | Kbranchifnot lbl :: code ->
-      Printf.printf "out branchifnot to label %d\n" lbl;
       out branchifnot;
       out_label lbl;
       emit code
   | Kletrec1 lbl :: code ->
-      Printf.printf "out letrec1 with label %d\n" lbl;
       out letrec1;
       out_label lbl;
       emit code
@@ -81,13 +74,10 @@ let rec emit instructions =
       emit code
   | Kendlet n :: Kendlet p :: code -> emit (Kendlet (n + p) :: code)
   | Kendlet 1 :: code ->
-      Printf.printf "out %s\n" "endlet1";
       out endlet1;
       emit code
   | Kendlet n :: code ->
-      Printf.printf "out %s\n" "endlet";
       out endlet;
-      Printf.printf "out n %d\n" n;
       out n;
       emit code
   | Kprim p :: code ->
@@ -98,13 +88,10 @@ let rec emit instructions =
             out n
         | Pccall (name, arity) ->
             if arity <= 5 then begin
-              Printf.printf "out ccall with arity %d and name %s\n" arity name;
               out (Opcodes.c_call1 + arity - 1)
             end
             else begin
-              Printf.printf "out %s\n" "ccalln";
               out Opcodes.c_calln;
-              Printf.printf "out arity %d\n" arity;
               out arity
             end;
             Reloc.slot_for_c_prim name
@@ -120,7 +107,6 @@ let rec emit instructions =
       end;
       emit code
   | Kbranch lbl :: code ->
-      Printf.printf "out branch to label %d\n" lbl;
       out branch;
       out_label lbl;
       emit code
@@ -143,7 +129,6 @@ let rec emit instructions =
       Reloc.slot_for_get_global qualid;
       emit code
   | instr :: code ->
-      Printf.printf "out %s\n" @@ Instruct.show_zam_instruction instr;
       out
         begin
           match instr with
