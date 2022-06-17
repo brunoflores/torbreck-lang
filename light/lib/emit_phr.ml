@@ -30,7 +30,6 @@ let emit_phrase oc is_pure phr =
   Event.reset ();
   Buffcode.init_out_code ();
   Labels.reset_label_table ();
-  Printf.printf "\nZam phrase:\n%s\n" (Instruct.show_zam_phrase phr);
   begin
     match phr with
     | { kph_fcts = []; _ } -> emit phr.kph_init
