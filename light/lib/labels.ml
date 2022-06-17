@@ -21,7 +21,6 @@ let extend_label_table needed =
   label_table := new_table
 
 let define_label lbl =
-  Printf.printf "define label %d at %d\n" lbl !out_position;
   if lbl >= Array.length !label_table then extend_label_table lbl;
   match !label_table.(lbl) with
   | Label_defined _ -> failwith "Labels.define_label: already defined"
