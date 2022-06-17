@@ -13,13 +13,10 @@ let init_out_code () = out_position := 0
 
 let out (b : int) : unit =
   if !out_position >= Bytes.length !out_buffer then realloc_out_buffer ();
-  Printf.printf "  buff[%d] <- %d\n" !out_position b;
   Bytes.set !out_buffer !out_position (char_of_int b);
   incr out_position
 
 let out_short (s : int) : unit =
-  Printf.printf "  buff[%d] <- short %d (%d)\n" !out_position s
-    (Int.shift_right_logical s 8);
   if s >= 32768 || s < -32768 then Error.displacement_overflow ()
   else begin
     out s;
