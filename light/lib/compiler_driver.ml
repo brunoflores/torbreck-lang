@@ -74,19 +74,17 @@ let compile_impl filename suffix =
   let obj_name = filename ^ ".zo" in
   let oc = open_out_bin obj_name in
   let lexbuf, content = get_contents source_name in
-  begin
-    Emit_phr.start_emit_phrase oc;
-    try
-      while true do
-        parse Parser.Incremental.implementation (compile_impl_phrase oc) lexbuf
-          content
-      done
-    with
-    | End_of_file ->
-        Emit_phr.end_emit_phrase oc;
-        close_out oc
-    | Sys_error s | Failure s -> failwith s
-  end
+  let _ = Emit_phr.start_emit_phrase oc in
+  try
+    while true do
+      parse Parser.Incremental.implementation (compile_impl_phrase oc) lexbuf
+        content
+    done
+  with
+  | End_of_file ->
+      Emit_phr.end_emit_phrase oc;
+      close_out oc
+  | Sys_error s | Failure s -> failwith s
 
 let compile_interface (modname : string) (filename : string) : unit =
   let source_name = filename ^ ".mli" in
