@@ -57,8 +57,6 @@ let scan_file tolink object_filename =
 
 (* Second pass: link in the required phrases *)
 
-let abs_pos = ref 0
-
 let link_object oc ((object_filename, phrases) : string * compiled_phrase list)
     : unit =
   let ic = open_in_bin object_filename in
@@ -68,8 +66,7 @@ let link_object oc ((object_filename, phrases) : string * compiled_phrase list)
       let buff = Bytes.create phr.cph_len in
       really_input ic buff 0 phr.cph_len;
       Patch.patch_object buff 0 phr.cph_reloc;
-      output oc buff 0 phr.cph_len;
-      abs_pos := !abs_pos + phr.cph_len
+      output oc buff 0 phr.cph_len
     in
     List.iter link phrases;
     close_in ic
@@ -121,7 +118,6 @@ let link object_files exec_name =
 
     (* The bytecode *)
     let pos1 = pos_out oc in
-    abs_pos := 0;
     List.iter (link_object oc) tolink;
     output_byte oc Opcodes.stop;
 
