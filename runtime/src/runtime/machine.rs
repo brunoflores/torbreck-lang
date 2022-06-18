@@ -570,6 +570,14 @@ impl<'machine> Machine<'machine> {
   }
 
   #[inline(always)]
+  fn u16pc(&self) -> u16 {
+    u16::from_be_bytes([
+      self.mem[(self.pc + 1) as usize],
+      self.mem[self.pc as usize],
+    ])
+  }
+
+  #[inline(always)]
   fn i16pc(&self) -> i16 {
     i16::from_be_bytes([
       self.mem[(self.pc + 1) as usize],
