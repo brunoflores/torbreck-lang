@@ -1035,7 +1035,7 @@ mod tests {
       I(Push),
       I(Grab),
       I(Cur),
-      // -5
+      // -5 in base 10 (this is a 16-bit short).
       D(0b11111011),
       D(0b11111111),
       I(Stop),
@@ -1077,7 +1077,7 @@ mod tests {
   fn machine_can_get_global() {
     let program: Vec<u8> = vec![
       I(Getglobal),
-      // 0
+      // 0 in base 10 (this is a 16-bit short).
       D(0),
       D(0),
       I(Stop),
@@ -1086,6 +1086,8 @@ mod tests {
     .map(Code::encode)
     .collect();
 
+    // A 32-bit integer that would have been created by OCaml's
+    // [Stdlib.output_binary_int].
     let mut globals: Vec<Code> =
       vec![D(0b00000000), D(0b00000000), D(0b00000000), D(0b00000001)];
     globals.append(&mut ("hello\0".as_bytes().iter().map(|b| D(*b)).collect()));
