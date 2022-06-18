@@ -564,7 +564,19 @@ impl<'machine> Machine<'machine> {
           self.step(None); // TODO: global id is duplicated.
           self.step(None);
         }
-        _ => self.panic_pc("not implemented", self.instr), // TODO
+        Instruction::Pushgetglobalapply => {
+          self.step(None);
+
+          let u16pc = self.u16pc();
+          let old_accu =
+            mem::replace(&mut self.accu, self.globals[u16pc as usize].clone());
+          self.asp += 1;
+          self.astack[self.asp] = Some(AspValue::Val(old_accu));
+
+          self.step(None); // Jump over short
+          self.exec_apply();
+        }
+        _ => self.panic_pc("not implemented", self.instr),
       };
     }
   }
