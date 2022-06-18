@@ -218,7 +218,7 @@ impl<'machine> Machine<'machine> {
           } else {
             self.panic_pc("not an integer", self.instr);
           }
-          self.step(None);
+          self.pc += 1;
         }
         Instruction::Predint => {
           if let Value::Int(i) = self.accu {
@@ -226,7 +226,7 @@ impl<'machine> Machine<'machine> {
           } else {
             self.panic_pc("not an integer", self.instr);
           }
-          self.step(None);
+          self.pc += 1;
         }
         Instruction::Negint => {
           if let Value::Int(i) = self.accu {
@@ -234,7 +234,7 @@ impl<'machine> Machine<'machine> {
           } else {
             self.panic_pc("not an integer", self.instr);
           }
-          self.step(None);
+          self.pc += 1;
         }
         Instruction::Addint => {
           if let Value::Int(i) = self.accu {
@@ -249,7 +249,7 @@ impl<'machine> Machine<'machine> {
           } else {
             self.panic_pc("not an integer", self.instr);
           }
-          self.step(None);
+          self.pc += 1;
         }
         Instruction::Subint => {
           if let Value::Int(i) = self.accu {
@@ -264,7 +264,7 @@ impl<'machine> Machine<'machine> {
           } else {
             self.panic_pc("not an integer", self.instr);
           }
-          self.step(None);
+          self.pc += 1;
         }
         Instruction::Mulint => {
           if let Value::Int(i) = self.accu {
@@ -279,7 +279,7 @@ impl<'machine> Machine<'machine> {
           } else {
             self.panic_pc("not an integer", self.instr);
           }
-          self.step(None);
+          self.pc += 1;
         }
         Instruction::Divint => {
           if let Value::Int(i) = self.accu {
@@ -296,7 +296,7 @@ impl<'machine> Machine<'machine> {
           } else {
             self.panic_pc("not an integer", self.instr);
           }
-          self.step(None);
+          self.pc += 1;
         }
         Instruction::Modint => {
           if let Value::Int(i) = self.accu {
@@ -313,7 +313,7 @@ impl<'machine> Machine<'machine> {
           } else {
             self.panic_pc("not an integer", self.instr);
           }
-          self.step(None);
+          self.pc += 1;
         }
         Instruction::Andint => {
           if let Value::Int(i) = self.accu {
@@ -328,7 +328,7 @@ impl<'machine> Machine<'machine> {
           } else {
             self.panic_pc("not an integer", self.instr);
           }
-          self.step(None);
+          self.pc += 1;
         }
         Instruction::Orint => {
           if let Value::Int(i) = self.accu {
@@ -343,7 +343,7 @@ impl<'machine> Machine<'machine> {
           } else {
             self.panic_pc("not an integer", self.instr);
           }
-          self.step(None);
+          self.pc += 1;
         }
         Instruction::Xorint => {
           if let Value::Int(i) = self.accu {
@@ -358,7 +358,7 @@ impl<'machine> Machine<'machine> {
           } else {
             self.panic_pc("not an integer", self.instr);
           }
-          self.step(None);
+          self.pc += 1;
         }
         Instruction::Shiftleftint => {
           if let Value::Int(i) = self.accu {
@@ -373,7 +373,7 @@ impl<'machine> Machine<'machine> {
           } else {
             self.panic_pc("not an integer", self.instr);
           }
-          self.step(None);
+          self.pc += 1;
         }
         Instruction::Shiftrightintsigned => {
           if let Value::Int(i) = self.accu {
@@ -388,7 +388,7 @@ impl<'machine> Machine<'machine> {
           } else {
             self.panic_pc("not an integer", self.instr);
           }
-          self.step(None);
+          self.pc += 1;
         }
         Instruction::Shiftrightintunsigned => {
           if let Value::Int(i) = self.accu {
@@ -403,10 +403,10 @@ impl<'machine> Machine<'machine> {
           } else {
             self.panic_pc("not an integer", self.instr);
           }
-          self.step(None);
+          self.pc += 1;
         }
         Instruction::Floatop => {
-          self.step(None);
+          self.pc += 1;
           self.accu = match self.decode() {
             Instruction::Floatofint => {
               if let Value::Int(v) = self.accu {
@@ -483,7 +483,7 @@ impl<'machine> Machine<'machine> {
             _ => self
               .panic_pc("not an instruction supported with floats", self.instr),
           };
-          self.step(None);
+          self.pc += 1;
         }
         Instruction::Intoffloat => {
           self.accu = if let Value::Float(f) = self.accu {
@@ -491,7 +491,7 @@ impl<'machine> Machine<'machine> {
           } else {
             self.panic_pc("not a float", self.instr);
           };
-          self.step(None);
+          self.pc += 1;
         }
         Instruction::Boolnot => {
           self.accu = match self.accu {
@@ -499,26 +499,25 @@ impl<'machine> Machine<'machine> {
             Value::True => Value::False,
             _ => panic!("not a bool in the accumulator"),
           };
-          self.step(None);
+          self.pc += 1;
         }
         Instruction::Constbyte => {
-          self.step(None);
+          self.pc += 1;
           self.accu = Value::Int(self.mem[self.pc as usize] as i32);
-          self.step(None);
+          self.pc += 1;
         }
         Instruction::Ccall1 => {
-          self.step(None);
+          self.pc += 1;
           let u16pc = self.u16pc();
           if let Some(prim) = self.prims.get(u16pc as usize) {
             self.accu = prim(&[&self.accu]);
           } else {
             panic!("primitive number undefined: {u16pc}");
           };
-          self.step(None); // Jump over short
-          self.step(None);
+          self.pc += 2; // Jump over short
         }
         Instruction::Ccall2 => {
-          self.step(None);
+          self.pc += 1;
           let u16pc = self.u16pc();
           if let Some(prim) = self.prims.get(u16pc as usize) {
             let arg1 = if let Some(AspValue::Val(v)) =
@@ -533,61 +532,55 @@ impl<'machine> Machine<'machine> {
           } else {
             panic!("primitive number undefined: {u16pc}");
           };
-          self.step(None); // Jump over short
-          self.step(None);
+          self.pc += 2; // Jump over short
         }
         Instruction::Makestring => {
-          self.step(None);
+          self.pc += 1;
           let (val, len) =
             Value::string_from_bytes(&self.mem[self.pc as usize..]);
           self.accu = val;
-          self.step(Some(len.try_into().unwrap()));
-          self.step(None);
+          self.pc += TryInto::<u32>::try_into(len).unwrap() + 1;
         }
         Instruction::Branch => {
-          self.step(None);
+          self.pc += 1;
           self.pc = (self.pc as i32 + self.i32pc()) as u32;
         }
         Instruction::Branchifnot => {
-          self.step(None);
+          self.pc += 1;
           match self.accu {
             Value::False => self.pc = (self.pc as i32 + self.i32pc()) as u32,
             Value::True => {
-              self.step(None); // Jump over short
-              self.step(None);
+              self.pc += 2; // Jump over short
             }
             _ => panic!("not a boolean in the accumulator"),
           }
         }
         Instruction::Branchif => {
-          self.step(None);
+          self.pc += 1;
           match self.accu {
             Value::True => self.pc = (self.pc as i32 + self.i32pc()) as u32,
             Value::False => {
-              self.step(None); // Jump over short
-              self.step(None);
+              self.pc += 2; // Jump over short
             }
             _ => panic!("not a boolean in the accumulator"),
           }
         }
         Instruction::Setglobal => {
-          self.step(None);
+          self.pc += 1;
           let u16pc = self.u16pc();
           if u16pc as usize >= self.globals.len() {
             self.realloc_globals();
           };
           self.globals[u16pc as usize] = self.accu.clone();
-          self.step(None); // Jump over short
-          self.step(None);
+          self.pc += 2; // Jump over short
         }
         Instruction::Getglobal => {
-          self.step(None);
+          self.pc += 1;
           self.accu = self.globals[self.u16pc() as usize].clone();
-          self.step(None); // Jump over short
-          self.step(None);
+          self.pc += 2; // Jump over short
         }
         Instruction::Pushgetglobalapply => {
-          self.step(None);
+          self.pc += 1;
 
           let u16pc = self.u16pc();
           let old_accu =
@@ -595,7 +588,7 @@ impl<'machine> Machine<'machine> {
           self.asp += 1;
           self.astack[self.asp] = Some(AspValue::Val(old_accu));
 
-          self.step(None); // Jump over short
+          self.pc += 1; // Jump over short
           self.exec_apply();
         }
         _ => self.panic_pc("not implemented", self.instr),
@@ -632,21 +625,21 @@ impl<'machine> Machine<'machine> {
 
   #[inline(always)]
   fn exec_access(&mut self) {
-    self.step(None);
+    self.pc += 1;
     self.accu = self.access_nth(self.mem[self.pc as usize] as usize).clone();
-    self.step(None);
+    self.pc += 1;
   }
 
   #[inline(always)]
   fn exec_access_0(&mut self) {
     self.accu = self.access_nth(0).clone();
-    self.step(None);
+    self.pc += 1;
   }
 
   #[inline(always)]
   fn exec_access_1(&mut self) {
     self.accu = self.access_nth(1).clone();
-    self.step(None);
+    self.pc += 1;
   }
 
   #[inline(always)]
@@ -714,14 +707,14 @@ impl<'machine> Machine<'machine> {
   fn exec_push(&mut self) {
     self.asp += 1;
     self.astack[self.asp] = Some(AspValue::Val(self.accu.clone()));
-    self.step(None);
+    self.pc += 1;
   }
 
   #[inline(always)]
   fn exec_pushmark(&mut self) {
     self.asp += 1;
     self.astack[self.asp] = Some(AspValue::Mark);
-    self.step(None);
+    self.pc += 1;
   }
 
   #[inline(always)]
@@ -733,7 +726,7 @@ impl<'machine> Machine<'machine> {
       //    Pc simply takes a step.
       Some(AspValue::Val(v)) => {
         self.env.push(v);
-        self.step(None);
+        self.pc += 1;
       }
       // 2) Got a mark so must build a closure.
       //    All arguments have already been consumed.
@@ -756,14 +749,13 @@ impl<'machine> Machine<'machine> {
 
   #[inline(always)]
   fn exec_cur(&mut self) {
-    self.step(None);
+    self.pc += 1;
     let displacement = self.i32pc();
     self.accu = Value::Fn(Closure(
       ((self.pc as i32) + displacement) as u32,
       self.env.clone(),
     ));
-    self.step(None); // Jump over short
-    self.step(None);
+    self.pc += 2; // Jump over short
   }
 
   #[inline(always)]
@@ -796,41 +788,40 @@ impl<'machine> Machine<'machine> {
   #[inline(always)]
   fn exec_let(&mut self) {
     self.env.push(self.accu.clone());
-    self.step(None);
+    self.pc += 1;
   }
 
   #[inline(always)]
   fn exec_letrec1(&mut self) {
-    self.step(None);
+    self.pc += 1;
     self.env.clear();
     self.env.push(Value::FnRec(Closure(
       ((self.pc as i32) + self.i32pc()) as u32,
       Vec::with_capacity(0), // TODO
     )));
-    self.step(None); // Jump over short
-    self.step(None);
+    self.pc += 2; // Jump over short
   }
 
   #[inline(always)]
   fn exec_endlet(&mut self) {
-    self.step(None);
+    self.pc += 1;
     let valofpc = self.mem[self.pc as usize];
     for _ in 0..valofpc {
       let _ = self.env.pop();
     }
-    self.step(None);
+    self.pc += 1;
   }
 
   #[inline(always)]
   fn exec_endlet1(&mut self) {
     let _ = self.env.pop();
-    self.step(None);
+    self.pc += 1;
   }
 
   #[inline(always)]
   fn exec_dummy(&mut self) {
     self.env.push(Value::Dummy);
-    self.step(None);
+    self.pc += 1;
   }
 
   #[inline(always)]
@@ -840,7 +831,7 @@ impl<'machine> Machine<'machine> {
     } else {
       panic!("expected a Dummy in the environment");
     }
-    self.step(None);
+    self.pc += 1;
   }
 
   // #[inline(always)]
@@ -864,14 +855,6 @@ impl<'machine> Machine<'machine> {
   fn access_nth(&self, n: usize) -> &Value {
     let len = self.env.len();
     &self.env[(len - (n + 1))]
-  }
-
-  #[inline(always)]
-  fn step(&mut self, n: Option<u8>) {
-    match n {
-      Some(n) => self.pc += n as u32,
-      None => self.pc += 1,
-    }
   }
 
   #[inline(always)]
