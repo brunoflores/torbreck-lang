@@ -7,7 +7,8 @@ mod runtime;
 use runtime::machine::Machine;
 
 fn usage() -> &'static str {
-  "Usage: breckrun [filename]"
+  // TODO
+  "Usage: breckrun [filename] ..."
 }
 
 #[derive(Debug)]
@@ -15,20 +16,23 @@ pub struct ConfigError;
 
 pub struct Config {
   pub filename: String,
+  pub args: Vec<String>,
 }
 
 impl Config {
   pub fn new(args: &[String]) -> Result<Config, ConfigError> {
-    if args.len() == 1 {
-      Ok(Config {
+    if args.is_empty() {
+      return Err(ConfigError);
+    }
+    match args.len() {
+      1 => Ok(Config {
         filename: "-".into(),
-      })
-    } else if args.len() == 2 {
-      Ok(Config {
+        args: vec![],
+      }),
+      _ => Ok(Config {
         filename: args[1].clone(),
-      })
-    } else {
-      Err(ConfigError)
+        args: args[1..].to_vec(),
+      }),
     }
   }
 }
@@ -81,6 +85,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
   let mut machine = Machine::new(
     &input[0..size_of_bytecode],
     &input[size_of_bytecode..(size_of_bytecode + size_of_globals)],
+    &config.args[..],
   );
   let _accu = machine.interpret();
 
