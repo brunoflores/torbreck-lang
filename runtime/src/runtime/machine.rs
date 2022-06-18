@@ -556,6 +556,13 @@ impl<'machine> Machine<'machine> {
             self.step(None);
           }
         }
+        Instruction::Setglobal => {
+          self.step(None);
+          let u16pc = self.u16pc();
+          self.globals[u16pc as usize] = self.accu.clone();
+          self.step(None); // Jump over short
+          self.step(None);
+        }
         Instruction::Getglobal => {
           self.step(None);
           self.accu = self.globals[self.u16pc() as usize].clone();
