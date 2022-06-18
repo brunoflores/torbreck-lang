@@ -507,19 +507,19 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Ccall1 => {
           self.step(None);
-          let pnum = self.mem[self.pc as usize] as usize;
-          if let Some(prim) = self.prims.get(pnum) {
+          let u16pc = self.u16pc();
+          if let Some(prim) = self.prims.get(u16pc as usize) {
             self.accu = prim(&[&self.accu]);
           } else {
-            panic!("primitive number {pnum} undefined");
+            panic!("primitive number undefined: {u16pc}");
           };
+          self.step(None); // Jump over short
           self.step(None);
-          self.step(None); // TODO Why is the prim id duplicated? (look at linker)
         }
         Instruction::Ccall2 => {
           self.step(None);
-          let pnum = self.mem[self.pc as usize] as usize;
-          if let Some(prim) = self.prims.get(pnum) {
+          let u16pc = self.u16pc();
+          if let Some(prim) = self.prims.get(u16pc as usize) {
             let arg1 = if let Some(AspValue::Val(v)) =
               self.astack[self.asp].take()
             {
@@ -530,10 +530,10 @@ impl<'machine> Machine<'machine> {
             self.asp -= 1;
             self.accu = prim(&[&self.accu, &arg1]);
           } else {
-            panic!("primitive number {pnum} undefined");
+            panic!("primitive number undefined: {u16pc}");
           };
+          self.step(None); // Jump over short
           self.step(None);
-          self.step(None); // TODO Why is the prim id duplicated? (look at linker)
         }
         Instruction::Makestring => {
           self.step(None);
@@ -545,14 +545,12 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Branch => {
           self.step(None);
-          let jump = self.pc + (self.mem[self.pc as usize] as u32);
-          self.pc = jump as u32;
+          self.pc = (self.pc as i32 + self.i32pc()) as u32;
         }
         Instruction::Branchifnot => {
           self.step(None);
           if let Value::False = self.accu {
-            let jump = self.pc + (self.mem[self.pc as usize] as u32);
-            self.pc = jump as u32;
+            self.pc = (self.pc as i32 + self.i32pc()) as u32;
           } else {
             self.step(None);
             self.step(None);
@@ -560,8 +558,8 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Getglobal => {
           self.step(None);
-          self.accu = self.globals[self.mem[self.pc as usize] as usize].clone();
-          self.step(None); // TODO: global id is duplicated.
+          self.accu = self.globals[self.u16pc() as usize].clone();
+          self.step(None); // Jump over short
           self.step(None);
         }
         Instruction::Pushgetglobalapply => {
@@ -777,11 +775,10 @@ impl<'machine> Machine<'machine> {
     self.step(None);
     self.env.clear();
     self.env.push(Value::FnRec(Closure(
-      self.pc - (self.mem[self.pc as usize] as u32),
+      ((self.pc as i32) + self.i32pc()) as u32,
       Vec::with_capacity(0), // TODO
     )));
-    // TODO Why? There's an extra zero here. Skip over it.
-    self.step(None);
+    self.step(None); // Jump over short
     self.step(None);
   }
 
