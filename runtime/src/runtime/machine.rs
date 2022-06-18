@@ -869,7 +869,7 @@ impl<'machine> Machine<'machine> {
 
 #[cfg(test)]
 mod tests {
-  use super::{Machine, Value};
+  use super::{Closure, Machine, Value};
   use crate::runtime::opcodes;
   use crate::runtime::opcodes::{Instruction, Instruction::*};
 
@@ -895,7 +895,7 @@ mod tests {
       .iter()
       .map(Code::encode)
       .collect();
-    let mut machine = Machine::new(&program);
+    let mut machine = Machine::new(&program, &[]);
     let accu = machine.interpret();
     if let Value::Int(int) = accu {
       assert_eq!(int, 42);
@@ -918,7 +918,7 @@ mod tests {
     .iter()
     .map(Code::encode)
     .collect();
-    let mut machine = Machine::new(&program);
+    let mut machine = Machine::new(&program, &[]);
     let accu = machine.interpret();
     if let Value::Int(int) = accu {
       assert_eq!(int, 43);
@@ -941,7 +941,7 @@ mod tests {
     .iter()
     .map(Code::encode)
     .collect();
-    let mut machine = Machine::new(&program);
+    let mut machine = Machine::new(&program, &[]);
     let accu = machine.interpret();
     if let Value::Int(int) = accu {
       assert_eq!(int, 42);
@@ -964,7 +964,7 @@ mod tests {
     .iter()
     .map(Code::encode)
     .collect();
-    let mut machine = Machine::new(&program);
+    let mut machine = Machine::new(&program, &[]);
     let accu = machine.interpret();
     if let Value::Int(int) = accu {
       assert_eq!(int, 42);
@@ -987,7 +987,7 @@ mod tests {
     .iter()
     .map(Code::encode)
     .collect();
-    let mut machine = Machine::new(&program);
+    let mut machine = Machine::new(&program, &[]);
     let accu = machine.interpret();
     if let Value::Int(int) = accu {
       assert_eq!(int, 42);
@@ -1011,7 +1011,7 @@ mod tests {
     .iter()
     .map(Code::encode)
     .collect();
-    let mut machine = Machine::new(&program);
+    let mut machine = Machine::new(&program, &[]);
     let accu = machine.interpret();
     if let Value::Int(int) = accu {
       assert_eq!(int, 42);
@@ -1052,11 +1052,13 @@ mod tests {
   fn machine_can_print() {
     let mut program: Vec<Code> = vec![I(Makestring)];
     program.append(&mut ("42\0".as_bytes().iter().map(|b| D(*b)).collect()));
-    program.push(I(Ccall1)); // Call primitive
-    program.push(D(0)); // Primitive 0
+    program.push(I(Ccall1));
+    // Primitive id 0: two bytes to make it a short
+    program.push(D(0));
+    program.push(D(0));
     program.push(I(Stop));
     let program: Vec<u8> = program.iter().map(Code::encode).collect();
-    let mut machine = Machine::new(&program);
+    let mut machine = Machine::new(&program, &[]);
     let accu = machine.interpret();
     match accu {
       Value::Int(0) => (),
