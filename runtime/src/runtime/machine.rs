@@ -560,6 +560,9 @@ impl<'machine> Machine<'machine> {
         Instruction::Setglobal => {
           self.step(None);
           let u16pc = self.u16pc();
+          if u16pc as usize >= self.globals.len() {
+            self.realloc_globals();
+          };
           self.globals[u16pc as usize] = self.accu.clone();
           self.step(None); // Jump over short
           self.step(None);
@@ -585,6 +588,11 @@ impl<'machine> Machine<'machine> {
         _ => self.panic_pc("not implemented", self.instr),
       };
     }
+  }
+
+  #[inline(always)]
+  fn realloc_globals(&mut self) {
+    self.globals.resize(self.globals.len() * 2, Value::Dummy);
   }
 
   #[inline(always)]
