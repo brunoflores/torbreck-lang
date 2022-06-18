@@ -841,7 +841,7 @@ impl<'machine> Machine<'machine> {
     if let Some(i) = self.mem.get(self.pc as usize) {
       opcodes::decode(*i)
     } else {
-      panic!("pc: {}: instruction out of bounds", self.pc);
+      panic!("instruction out of bounds: {}", self.pc);
     }
   }
 
