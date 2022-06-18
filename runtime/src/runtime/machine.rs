@@ -1072,4 +1072,30 @@ mod tests {
       _ => panic!(),
     }
   }
+
+  #[test]
+  fn machine_can_get_global() {
+    let program: Vec<u8> = vec![
+      I(Getglobal),
+      // 0
+      D(0),
+      D(0),
+      I(Stop),
+    ]
+    .iter()
+    .map(Code::encode)
+    .collect();
+
+    let mut globals: Vec<Code> =
+      vec![D(0b00000000), D(0b00000000), D(0b00000000), D(0b00000001)];
+    globals.append(&mut ("hello\0".as_bytes().iter().map(|b| D(*b)).collect()));
+    let globals: Vec<u8> = globals.iter().map(Code::encode).collect();
+
+    let mut machine = Machine::new(&program, &globals);
+    let accu = machine.interpret();
+    match accu {
+      Value::String(val) => assert_eq!(val, "hello"),
+      _ => panic!(),
+    }
+  }
 }
