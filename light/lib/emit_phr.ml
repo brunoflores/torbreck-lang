@@ -6,7 +6,8 @@ open Emitcode
 type compiled_phrase = {
   cph_pos : int; (* Position of start of code *)
   cph_len : int; (* Length of code *)
-  cph_reloc : (Reloc.info * int) list; (* What to patch *)
+  cph_reloc : (Reloc.info * int) list;
+      (* What to patch and a position in the buffer *)
   cph_pure : bool; (* Can be omitted or not *)
   cph_events : Lambda.event list; (* Debug events *)
 }
