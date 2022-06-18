@@ -579,6 +579,7 @@ impl<'machine> Machine<'machine> {
 
   #[inline(always)]
   fn i32pc(&self) -> i32 {
+    // Logical arith shift
     self.i16pc() as i32
   }
 
