@@ -28,7 +28,7 @@ let reserve_in_numtable nt key =
 (* Global variables *)
 
 let global_table = ref (new_numtable 1 : qualified_ident numtable)
-let literal_table = ref ([] : struct_constant list)
+let literal_table = ref ([] : (int * struct_constant) list)
 let number_of_globals () = !global_table.num_cnt
 
 let get_slot_for_variable qualid =
@@ -58,8 +58,9 @@ let reserve_slot_for_defined_variable qualid =
   ()
 
 let get_slot_for_literal cst =
-  let c = List.length !literal_table in
-  literal_table := cst :: !literal_table;
+  let c = !global_table.num_cnt in
+  !global_table.num_cnt <- succ !global_table.num_cnt;
+  literal_table := (c, cst) :: !literal_table;
   c
 
 (* The exception tags *)

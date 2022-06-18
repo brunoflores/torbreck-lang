@@ -83,7 +83,7 @@ let emit_data oc =
   output_binary_int oc (List.length !Symtable.literal_table);
   List.iteri
     begin
-      fun n sc ->
+      fun n (_, sc) ->
         Printf.printf "%d %s\n" n (Const.show_struct_constant sc);
         match sc with
         | Const.SCatom (Const.ACstring s) -> begin
