@@ -550,11 +550,24 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Branchifnot => {
           self.step(None);
-          if let Value::False = self.accu {
-            self.pc = (self.pc as i32 + self.i32pc()) as u32;
-          } else {
-            self.step(None);
-            self.step(None);
+          match self.accu {
+            Value::False => self.pc = (self.pc as i32 + self.i32pc()) as u32,
+            Value::True => {
+              self.step(None); // Jump over short
+              self.step(None);
+            }
+            _ => panic!("not a boolean in the accumulator"),
+          }
+        }
+        Instruction::Branchif => {
+          self.step(None);
+          match self.accu {
+            Value::True => self.pc = (self.pc as i32 + self.i32pc()) as u32,
+            Value::False => {
+              self.step(None); // Jump over short
+              self.step(None);
+            }
+            _ => panic!("not a boolean in the accumulator"),
           }
         }
         Instruction::Setglobal => {
