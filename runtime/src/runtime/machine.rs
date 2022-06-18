@@ -6,13 +6,15 @@ use std::mem;
 
 // TODO Public?
 #[derive(Debug, Clone)]
-pub struct Closure(u32, Vec<Value>);
+pub struct Closure(
+  usize,      // Program pointer
+  Vec<Value>, // Environment
+);
 
 // TODO Public?
 #[derive(Debug, Clone)]
 pub enum Value {
-  Fn(Closure),
-  FnRec(Closure),
+  // Basic types
   Int(i32),
   Float(f32),
   String(String),
@@ -20,7 +22,10 @@ pub enum Value {
   False,
   Dummy,
   Atom0,
+  // Compound types
   Vec(Vec<Value>),
+  Fn(Closure),
+  FnRec(Closure),
 }
 
 impl Value {
@@ -52,7 +57,7 @@ enum AspValue {
 
 pub struct Machine<'machine> {
   instr: Instruction,
-  pc: u32,                        // Code pointer.
+  pc: usize,                      // Code pointer.
   mem: &'machine [u8],            // Program memory in bytes.
   env: Vec<Value>,                // Current environment (heap allocated).
   astack: [Option<AspValue>; 60], // Argument stack.
@@ -557,16 +562,16 @@ impl<'machine> Machine<'machine> {
           let (val, len) =
             Value::string_from_bytes(&self.mem[self.pc as usize..]);
           self.accu = val;
-          self.pc += TryInto::<u32>::try_into(len).unwrap() + 1;
+          self.pc += len + 1;
         }
         Instruction::Branch => {
           self.pc += 1;
-          self.pc = (self.pc as i32 + self.i32pc()) as u32;
+          self.pc = (self.pc as i32 + self.i32pc()) as usize;
         }
         Instruction::Branchifnot => {
           self.pc += 1;
           match self.accu {
-            Value::False => self.pc = (self.pc as i32 + self.i32pc()) as u32,
+            Value::False => self.pc = (self.pc as i32 + self.i32pc()) as usize,
             Value::True => {
               self.pc += 2; // Jump over short
             }
@@ -576,7 +581,7 @@ impl<'machine> Machine<'machine> {
         Instruction::Branchif => {
           self.pc += 1;
           match self.accu {
-            Value::True => self.pc = (self.pc as i32 + self.i32pc()) as u32,
+            Value::True => self.pc = (self.pc as i32 + self.i32pc()) as usize,
             Value::False => {
               self.pc += 2; // Jump over short
             }
@@ -684,7 +689,7 @@ impl<'machine> Machine<'machine> {
   #[inline(always)]
   fn exec_appterm(&mut self) {
     if let Value::Fn(Closure(c1, e1)) = &self.accu {
-      self.pc = *c1 as u32;
+      self.pc = *c1;
       let mut new_env = {
         let mut e1 = e1.clone();
         e1.push(
@@ -791,7 +796,7 @@ impl<'machine> Machine<'machine> {
     self.pc += 1;
     let displacement = self.i32pc();
     self.accu = Value::Fn(Closure(
-      ((self.pc as i32) + displacement) as u32,
+      ((self.pc as i32) + displacement) as usize,
       self.env.clone(),
     ));
     self.pc += 2; // Jump over short
@@ -835,7 +840,7 @@ impl<'machine> Machine<'machine> {
     self.pc += 1;
     self.env.clear();
     self.env.push(Value::FnRec(Closure(
-      ((self.pc as i32) + self.i32pc()) as u32,
+      ((self.pc as i32) + self.i32pc()) as usize,
       Vec::with_capacity(0), // TODO
     )));
     self.pc += 2; // Jump over short
