@@ -135,8 +135,9 @@ impl<'machine> Machine<'machine> {
     loop {
       self.instr = self.decode();
       // Debug:
+      // println!("{:?}", self.globals);
       // println!("{:?}", self.accu);
-      // println!("{}", instr);
+      // println!("{}", self.instr);
       match self.instr {
         Instruction::Stop => return self.accu.clone(),
         Instruction::Access => {
