@@ -707,11 +707,12 @@ impl<'machine> Machine<'machine> {
   #[inline(always)]
   fn exec_cur(&mut self) {
     self.step(None);
+    let displacement = self.i32pc();
     self.accu = Value::Fn(Closure(
-      // TODO how to jump backward and forward?
-      self.pc + (self.mem[self.pc as usize] as u32),
+      ((self.pc as i32) + displacement) as u32,
       self.env.clone(),
     ));
+    self.step(None); // Jump over short
     self.step(None);
   }
 
