@@ -18,7 +18,7 @@ for test in "$(pwd)"/*.ml; do
     fname_exec=$(basename "$test" ".ml").out
 
     $exe_light -I ../stdlib "$test" > /dev/null
-    $exe_linker "$test" > /dev/null
+    $exe_linker -I ../stdlib exc.ml vect.ml "$test" > /dev/null
 
     ./"$fname_exec" 2> /dev/null 1> ./"$fname_out"
 
