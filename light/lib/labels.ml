@@ -45,9 +45,7 @@ let out_label_with_orig orig lbl =
   if lbl == Instruct.nolabel then failwith "Labels.out_label: undefined label";
   if lbl >= Array.length !label_table then extend_label_table lbl;
   match !label_table.(lbl) with
-  | Label_defined def ->
-      (* out_short (def - orig) *)
-      out_short (orig - def)
+  | Label_defined def -> out_short (def - orig)
   | Label_undefined l ->
       !label_table.(lbl) <- Label_undefined ((!out_position, orig) :: l);
       (* Reserve an offset position (a placeholder) *)
