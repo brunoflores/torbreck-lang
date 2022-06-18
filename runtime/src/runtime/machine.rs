@@ -1020,32 +1020,33 @@ mod tests {
     }
   }
 
-  // TODO: negative jump.
-  // #[test]
-  // fn machine_can_cur() {
-  //   let program: Vec<u8> = vec![
-  //     I(Constbyte),
-  //     D(42),
-  //     I(Push),
-  //     I(Grab),
-  //     I(Cur),
-  //     D(-5),
-  //     I(Stop),
-  //   ]
-  //   .iter()
-  //   .map(Code::encode)
-  //   .collect();
-  //   let mut machine = Machine::new(&program);
-  //   let accu = machine.interpret();
-  //   match accu {
-  //     Value::Fn(Closure(0, env)) => match &env[..] {
-  //       [Value::Int(42)] => assert!(true),
-  //       _ => panic!("environment does not match"),
-  //     },
-  //     Value::Fn(Closure(pc, _)) => panic!("wrong pc: {pc}"),
-  //     _ => panic!("not a closure: {:?}", accu),
-  //   }
-  // }
+  #[test]
+  fn machine_can_do_negative_jump() {
+    let program: Vec<u8> = vec![
+      I(Constbyte),
+      D(42),
+      I(Push),
+      I(Grab),
+      I(Cur),
+      // -5
+      D(0b11111011),
+      D(0b11111111),
+      I(Stop),
+    ]
+    .iter()
+    .map(Code::encode)
+    .collect();
+    let mut machine = Machine::new(&program, &[]);
+    let accu = machine.interpret();
+    match accu {
+      Value::Fn(Closure(0, env)) => match &env[..] {
+        [Value::Int(42)] => assert!(true),
+        _ => panic!("environment does not match"),
+      },
+      Value::Fn(Closure(pc, _)) => panic!("wrong pc: {pc}"),
+      _ => panic!("not a closure: {:?}", accu),
+    }
+  }
 
   #[test]
   fn machine_can_print() {
