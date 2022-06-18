@@ -20,6 +20,7 @@ pub enum Value {
   False,
   Dummy,
   Atom0,
+  Vec(Vec<Value>),
 }
 
 impl Value {
@@ -66,7 +67,11 @@ pub struct Machine<'machine> {
 
 #[allow(clippy::needless_lifetimes)]
 impl<'machine> Machine<'machine> {
-  pub fn new(mem: &'machine [u8], globals: &'machine [u8]) -> Self {
+  pub fn new(
+    mem: &'machine [u8],
+    globals: &'machine [u8],
+    args: &'machine [String],
+  ) -> Self {
     // Debug:
     // println!("{:?}", mem);
     // println!("{:?}", globals);
@@ -80,9 +85,17 @@ impl<'machine> Machine<'machine> {
       0
     };
     let mut global_vals: Vec<Value> =
-      Vec::with_capacity(number_of_globals as usize);
+      Vec::with_capacity((number_of_globals + 1) as usize);
     // Position after the 32-bit integer that told us about the number of
     // globals in the bytecode.
+
+    // Command line arguments
+    let mut args_as_vals = Vec::with_capacity(args.len());
+    for s in args.iter() {
+      args_as_vals.push(Value::String(s.clone()));
+    }
+    global_vals.push(Value::Vec(args_as_vals));
+
     let mut pos = 4;
     for _ in 0..number_of_globals {
       // TODO: Do not assume always strings in the globals section.
@@ -594,6 +607,27 @@ impl<'machine> Machine<'machine> {
           self.pc += 1; // Jump over short
           self.exec_apply();
         }
+        Instruction::Vectlength => {
+          self.accu = match &self.accu {
+            Value::Vec(v) => Value::Int(v.len().try_into().unwrap()),
+            _ => panic!(),
+          };
+          self.pc += 1;
+        }
+        Instruction::Getvectitem => {
+          self.accu = if let Some(AspValue::Val(Value::Int(i))) =
+            self.astack[self.asp].take()
+          {
+            self.asp -= 1;
+            match &self.accu {
+              Value::Vec(vec) => vec[i as usize].clone(),
+              _ => panic!(),
+            }
+          } else {
+            panic!();
+          };
+          self.pc += 1;
+        }
         _ => self.panic_pc("not implemented", self.instr),
       };
     }
@@ -902,7 +936,7 @@ mod tests {
       .iter()
       .map(Code::encode)
       .collect();
-    let mut machine = Machine::new(&program, &[]);
+    let mut machine = Machine::new(&program, &[], &[]);
     let accu = machine.interpret();
     if let Value::Int(int) = accu {
       assert_eq!(int, 42);
@@ -925,7 +959,7 @@ mod tests {
     .iter()
     .map(Code::encode)
     .collect();
-    let mut machine = Machine::new(&program, &[]);
+    let mut machine = Machine::new(&program, &[], &[]);
     let accu = machine.interpret();
     if let Value::Int(int) = accu {
       assert_eq!(int, 43);
@@ -948,7 +982,7 @@ mod tests {
     .iter()
     .map(Code::encode)
     .collect();
-    let mut machine = Machine::new(&program, &[]);
+    let mut machine = Machine::new(&program, &[], &[]);
     let accu = machine.interpret();
     if let Value::Int(int) = accu {
       assert_eq!(int, 42);
@@ -971,7 +1005,7 @@ mod tests {
     .iter()
     .map(Code::encode)
     .collect();
-    let mut machine = Machine::new(&program, &[]);
+    let mut machine = Machine::new(&program, &[], &[]);
     let accu = machine.interpret();
     if let Value::Int(int) = accu {
       assert_eq!(int, 42);
@@ -994,7 +1028,7 @@ mod tests {
     .iter()
     .map(Code::encode)
     .collect();
-    let mut machine = Machine::new(&program, &[]);
+    let mut machine = Machine::new(&program, &[], &[]);
     let accu = machine.interpret();
     if let Value::Int(int) = accu {
       assert_eq!(int, 42);
@@ -1018,7 +1052,7 @@ mod tests {
     .iter()
     .map(Code::encode)
     .collect();
-    let mut machine = Machine::new(&program, &[]);
+    let mut machine = Machine::new(&program, &[], &[]);
     let accu = machine.interpret();
     if let Value::Int(int) = accu {
       assert_eq!(int, 42);
@@ -1043,7 +1077,7 @@ mod tests {
     .iter()
     .map(Code::encode)
     .collect();
-    let mut machine = Machine::new(&program, &[]);
+    let mut machine = Machine::new(&program, &[], &[]);
     let accu = machine.interpret();
     match accu {
       Value::Fn(Closure(0, env)) => match &env[..] {
@@ -1065,7 +1099,7 @@ mod tests {
     program.push(D(0));
     program.push(I(Stop));
     let program: Vec<u8> = program.iter().map(Code::encode).collect();
-    let mut machine = Machine::new(&program, &[]);
+    let mut machine = Machine::new(&program, &[], &[]);
     let accu = machine.interpret();
     match accu {
       Value::Int(0) => (),
@@ -1077,8 +1111,9 @@ mod tests {
   fn machine_can_get_global() {
     let program: Vec<u8> = vec![
       I(Getglobal),
-      // 0 in base 10 (this is a 16-bit short).
-      D(0),
+      // 1 in base 10 (this is a 16-bit short).
+      // Skip index 0 which is reserved for command line arguments.
+      D(0b00000001),
       D(0),
       I(Stop),
     ]
@@ -1093,7 +1128,7 @@ mod tests {
     globals.append(&mut ("hello\0".as_bytes().iter().map(|b| D(*b)).collect()));
     let globals: Vec<u8> = globals.iter().map(Code::encode).collect();
 
-    let mut machine = Machine::new(&program, &globals);
+    let mut machine = Machine::new(&program, &globals, &[]);
     let accu = machine.interpret();
     match accu {
       Value::String(val) => assert_eq!(val, "hello"),
