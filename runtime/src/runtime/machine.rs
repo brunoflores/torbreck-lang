@@ -73,9 +73,11 @@ impl<'machine> Machine<'machine> {
 
     let mut globals_iter = globals.iter();
     let mut number_of_globals: u32 = 0;
-    for p in 0..4 {
-      let n = globals_iter.next().unwrap();
-      number_of_globals = (n >> (8 * p)) as u32;
+    if !globals.is_empty() {
+      for p in 0..4 {
+        let n = globals_iter.next().unwrap();
+        number_of_globals = (n >> (8 * p)) as u32;
+      }
     }
     let mut global_vals: Vec<Value> =
       Vec::with_capacity(number_of_globals as usize);
