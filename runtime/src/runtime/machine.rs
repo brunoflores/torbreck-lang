@@ -71,22 +71,25 @@ impl<'machine> Machine<'machine> {
     // println!("{:?}", mem);
     // println!("{:?}", globals);
 
-    let mut globals_iter = globals.iter();
-    let mut number_of_globals: u32 = 0;
-    if !globals.is_empty() {
-      for p in 0..4 {
-        let n = globals_iter.next().unwrap();
-        number_of_globals = (n >> (8 * p)) as u32;
-      }
-    }
+    let number_of_globals: u32 = if !globals.is_empty() {
+      // In this case we take four bytes as an unsigned 32-bit
+      // integer that would have been created by OCaml's
+      // [Stdlib.output_binary_int] in our linker.
+      u32::from_be_bytes(globals[0..4].try_into().unwrap())
+    } else {
+      0
+    };
     let mut global_vals: Vec<Value> =
       Vec::with_capacity(number_of_globals as usize);
+    // Position after the 32-bit integer that told us about the number of
+    // globals in the bytecode.
     let mut pos = 4;
     for _ in 0..number_of_globals {
       // TODO: Do not assume always strings in the globals section.
       let (val, len) = Value::string_from_bytes(&globals[pos..]);
       pos += len;
-      pos += 1; // Skip the null byte
+      // Jump over the null byte that terminates the string.
+      pos += 1;
 
       global_vals.push(val);
 
