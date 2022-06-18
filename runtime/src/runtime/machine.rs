@@ -889,6 +889,7 @@ impl<'machine> Machine<'machine> {
   //   format!("accumulator: {:?}", self.accu)
   // }
 
+  #[inline(always)]
   fn access_nth(&self, n: usize) -> &Value {
     let len = self.env.len();
     &self.env[(len - (n + 1))]
