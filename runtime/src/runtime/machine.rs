@@ -152,8 +152,10 @@ impl<'machine> Machine<'machine> {
       self.instr = self.decode();
       // Debug:
       // println!("{:?}", self.globals);
-      // println!("{:?}", self.accu);
-      // println!("{}", self.instr);
+      // println!("instr: {}", self.instr);
+      // println!("accu: {:?}", self.accu);
+      // println!("env: {:?}", self.env);
+      // println!("astack: {:?}", self.astack);
       match self.instr {
         Instruction::Stop => return self.accu.clone(),
         Instruction::Access => {
