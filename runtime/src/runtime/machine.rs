@@ -636,7 +636,7 @@ impl<'machine> Machine<'machine> {
   fn exec_apply(&mut self) {
     let oldpc = self.pc;
     if let Value::Fn(Closure(c1, e1)) = &self.accu {
-      self.pc = *c1 as u32;
+      self.pc = *c1;
       let new_env = {
         let mut e1 = e1.clone();
         e1.push(
@@ -653,7 +653,7 @@ impl<'machine> Machine<'machine> {
       self.rstack[self.rsp] =
         Some(Closure(oldpc + 1, mem::replace(&mut self.env, new_env)));
     } else if let Value::FnRec(Closure(c1, _)) = &self.accu {
-      self.pc = *c1 as u32;
+      self.pc = *c1;
       let new_env = {
         let mut e1 = Vec::with_capacity(10); // TODO
         e1.push(self.accu.clone());
