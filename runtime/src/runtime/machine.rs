@@ -568,6 +568,19 @@ impl<'machine> Machine<'machine> {
   }
 
   #[inline(always)]
+  fn i16pc(&self) -> i16 {
+    i16::from_be_bytes([
+      self.mem[(self.pc + 1) as usize],
+      self.mem[self.pc as usize],
+    ])
+  }
+
+  #[inline(always)]
+  fn i32pc(&self) -> i32 {
+    self.i16pc() as i32
+  }
+
+  #[inline(always)]
   fn exec_access(&mut self) {
     self.step(None);
     self.accu = self.access_nth(self.mem[self.pc as usize] as usize).clone();
