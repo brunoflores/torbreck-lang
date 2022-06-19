@@ -635,6 +635,25 @@ impl<'machine> Machine<'machine> {
           };
           self.pc += 1;
         }
+        Instruction::Makevector => {
+          let len = match self.accu {
+            Value::Int(i) => i as usize,
+            _ => panic!("not an int in the accumulator"),
+          };
+          let mut vals = Vec::<Value>::with_capacity(len);
+          for _ in 0..len {
+            vals.push(
+              if let Some(AspValue::Val(v)) = self.astack[self.asp].take() {
+                self.asp -= 1;
+                v
+              } else {
+                panic!("not a value in the argument stack");
+              },
+            );
+          }
+          self.accu = Value::Vec(vals);
+          self.pc += 1;
+        }
         _ => self.panic_pc("not implemented", self.instr),
       };
     }
@@ -1140,6 +1159,36 @@ mod tests {
     let accu = machine.interpret();
     match accu {
       Value::String(val) => assert_eq!(val, "hello"),
+      _ => panic!(),
+    }
+  }
+
+  #[test]
+  fn machine_can_get_vect_item() {
+    let program: Vec<u8> = vec![
+      I(Constbyte),
+      D(1), // Get value at index 1
+      I(Push),
+      I(Constbyte),
+      D(42), // Value at index 1
+      I(Push),
+      I(Constbyte),
+      D(0), // Value at index 0
+      I(Push),
+      I(Constbyte),
+      D(2), // Make vector of length 2
+      I(Makevector),
+      I(Getvectitem),
+      I(Stop),
+    ]
+    .iter()
+    .map(Code::encode)
+    .collect();
+
+    let mut machine = Machine::new(&program, &[], &[]);
+    let accu = machine.interpret();
+    match accu {
+      Value::Int(i) => assert_eq!(i, 42),
       _ => panic!(),
     }
   }
