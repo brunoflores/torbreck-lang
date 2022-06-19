@@ -253,6 +253,8 @@ binding_list:
     { [b] }
 
 binding:
+  | pat = pattern EQUAL e = expr
+    { (pat, e) }
   | id = ide pat = simple_pattern_list EQUAL e = expr
     { (pat_constr_or_var id, make_expr (Zfunction [pat, e])) }
 
