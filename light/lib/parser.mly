@@ -60,7 +60,6 @@ open Builtins
 %right MINUSGREATER
 %right prec_if
 %right COLONEQUAL
-%left try_match_list
 %left BAR
 %left BARBAR
 %left INFIX0          /* comparisons */
@@ -126,7 +125,7 @@ expr:
     { make_expr (Zlet (false, b, e)) }
   | LET REC b = binding_list IN e = expr %prec prec_let
     { make_expr (Zlet (true, b, e)) }
-  | TRY e = expr WITH opt_bar m = try_match_list
+  | TRY e = expr WITH m = try_match
     { make_expr (Ztrywith (e, m)) }
 
 simple_expr:
@@ -251,15 +250,11 @@ action:
   | WHEN e1 = expr MINUSGREATER e2 = expr
     { make_expr (Zwhen (e1, e2)) }
 
-try_match_list:
-  | pat = try_match BAR more = try_match_list %prec try_match_list
-    { pat :: more }
-  | pat = try_match
-    { [pat] }
-
 try_match:
+  | BAR p = pattern a = action BAR more = try_match
+    { (p, a) :: more }
   | p = pattern a = action
-    { (p, a) }
+    { [(p, a)] }
 
 binding_list:
   | b = binding AND bs = binding_list
