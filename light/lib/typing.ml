@@ -91,6 +91,10 @@ let rec is_nonexpansive expr =
   | Zconstant _ -> true
   | Zconstruct0 _ -> true
   | Zfunction _ -> true
+  | Zwhile _ -> false
+  | Ztrywith (body, pat_expr_list) ->
+      is_nonexpansive body
+      && List.for_all (fun (_pat, expr) -> is_nonexpansive expr) pat_expr_list
   | Zapply _ -> false
   | Ztuple el -> List.for_all is_nonexpansive el
   | Zconstruct1 (cstr, e) -> cstr.info.cs_mut == Notmutable && is_nonexpansive e

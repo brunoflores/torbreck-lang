@@ -33,6 +33,9 @@ open Builtins
 %token TRY
 %token WITH
 %token WHEN
+%token WHILE
+%token DO
+%token DONE
 
 /* Special symbols */
 %token EQUAL
@@ -119,6 +122,8 @@ expr:
     { make_binop "||" e1 e2 }
   | e1 = expr COLONEQUAL e2 = expr
     { make_binop ":=" e1 e2 }
+  | WHILE cond = expr DO body = opt_expr DONE
+    { make_expr (Zwhile (cond, body)) }
   | IF e1 = expr THEN e2 = expr ELSE e3 = expr %prec prec_if
     { make_expr (Zcondition (e1, e2, e3)) }
   | LET b = binding_list IN e = expr  %prec prec_let
