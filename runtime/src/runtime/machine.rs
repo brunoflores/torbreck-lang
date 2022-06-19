@@ -26,6 +26,9 @@ pub enum Value {
   Vec(Vec<Value>),
   Fn(Closure),
   FnRec(Closure),
+  Block(Vec<Value>),
+  // Misc
+  Global(usize), // Index to the globals table
 }
 
 impl Value {
@@ -599,7 +602,7 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Getglobal => {
           self.pc += 1;
-          self.accu = self.globals[self.u16pc() as usize].clone();
+          self.accu = Value::Global(self.u16pc() as usize);
           self.pc += 2; // Jump over short
         }
         Instruction::Pushgetglobalapply => {
@@ -656,6 +659,45 @@ impl<'machine> Machine<'machine> {
             );
           }
           self.accu = Value::Vec(vals);
+          self.pc += 1;
+        }
+        Instruction::Makeblock1 => {
+          self.pc += 1; // Pc now points at the tag (TODO)
+          let val =
+            Value::Block(vec![mem::replace(&mut self.accu, Value::Dummy)]);
+          self.accu = val;
+          self.pc += 1;
+        }
+        Instruction::Getfield0 => {
+          self.accu = match &self.accu {
+            Value::Global(i) => {
+              if let Value::Block(fields) = &self.globals[*i] {
+                fields[0].clone() // TODO: think
+              } else {
+                panic!("not a block at global index {i}");
+              }
+            }
+            x => panic!("unexpected {:?}", x),
+          };
+          self.pc += 1;
+        }
+        Instruction::Setfield0 => {
+          if let Value::Global(i) = self.accu {
+            if let Value::Block(mut fields) =
+              mem::replace(&mut self.globals[i], Value::Dummy)
+            {
+              fields[0] =
+                if let Some(AspValue::Val(v)) = self.astack[self.asp].take() {
+                  self.asp -= 1;
+                  v
+                } else {
+                  panic!("not a value in the argument stack");
+                };
+              self.globals[i] = Value::Block(fields);
+            }
+          } else {
+            panic!("not a global index in the accumulator");
+          }
           self.pc += 1;
         }
         _ => self.panic_pc("not implemented", self.instr),
