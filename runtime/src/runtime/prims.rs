@@ -43,6 +43,8 @@ pub fn greaterequal(vals: &[&Value]) -> Value {
 
 pub fn string_of_int(vals: &[&Value]) -> Value {
   if let Value::Int(v) = vals[0] {
+    // TODO: if this string is not mutable, consider another representation
+    // to avoid this heap allocation. An array of bytes perhaps?
     Value::String(v.to_string())
   } else {
     panic!()
