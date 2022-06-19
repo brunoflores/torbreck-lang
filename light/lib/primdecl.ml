@@ -6,6 +6,8 @@ open Globals
 let primitive_names =
   [
     ("identity", Pidentity);
+    ("field0", Pfield 0);
+    ("setfield0", Psetfield 0);
     ("vect_length", Pvectlength);
     ("sequor", Psequor);
     ("sequand", Psequand);

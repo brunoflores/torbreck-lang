@@ -80,12 +80,25 @@ let rec emit instructions =
       out endlet;
       out n;
       emit code
+  | Kprim Pidentity :: code -> emit code
   | Kprim p :: code ->
       begin
         match p with
         | Pdummy n ->
             out dummy;
             out n
+        | Pfield n ->
+            if n < 4 then out (getfield0 + n)
+            else begin
+              out getfield;
+              out n
+            end
+        | Psetfield n ->
+            if n < 4 then out (setfield0 + n)
+            else begin
+              out setfield;
+              out n
+            end
         | Pccall (name, arity) ->
             if arity <= 5 then begin
               out (Opcodes.c_call1 + arity - 1)
