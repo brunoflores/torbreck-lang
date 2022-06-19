@@ -1180,6 +1180,9 @@ mod tests {
     }
   }
 
+  // TODO
+  // This test does not seem relevant anymore, after having instroduced the
+  // Value::Global(usize) type...
   #[test]
   fn machine_can_get_global() {
     let program: Vec<u8> = vec![
@@ -1204,8 +1207,8 @@ mod tests {
     let mut machine = Machine::new(&program, &globals, &[]);
     let accu = machine.interpret();
     match accu {
-      Value::String(val) => assert_eq!(val, "hello"),
-      _ => panic!(),
+      Value::Global(1) => assert_eq!(true, true),
+      x => panic!("got {:?}", x),
     }
   }
 
