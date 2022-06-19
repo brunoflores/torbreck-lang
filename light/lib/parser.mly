@@ -30,6 +30,9 @@ open Builtins
 %token EXCEPTION
 %token OF
 %token MUTABLE
+%token TRY
+%token WITH
+%token WHEN
 
 /* Special symbols */
 %token EQUAL
@@ -57,11 +60,13 @@ open Builtins
 %right MINUSGREATER
 %right prec_if
 %right COLONEQUAL
+%left try_match_list
+%left BAR
 %left BARBAR
-%left INFIX0 /* comparisons */
-%left INFIX2 /* additives, subtractives */
+%left INFIX0          /* comparisons */
+%left INFIX2          /* additives, subtractives */
 %left DOTLPAREN
-%right PREFIX /* prefix operators, e.g. ! */
+%right PREFIX         /* prefix operators, e.g. ! */
 
 /* Entry points */
 
@@ -117,8 +122,12 @@ expr:
     { make_binop ":=" e1 e2 }
   | IF e1 = expr THEN e2 = expr ELSE e3 = expr %prec prec_if
     { make_expr (Zcondition (e1, e2, e3)) }
+  | LET b = binding_list IN e = expr  %prec prec_let
+    { make_expr (Zlet (false, b, e)) }
   | LET REC b = binding_list IN e = expr %prec prec_let
     { make_expr (Zlet (true, b, e)) }
+  | TRY e = expr WITH opt_bar m = try_match_list
+    { make_expr (Ztrywith (e, m)) }
 
 simple_expr:
   | s = struct_constant
@@ -228,6 +237,62 @@ mutable_option:
   | /* epsilon */
     { Notmutable }
 
+/* Definitions by pattern matchings */
+
+opt_bar:
+  | BAR
+    { () }
+  | /* epsilon */
+    { () }
+
+action:
+  | MINUSGREATER e = expr
+    { e }
+  | WHEN e1 = expr MINUSGREATER e2 = expr
+    { make_expr (Zwhen (e1, e2)) }
+
+try_match_list:
+  | pat = try_match BAR more = try_match_list %prec try_match_list
+    { pat :: more }
+  | pat = try_match
+    { [pat] }
+
+try_match:
+  | p = pattern a = action
+    { (p, a) }
+
+binding_list:
+  | b = binding AND bs = binding_list
+    { b :: bs }
+  | b = binding
+    { [b] }
+
+binding:
+  | pat = pattern EQUAL e = expr
+    { (pat, e) }
+  | id = ide pat = simple_pattern_list EQUAL e = expr
+    { (pat_constr_or_var id, make_expr (Zfunction [pat, e])) }
+
+/* Patterns */
+
+simple_pattern_list:
+  | pat = simple_pattern pats = simple_pattern_list
+    { pat :: pats }
+  | pat = simple_pattern
+    { [pat] }
+
+pattern:
+  | pat = simple_pattern
+    { pat }
+  | p1 = pattern BAR p2 = pattern
+    { make_pat (Zorpat (p1, p2)) }
+
+simple_pattern:
+  | id = ide
+    { pat_constr_or_var id }
+  | LPAREN pat = pattern RPAREN
+    { pat }
+
 /* Identifiers */
 
 ide:
@@ -275,44 +340,6 @@ simple_type:
 type_var:
   | QUOTE id = IDENT
     { id }
-
-/* Definitions by pattern matchings */
-
-opt_bar:
-  | BAR
-    { () }
-  | /* epsilon */
-    { () }
-
-binding_list:
-  | b = binding AND bs = binding_list
-    { b :: bs }
-  | b = binding
-    { [b] }
-
-binding:
-  | pat = pattern EQUAL e = expr
-    { (pat, e) }
-  | id = ide pat = simple_pattern_list EQUAL e = expr
-    { (pat_constr_or_var id, make_expr (Zfunction [pat, e])) }
-
-/* Patterns */
-
-simple_pattern_list:
-  | pat = simple_pattern pats = simple_pattern_list
-    { pat :: pats }
-  | pat = simple_pattern
-    { [pat] }
-
-pattern:
-  | pat = simple_pattern
-    { pat }
-
-simple_pattern:
-  | id = ide
-    { pat_constr_or_var id }
-  | LPAREN pat = pattern RPAREN
-    { pat }
 
 /* Directives */
 
