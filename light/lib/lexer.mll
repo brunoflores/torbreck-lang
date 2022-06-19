@@ -19,6 +19,11 @@ let reservedWords = [
   ("of", OF);
   ("mutable", MUTABLE);
   ("exception", EXCEPTION);
+  ("while", WHILE);
+  ("do", DO);
+  ("done", DONE);
+  ("try", TRY);
+  ("with", WITH);
 ]
 
 let (symbolTable : (string, token) Hashtbl.t) = Hashtbl.create 149
