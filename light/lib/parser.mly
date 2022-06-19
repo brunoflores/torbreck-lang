@@ -9,6 +9,7 @@ open Builtins
 
 /* Identifiers, prefixes and infixes */
 %token <string> IDENT
+%token <string> PREFIX
 %token <string> INFIX0
 %token <string> INFIX2
 
@@ -39,6 +40,9 @@ open Builtins
 %token AND
 %token MINUSGREATER
 %token QUOTE
+%token COMMA
+%token BAR
+%token COLONEQUAL
 %token DOTLPAREN      /* ".(" */
 %token BARBAR         /* "||" */
 %token SHARP          /* "#" */
@@ -52,9 +56,12 @@ open Builtins
 %right prec_let
 %right MINUSGREATER
 %right prec_if
+%right COLONEQUAL
 %left BARBAR
 %left INFIX0 /* comparisons */
 %left INFIX2 /* additives, subtractives */
+%left DOTLPAREN
+%right PREFIX /* prefix operators, e.g. ! */
 
 /* Entry points */
 
@@ -106,6 +113,8 @@ expr:
     { make_binop i e1 e2 }
   | e1 = expr BARBAR e2 = expr
     { make_binop "||" e1 e2 }
+  | e1 = expr COLONEQUAL e2 = expr
+    { make_binop ":=" e1 e2 }
   | IF e1 = expr THEN e2 = expr ELSE e3 = expr %prec prec_if
     { make_expr (Zcondition (e1, e2, e3)) }
   | LET REC b = binding_list IN e = expr %prec prec_let
@@ -118,6 +127,8 @@ simple_expr:
     { expr_constr_or_ident e }
   | LPAREN e = opt_expr RPAREN
     { e }
+  | p = PREFIX e = simple_expr
+    { make_unop p e }
   | lexpr = simple_expr DOTLPAREN rexpr = expr RPAREN
     { make_binop "vect_item" lexpr rexpr }
 
@@ -165,6 +176,12 @@ exc_decl:
   | c = constr1_decl
     { [c] }
 
+constr_decl:
+  | decl = constr1_decl BAR decls = constr_decl
+    { decl :: decls }
+  | decl = constr1_decl
+    { [decl] }
+
 value1_decl:
   | id = ide COLON ty = typ
     { (id, ty, ValueNotPrim) }
@@ -180,12 +197,24 @@ type1_decl:
     { (id, params, ty_def) }
 
 type1_def:
-  | /* pesilon */
+  | /* epsilon */
     { Zabstract_type }
+  | EQUAL opt_bar c = constr_decl
+    { Zvariant_type c }
 
 type_params:
+  | LPAREN tvars = type_var_list RPAREN
+    { tvars }
+  | tvar = type_var
+    { [tvar] }
   | /* empty */
     { [] }
+
+type_var_list:
+  | tvar = type_var COMMA tvars = type_var_list
+    { tvar :: tvars }
+  | tvar = type_var
+    { [tvar] }
 
 constr1_decl:
   | i = ide OF m = mutable_option ty = typ
@@ -210,9 +239,12 @@ ide:
 infx:
   | i = INFIX0
   | i = INFIX2
+  | i = PREFIX
     { i }
   | BARBAR
     { "||" }
+  | COLONEQUAL
+    { ":=" }
 
 qual_ident:
   | qual = IDENT UNDERUNDER id = ide
@@ -245,6 +277,12 @@ type_var:
     { id }
 
 /* Definitions by pattern matchings */
+
+opt_bar:
+  | BAR
+    { () }
+  | /* epsilon */
+    { () }
 
 binding_list:
   | b = binding AND bs = binding_list

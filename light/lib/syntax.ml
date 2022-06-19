@@ -63,9 +63,10 @@ and expression_desc =
 and expr_ident = Zglobal of value_desc global | Zlocal of string
 [@@deriving show]
 
-type type_decl = Zabstract_type [@@deriving show]
+type type_decl = Zabstract_type | Zvariant_type of constr_decl list
+[@@deriving show]
 
-type constr_decl =
+and constr_decl =
   | Zconstr0decl of string
   | Zconstr1decl of string * type_expression * mutable_flag
 [@@deriving show]

@@ -69,6 +69,9 @@ rule read = parse
   | "'" { QUOTE }
   | "(" { LPAREN }
   | ")" { RPAREN }
+  | "," { COMMA }
+  | ":=" { COLONEQUAL }
+  | "|" { BAR }
   | "=" { EQUAL }
   | ";;" { SEMISEMI }
   | ":" { COLON }
@@ -88,6 +91,8 @@ rule read = parse
         with Not_found ->
           IDENT s }
 
+  | ['!' '?'] symbols *
+    { PREFIX (Lexing.lexeme lexbuf) }
   | [ '=' '<' '>' '|' '&' '~' '$' ] symbols *
     { INFIX0 (Lexing.lexeme lexbuf) }
 

@@ -21,6 +21,21 @@ let make_apply = function
       make_expr (Zconstruct1 (cstr1, e2))
   | e1, el -> make_expr (Zapply (e1, el))
 
+let make_unop op ({ e_loc = Loc (l1, _); _ } as e1) =
+  let (Loc (l, _) as loc) = get_current_location () in
+  {
+    e_desc =
+      Zapply
+        ( {
+            e_desc = Zident (ref (Zlocal op));
+            e_loc = Loc (l, l1);
+            e_typ = no_type;
+          },
+          [ e1 ] );
+    e_loc = loc;
+    e_typ = no_type;
+  }
+
 let make_binop op ({ e_loc = Loc (_l1, m1); _ } as e1)
     ({ e_loc = Loc (l2, _m2); _ } as e2) =
   make_expr

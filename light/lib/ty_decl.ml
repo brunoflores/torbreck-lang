@@ -105,6 +105,8 @@ let define_new_type loc (ty_desc, params, def) =
         pop_type_level ();
         Abstract_type
       end
+    | Zvariant_type constrs ->
+        enter_new_variant false loc (ty_desc.info.ty_constr, ty_res, constrs)
   in
   ty_desc.info.ty_desc <- type_comp;
   begin
