@@ -622,13 +622,17 @@ impl<'machine> Machine<'machine> {
           self.pc += 1;
         }
         Instruction::Getvectitem => {
+          let vals = mem::replace(&mut self.accu, Value::Dummy);
           self.accu = if let Some(AspValue::Val(Value::Int(i))) =
             self.astack[self.asp].take()
           {
             self.asp -= 1;
-            match &self.accu {
-              Value::Vec(vec) => vec[i as usize].clone(),
-              _ => panic!(),
+            match vals {
+              Value::Vec(mut vec) => {
+                // mem::replace to avoid clonning
+                mem::replace(&mut vec[i as usize], Value::Dummy)
+              }
+              _ => panic!("not a vector in the accumulator"),
             }
           } else {
             panic!();
