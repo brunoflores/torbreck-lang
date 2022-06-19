@@ -629,7 +629,7 @@ impl<'machine> Machine<'machine> {
             self.asp -= 1;
             match vals {
               Value::Vec(mut vec) => {
-                // mem::replace to avoid clonning
+                // mem::replace to avoid cloning
                 mem::replace(&mut vec[i as usize], Value::Dummy)
               }
               _ => panic!("not a vector in the accumulator"),
