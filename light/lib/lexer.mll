@@ -78,6 +78,7 @@ rule read = parse
   | ":=" { COLONEQUAL }
   | "|" { BAR }
   | "=" { EQUAL }
+  | ";" { SEMI }
   | ";;" { SEMISEMI }
   | ":" { COLON }
   | "#" { SHARP }

@@ -41,6 +41,7 @@ open Builtins
 %token EQUAL
 %token LPAREN
 %token RPAREN
+%token SEMI
 %token SEMISEMI
 %token COLON
 %token AND
