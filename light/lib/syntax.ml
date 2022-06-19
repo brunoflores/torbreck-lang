@@ -46,11 +46,11 @@ and expression_desc =
   | Zcondition of expression * expression * expression
   | Zwhen of expression * expression
   | Ztuple of expression list
+  | Ztrywith of expression * (pattern * expression) list
 (* | Zconstraint of expression * type_expression *)
 (* | Zrecord of (label_desc global * expression) list *)
 (* | Zvector of expression list *)
 (* | Zparser of (stream_pattern list * expression) list *)
-(* | Ztrywith of expression * (pattern * expression) list *)
 (* | Zsequence of expression * expression *)
 (* | Zwhile of expression * expression *)
 (* | Zfor of string * expression * expression * bool * expression *)
@@ -120,6 +120,7 @@ let rec expr_is_pure expr =
   | Zlet _ -> false
   | Zcondition _ -> false
   | Zwhen _ -> false
+  | Ztrywith _ -> false
   | Ztuple el -> List.for_all expr_is_pure el
   | Zconstruct1 (_, arg) -> expr_is_pure arg
 
