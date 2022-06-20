@@ -107,11 +107,18 @@ let rec is_nonexpansive expr =
 
 let type_of_atomic_constant = function
   | ACint _ -> type_int
-  | _ -> failwith "not implemented: Typing.type_of_atomic_constant"
+  | x ->
+      failwith
+      @@ Format.sprintf "not implemented: Typing.type_of_atomic_constant: %s"
+           (Const.show_atomic_constant x)
 
 let type_of_structured_constant = function
   | SCatom ac -> type_of_atomic_constant ac
-  | _ -> failwith "not implemented: Typing.type_of_structured_constant"
+  | x ->
+      failwith
+      @@ Format.sprintf
+           "not implemented: Typing.type_of_structured_constant: %s"
+           (Const.show_struct_constant x)
 
 (* Typing of expressions *)
 
