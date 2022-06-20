@@ -67,7 +67,7 @@ open Builtins
 %right COLONEQUAL
 %left BAR
 %left BARBAR
-%left INFIX0          /* comparisons */
+%left INFIX0 EQUAL    /* comparisons */
 %left INFIX2          /* additives, subtractives */
 %left DOTLPAREN
 %right PREFIX         /* prefix operators, e.g. ! */
@@ -120,6 +120,8 @@ expr:
     { make_binop i e1 e2 }
   | e1 = expr i = INFIX0 e2 = expr
     { make_binop i e1 e2 }
+  | e1 = expr EQUAL e2 = expr
+    { make_binop "=" e1 e2 }
   | e1 = expr BARBAR e2 = expr
     { make_binop "||" e1 e2 }
   | e1 = expr COLONEQUAL e2 = expr
