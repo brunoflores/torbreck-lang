@@ -192,6 +192,9 @@ let rec type_expr env expr =
             type_expect (type_pattern (pat, type_exn, Notmutable) @ env) expr ty)
           matching;
         ty
+    | Zsequence (e1, e2) ->
+        type_statement env e1;
+        type_expr env e2
     | Zcondition (e1, e2, e3) ->
         type_expect env e1 type_bool;
         if
@@ -224,6 +227,7 @@ and type_expect env exp expected_ty =
       let actual_ty =
         begin
           match (type_repr expected_ty).typ_desc with
+          (* Hack for format strings *)
           (* https://github.com/brunoflores/camllight/blob/master/sources/src/compiler/typing.ml#L457 *)
           (* | Tconstr (cstr, _) ->
            *     if cstr = constr_type_format then type_format exp.e_loc s
@@ -232,6 +236,21 @@ and type_expect env exp expected_ty =
         end
       in
       unify_expr exp expected_ty actual_ty
+  | Zlet (rec_flag, pat_expr_list, body) ->
+      type_expect (type_let_decl env rec_flag pat_expr_list) body expected_ty
+  | Zsequence (e1, e2) ->
+      type_statement env e1;
+      type_expect env e2 expected_ty
+  | Zcondition (cond, ifso, ifnot) ->
+      type_expect env cond type_bool;
+      type_expect env ifso expected_ty;
+      type_expect env ifnot expected_ty
+  | Ztuple el -> begin
+      try
+        List.iter2 (type_expect env) el
+          (filter_product (List.length el) expected_ty)
+      with Unify -> unify_expr exp expected_ty (type_expr env exp)
+    end
   (* To do: try...with, match...with ? *)
   (* https://github.com/brunoflores/camllight/blob/master/sources/src/compiler/typing.ml#L480 *)
   | _ -> unify_expr exp expected_ty (type_expr env exp)
