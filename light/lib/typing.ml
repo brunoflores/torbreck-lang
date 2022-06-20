@@ -138,6 +138,15 @@ let rec type_expr env expr =
           end
       end
     | Zconstant c -> type_of_structured_constant c
+    | Zconstruct0 cstr -> begin
+        match cstr.info.cs_kind with
+        | Constr_constant -> type_instance cstr.info.cs_res
+        | _ ->
+            let ty_res, ty_arg =
+              type_pair_instance (cstr.info.cs_res, cstr.info.cs_arg)
+            in
+            type_arrow (ty_arg, ty_res)
+      end
     | Zconstruct1 (cstr, arg) -> begin
         match cstr.info.cs_kind with
         | Constr_constant -> Error.constant_constr_err cstr expr.e_loc
