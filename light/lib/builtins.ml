@@ -124,5 +124,5 @@ let () =
     ];
   List.iter
     (fun desc -> Hashtbl.add module_builtin.mod_constrs desc.qualid.id desc)
-    [ constr_void ];
+    [ constr_void; constr_false; constr_match_failure; constr_true ];
   Hashtbl.add module_table "builtin" module_builtin
