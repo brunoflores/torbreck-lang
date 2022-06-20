@@ -63,6 +63,7 @@ open Builtins
 %right prec_let
 %right MINUSGREATER
 %right prec_if
+%right SEMI
 %right COLONEQUAL
 %left BAR
 %left BARBAR
@@ -127,6 +128,10 @@ expr:
     { make_expr (Zwhile (cond, body)) }
   | IF e1 = expr THEN e2 = expr ELSE e3 = expr %prec prec_if
     { make_expr (Zcondition (e1, e2, e3)) }
+  | e1 = expr SEMI e2 = expr
+    { make_expr (Zsequence (e1, e2)) }
+  | e = expr SEMI
+    { e }
   | LET b = binding_list IN e = expr  %prec prec_let
     { make_expr (Zlet (false, b, e)) }
   | LET REC b = binding_list IN e = expr %prec prec_let
