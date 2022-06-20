@@ -536,7 +536,10 @@ impl<'machine> Machine<'machine> {
           self.pc += 1;
           let u16pc = self.u16pc();
           if let Some(prim) = self.prims.get(u16pc as usize) {
-            self.accu = prim(&[&self.accu]);
+            self.accu = prim(&[match &self.accu {
+              Value::Global(i) => &self.globals[*i],
+              val => val,
+            }]);
           } else {
             panic!("primitive number undefined: {u16pc}");
           };
@@ -554,7 +557,13 @@ impl<'machine> Machine<'machine> {
               panic!("Ccall2 expects the second argument in the argument stack")
             };
             self.asp -= 1;
-            self.accu = prim(&[&self.accu, &arg1]);
+            self.accu = prim(&[
+              match &self.accu {
+                Value::Global(i) => &self.globals[*i],
+                val => val,
+              },
+              &arg1,
+            ]);
           } else {
             panic!("primitive number undefined: {u16pc}");
           };
