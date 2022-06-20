@@ -176,6 +176,13 @@ let rec type_expr env expr =
         List.fold_right
           (fun ty_arg ty_res -> type_arrow (ty_arg, ty_res))
           ty_args ty_res
+    | Ztrywith (body, matching) ->
+        let ty = type_expr env body in
+        List.iter
+          (fun (pat, expr) ->
+            type_expect (type_pattern (pat, type_exn, Notmutable) @ env) expr ty)
+          matching;
+        ty
     | Zcondition (e1, e2, e3) ->
         type_expect env e1 type_bool;
         if
