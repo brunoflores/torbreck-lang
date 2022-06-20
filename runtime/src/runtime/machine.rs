@@ -628,8 +628,12 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Vectlength => {
           self.accu = match &self.accu {
+            Value::Global(i) => match &self.globals[*i] {
+              Value::Vec(v) => Value::Int(v.len().try_into().unwrap()),
+              x => panic!("unexpected: {:?}", x),
+            },
             Value::Vec(v) => Value::Int(v.len().try_into().unwrap()),
-            _ => panic!(),
+            x => panic!("unexpected: {:?}", x),
           };
           self.pc += 1;
         }
@@ -640,11 +644,12 @@ impl<'machine> Machine<'machine> {
           {
             self.asp -= 1;
             match vals {
-              Value::Vec(mut vec) => {
-                // mem::replace to avoid cloning
-                mem::replace(&mut vec[i as usize], Value::Dummy)
-              }
-              _ => panic!("not a vector in the accumulator"),
+              Value::Global(g) => match &self.globals[g] {
+                Value::Vec(v) => v[i as usize].clone(),
+                x => panic!("unexpected: {:?}", x),
+              },
+              Value::Vec(v) => v[i as usize].clone(),
+              x => panic!("not a vector in the accumulator: {:?}", x),
             }
           } else {
             panic!();
