@@ -321,6 +321,8 @@ infx:
     { "||" }
   | COLONEQUAL
     { ":=" }
+  | EQUAL
+    { "=" }
 
 qual_ident:
   | qual = IDENT UNDERUNDER id = ide
