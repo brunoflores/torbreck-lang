@@ -16,6 +16,7 @@ open Builtins
 /* Literals */
 %token <int> INT
 %token <string> STRING
+%token <char> CHAR
 
 /* Keywords */
 %token LET
@@ -176,6 +177,8 @@ atomic_constant:
     { ACint i }
   | s = STRING
     { ACstring s }
+  | c = CHAR
+    { ACchar c }
 
 /* Declarations */
 

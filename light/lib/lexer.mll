@@ -50,6 +50,13 @@ let addstr ch =
 
 let getstr () = Bytes.sub_string (!string_buff) 0 (!string_end)
 
+let char_for_backslash = function
+  | 'n' -> '\010'
+  | 'r' -> '\013'
+  | 'b' -> '\008'
+  | 't' -> '\009'
+  | c   -> c
+
 }
 
 let white = [' ' '\t']+
@@ -71,7 +78,10 @@ rule read = parse
       comment lexbuf;
       read lexbuf }
 
-  | "'" { QUOTE }
+  | "\'\\" (['\\' '\'' '\"' 'n' 't' 'b' 'r' ' '] as c) "\'"
+      { CHAR (char_for_backslash c) }
+
+  | "\'" { QUOTE }
   | "(" { LPAREN }
   | ")" { RPAREN }
   | "," { COMMA }
