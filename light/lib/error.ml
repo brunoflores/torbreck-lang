@@ -131,3 +131,15 @@ let recursive_abbrev_err _loc _ty_cstr =
 let constant_constr_err _cstr _loc =
   Printf.eprintf "The constant constructor cannot accept an argument.\n";
   failwith "constant_constr_err"
+
+let partial_apply_warning _loc =
+  Printf.eprintf
+    "Warning: this function application is partial, maybe some arguments are \
+     missing.\n";
+  flush stderr
+
+let not_unit_type_warning _exp actual_ty =
+  Printf.eprintf
+    "Warning: this expression has tipe %s, but is used with type unit.\n"
+    (Globals.show_typ actual_ty);
+  flush stderr

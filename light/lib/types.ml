@@ -341,6 +341,16 @@ and filter_list = function
       filter_list (rest1, rest2)
   | _ -> raise Unify
 
+(* Simple equality between base types *)
+let rec same_base_type ty base_ty =
+  match ((type_repr ty).typ_desc, (type_repr base_ty).typ_desc) with
+  | Tconstr ({ info = { ty_abbr = Tabbrev (params, body); _ }; _ }, args), _ ->
+      same_base_type (expand_abbrev params body args) base_ty
+  | _, Tconstr ({ info = { ty_abbr = Tabbrev (params, body); _ }; _ }, args) ->
+      same_base_type ty (expand_abbrev params body args)
+  | Tconstr (cstr1, []), Tconstr (cstr2, []) -> same_type_constr cstr1 cstr2
+  | _, _ -> false
+
 (* Extract the list of labels of a record type *)
 let rec labels_of_type ty =
   match (type_repr ty).typ_desc with

@@ -198,6 +198,10 @@ let rec type_expr env expr =
           type_expect env e3 ty;
           ty
         end
+    | Zwhile (cond, body) ->
+        type_expect env cond type_bool;
+        type_statement env body;
+        type_unit
     | _ as d ->
         Printf.printf "%s\n" (Syntax.show_expression_desc d);
         failwith "Typing.type_expr"
@@ -245,3 +249,12 @@ and type_let_decl env rec_flag pat_expr_list =
   List.iter (fun (gen, ty) -> if not gen then nongen_type ty) gen_type;
   List.iter (fun (gen, ty) -> if gen then generalize_type ty) gen_type;
   new_env
+
+and type_statement env expr =
+  let ty = type_expr env expr in
+  match (type_repr ty).typ_desc with
+  | Tarrow _ -> Error.partial_apply_warning expr.e_loc
+  | Tvar _ -> ()
+  | _ ->
+      if not (Types.same_base_type ty type_unit) then
+        Error.not_unit_type_warning expr ty
