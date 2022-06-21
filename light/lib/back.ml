@@ -131,6 +131,13 @@ let compile_expr _staticfail =
     | Lprim (Praise, explist) ->
         compexplist explist (Kprim Praise :: discard_dead_code code)
     | Lprim (p, explist) -> compexplist explist (Kprim p :: code)
+    | Lhandle (body, handler) ->
+        let branch1, code1 = make_branch code in
+        let lbl2 = new_label () in
+        let code2 = if is_return code1 then code1 else Kendlet 1 :: code1 in
+        Kpushtrap lbl2
+        :: compexp body
+             (Kpoptrap :: branch1 :: Klabel lbl2 :: compexp handler code2)
     | Lapply (body, args) ->
         if is_return code then
           compexplist args
@@ -182,6 +189,14 @@ let compile_expr _staticfail =
         end
     | Lifthenelse (cond, ifso, ifnot) -> comp_test2 cond ifso ifnot code
     | Lsequence (exp1, exp2) -> compexp exp1 (compexp exp2 code)
+    | Lwhile (cond, body) ->
+        let lbl1 = new_label () in
+        let lbl2 = new_label () in
+        Kbranch lbl1 :: Klabel lbl2 :: Kcheck_signals
+        :: compexp body
+             (Klabel lbl1
+             :: compexp cond (Kbranchif lbl2 :: Kquote Const.const_unit :: code)
+             )
     | Lcond _ -> failwith "here"
     | x ->
         Printf.printf "%s\n" (Lambda.show_lambda x);
