@@ -11,13 +11,11 @@ open Globals
 open Prim
 
 (* Propagation of constants *)
-
 exception Not_constant
 
 let extract_constant = function Lconst cst -> cst | _ -> raise Not_constant
 
 (* Compilation of let rec definitions *)
-
 let rec check_letrec_expr expr =
   match expr.e_desc with
   | Zident _ -> ()
@@ -51,8 +49,10 @@ let size_of_expr expr =
   | Zfunction _ -> 2
   | _ -> failwith "Front.size_of_expr: not implemented"
 
-(* Translation of expressions *)
+(* Default cases for partial matches *)
+let partial_try = Lprim (Praise, [ Lvar 0 ])
 
+(* Translation of expressions *)
 let rec translate_expr env =
   let rec transl expr =
     match expr.e_desc with
@@ -139,6 +139,11 @@ let rec translate_expr env =
                    (transl_fun new_debug_env patl))
         in
         transl_fun env patl1
+    | Ztrywith (body, pat_expr_list) ->
+        Lhandle
+          (transl body, translate_simple_match env partial_try pat_expr_list)
+    | Zsequence (e1, e2) ->
+        Lsequence (transl e1, Event.before env e2 (transl e2))
     | Zcondition (eif, ethen, eelse) ->
         Lifthenelse
           ( transl eif,
@@ -154,6 +159,12 @@ let rec translate_expr env =
         failwith "not implemented: Front.translate_expr"
   in
   transl
+
+and translate_simple_match env failure_code pat_expr_list =
+  translate_matching failure_code
+    (List.map
+       (fun (pat, expr) -> transl_action env ([ pat ], expr))
+       pat_expr_list)
 
 and transl_action env (patlist, expr) =
   let new_env, add_lets, num_pops = add_pat_list_to_env env patlist in

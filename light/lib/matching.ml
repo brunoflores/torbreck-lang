@@ -260,3 +260,10 @@ let translate_matching_check_failure loc casel =
   if partial_match casel then not_exhaustive_warning loc;
   let lambda, total = conquer_matching (make_initial_matching casel') in
   if total then lambda else Lstatichandle (lambda, partial_fun loc)
+
+let translate_matching failure_code casel =
+  let casel' =
+    List.map (fun (patl, act) -> (patl, share_lambda act)) (check_unused casel)
+  in
+  let lambda, total = conquer_matching (make_initial_matching casel') in
+  if total then lambda else Lstatichandle (lambda, failure_code)
