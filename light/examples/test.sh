@@ -12,10 +12,13 @@ dune build ../bin/linker.ml
 exe_light=../../_build/default/light/bin/light.exe
 exe_linker=../../_build/default/light/bin/linker.exe
 
+flags="-I ../stdlib"
+stdlib="io.ml exc.ml vect.ml"
+
 # First pass: build
 for test in "$(pwd)"/*.ml; do
-    $exe_light -I ../stdlib "$test" > /dev/null
-    $exe_linker -I ../stdlib exc.ml vect.ml "$test" > /dev/null
+    $exe_light "$flags" "$test" > /dev/null
+    $exe_linker "$flags" "$stdlib" "$test" > /dev/null
 done
 
 # Second pass: execute test
