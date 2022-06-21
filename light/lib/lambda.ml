@@ -40,7 +40,7 @@ type event = {
 [@@deriving show]
 
 (* The intermediate language *)
-
+(* TODO: document constructors. *)
 type lambda =
   | Lvar of int
   | Lconst of struct_constant

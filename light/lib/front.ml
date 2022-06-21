@@ -52,6 +52,15 @@ let size_of_expr expr =
 (* Default cases for partial matches *)
 let partial_try = Lprim (Praise, [ Lvar 0 ])
 
+(* Auxiliary to apply a superfluous constructor when the argument is an
+   already-allocated tuple (in Lvar 0) *)
+let alloc_superfluous_constr cstr n =
+  let rec extract_fields i =
+    if i >= n then []
+    else Lprim (Pfield i, [ Lvar 0 ]) :: extract_fields (succ i)
+  in
+  Lprim (Pmakeblock cstr.info.cs_tag, extract_fields 0)
+
 (* Translation of expressions *)
 let rec translate_expr env =
   let rec transl expr =
@@ -69,6 +78,13 @@ let rec translate_expr env =
             make_fct [] 0
       end
     | Zconstant c -> Lconst c
+    | Zconstruct0 c -> begin
+        match c.info.cs_kind with
+        | Constr_constant -> Lconst (SCblock (c.info.cs_tag, []))
+        | Constr_regular ->
+            Lfunction (Lprim (Pmakeblock c.info.cs_tag, [ Lvar 0 ]))
+        | Constr_superfluous n -> Lfunction (alloc_superfluous_constr c n)
+      end
     | Zconstruct1 (c, arg) -> begin
         match c.info.cs_kind with
         | Constr_superfluous _ ->
@@ -154,6 +170,8 @@ let rec translate_expr env =
               | _ -> false
             then transl eelse
             else Event.before env eelse (transl eelse) )
+    | Zwhile (econd, ebody) ->
+        Lwhile (transl econd, Event.before env ebody (transl ebody))
     | x ->
         Printf.printf "%s\n" (Syntax.show_expression_desc x);
         failwith "not implemented: Front.translate_expr"
