@@ -106,7 +106,7 @@ let reset_linker_tables () =
   global_table := new_numtable 1;
   literal_table := [];
   set_c_primitives
-    [ "print_endline"; "lessthan"; "string_of_int"; "greaterequal" ];
+    [ "print_endline"; "lessthan"; "string_of_int"; "greaterequal"; "sys_exit" ];
   (* https://github.com/brunoflores/camllight/blob/master/sources/src/linker/Makefile#L36 *)
   List.iter reserve_slot_for_defined_variable
     [ { qual = "sys"; id = "command_line" } ];

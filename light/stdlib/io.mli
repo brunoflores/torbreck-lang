@@ -10,10 +10,16 @@ type in_channel
 value std_in : in_channel
 ;;
 
+value exit : int -> 'a
+;;
+
 (* Output functions on standard output *)
 value print_endline : string -> unit = 1 "print_endline"
+and print_int : int -> unit
+and print_string : string -> unit = 1 "print_string"
 ;;
 
 (* General input functions *)
 value input_char : in_channel -> char = 1 "input_char"
+and open_descriptor_in : int -> in_channel = 1 "open_descriptor"
 ;;
