@@ -119,6 +119,10 @@ let rec emit instructions =
             failwith "not implemented: Emitcode.emit"
       end;
       emit code
+  | Kpushtrap lbl :: code ->
+      out pushtrap;
+      out_label lbl;
+      emit code
   | Kbranch lbl :: code ->
       out branch;
       out_label lbl;
