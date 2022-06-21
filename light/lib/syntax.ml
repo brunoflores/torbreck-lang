@@ -80,7 +80,7 @@ and impl_desc =
   | Zletdef of bool * (pattern * expression) list
   | Zimpldirective of directiveu
   | Zexcdef of constr_decl list
-(* | Ztypedef of (string * string list * type_decl) list *)
+  | Ztypedef of (string * string list * type_decl) list
 [@@deriving show]
 
 type intf_phrase = { in_desc : intf_desc; in_loc : location }

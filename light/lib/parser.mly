@@ -89,6 +89,8 @@ implementation:
     { make_impl (Zletdef (false, bs)) }
   | LET REC bs = binding_list SEMISEMI
     { make_impl (Zletdef (true, bs)) }
+  | TYPE decl = type_decl SEMISEMI
+    { make_impl (Ztypedef decl) }
   | SHARP d = directive SEMISEMI
     { make_impl (Zimpldirective d) }
   | EXCEPTION e = exc_decl SEMISEMI

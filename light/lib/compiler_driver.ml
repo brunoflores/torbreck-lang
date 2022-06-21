@@ -37,6 +37,9 @@ let compile_impl_phrase oc (phr : Syntax.impl_phrase) =
         else
           Back.compile_lambda false
             (Front.translate_letdef phr.im_loc pat_expr_list))
+  | Ztypedef decl ->
+      let _ = Ty_decl.type_typedecl phr.im_loc decl in
+      ()
   | Zimpldirective dir -> do_directive phr.im_loc dir
   | Zexcdef decl ->
       let _ = Ty_decl.type_excdecl phr.im_loc decl in
