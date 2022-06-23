@@ -16,9 +16,9 @@ depends: [
   "cmdliner" {= "1.1.1"}
   "cppo" {= "1.6.9"}
   "csexp" {= "1.5.1"}
-  "dune" {= "3.2.0"}
-  "dune-build-info" {= "3.2.0"}
-  "dune-configurator" {= "3.2.0"}
+  "dune" {= "3.3.1"}
+  "dune-build-info" {= "3.3.1"}
+  "dune-configurator" {= "3.3.1"}
   "either" {= "1.0.0"}
   "fieldslib" {= "v0.15.0"}
   "fix" {= "20220121"}
@@ -30,11 +30,10 @@ depends: [
   "menhirSdk" {= "20220210"}
   "num" {= "1.4"}
   "ocaml" {= "4.14.0"}
+  "ocaml-base-compiler" {= "4.14.0"}
   "ocaml-compiler-libs" {= "v0.12.4"}
   "ocaml-config" {= "2"}
-  "ocaml-option-flambda" {= "1"}
-  "ocaml-option-nnpchecker" {= "1"}
-  "ocaml-variants" {= "4.14.0+options"}
+  "ocaml-options-vanilla" {= "1"}
   "ocaml-version" {= "3.4.0"}
   "ocamlbuild" {= "0.14.1"}
   "ocamlfind" {= "1.9.5"}
