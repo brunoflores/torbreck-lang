@@ -6,8 +6,8 @@ NOCOLOR=$'\033[0m'
 
 exit_status=0
 
-dune build ../bin/light.ml
-dune build ../bin/linker.ml
+dune build ../bin/light.exe
+dune build ../bin/linker.exe
 
 exe_light=../../_build/default/light/bin/light.exe
 exe_linker=../../_build/default/light/bin/linker.exe
@@ -17,8 +17,8 @@ stdlib="io.ml exc.ml vect.ml"
 
 # First pass: build
 for test in "$(pwd)"/*.ml; do
-    $exe_light "$flags" "$test" > /dev/null
-    $exe_linker "$flags" "$stdlib" "$test" > /dev/null
+    $exe_light $flags $test > /dev/null
+    $exe_linker $flags $stdlib $test > /dev/null
 done
 
 # Second pass: execute test
