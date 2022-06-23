@@ -1,0 +1,6 @@
+Two ways of inspecting the bytecode in a file named `io_constant.out`:
+
+```bash
+$ od --skip-bytes=65 --address-radix=n --endian=big --width=10 -t u1 -t x2 io_constant.out
+$ hexdump -C io_constant.out
+```
