@@ -84,6 +84,10 @@ let get_num_of_exn (name, stamp) =
     !tag_exn_table.(c) <- (name, stamp);
     c
 
+let get_num_of_tag = function
+  | ConstrRegular (n, _) -> n
+  | ConstrExtensible (id, stamp) -> get_num_of_exn (id, stamp)
+
 (* The C primitives *)
 
 let get_num_of_prim name =

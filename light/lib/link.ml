@@ -2,6 +2,7 @@
 
 open Emit_phr
 open Reloc
+open Const
 
 (* First pass: determine which phrases are required *)
 
@@ -76,27 +77,32 @@ let link_object oc ((object_filename, phrases) : string * compiled_phrase list)
     close_in ic;
     raise x
 
+(* Translate a structured constant into an object *)
+let rec transl_structured_const = function
+  | SCatom (ACint i) -> Obj.repr i
+  | SCatom (ACfloat f) -> Obj.repr f
+  | SCatom (ACstring s) -> Obj.repr s
+  | SCatom (ACchar c) -> Obj.repr c
+  | SCblock (tag, comps) ->
+      let res =
+        Obj.new_block (Symtable.get_num_of_tag tag) (List.length comps)
+      in
+      fill_structured_const 0 res comps;
+      res
+
+and fill_structured_const n obj = function
+  | [] -> ()
+  | cst :: rest ->
+      Obj.set_field obj n (transl_structured_const cst);
+      fill_structured_const (n + 1) obj rest
+
 (* Build the initial table of globals *)
 let emit_data oc =
-  (* TODO: review *)
-  (* output_binary_int oc (Symtable.number_of_globals ()); *)
-  output_binary_int oc (List.length !Symtable.literal_table);
-  List.iteri
-    begin
-      fun n (_, sc) ->
-        Printf.printf "%d %s\n" n (Const.show_struct_constant sc);
-        match sc with
-        | Const.SCatom (Const.ACstring s) -> begin
-            output_string oc s;
-            (* Terminate string with a null byte *)
-            output_byte oc 0
-          end
-        | _ ->
-            failwith
-            @@ Format.sprintf "Link.emit_data: not implemented %s"
-                 (Const.show_struct_constant sc)
-    end
-    (List.rev !Symtable.literal_table)
+  let globals = Array.make (Symtable.number_of_globals ()) (Obj.repr 0) in
+  List.iter
+    (function n, sc -> globals.(n) <- transl_structured_const sc)
+    !Symtable.literal_table;
+  output_value oc globals
 
 (* Build a bytecode executable file *)
 let link object_files exec_name =
