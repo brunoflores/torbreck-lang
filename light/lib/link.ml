@@ -111,17 +111,14 @@ let transl_structured_const = function
 
 (* Build the initial table of globals *)
 let emit_data oc =
-  let globals = Array.make (Symtable.number_of_globals ()) (Bytes.create 0) in
+  output_binary_int oc (Symtable.number_of_globals ());
+  output_binary_int oc (List.length !Symtable.literal_table);
   List.iter
     (function
       | n, sc ->
-          print_endline @@ Format.sprintf "Working on global index %d" n;
-          globals.(n) <- transl_structured_const sc)
-    !Symtable.literal_table;
-  print_endline @@ "Length of globals: " ^ string_of_int (Array.length globals);
-  output_binary_int oc (Array.length globals);
-  Array.iter (fun bs -> output_bytes oc bs) globals
-(* output_value oc globals *)
+          output_binary_int oc n;
+          output_bytes oc (transl_structured_const sc))
+    !Symtable.literal_table
 
 (* Build a bytecode executable file *)
 let link object_files exec_name =
