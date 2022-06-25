@@ -84,18 +84,20 @@ let link_object oc ((object_filename, phrases) : string * compiled_phrase list)
 let rec transl_structured_const = function
   | SCatom (ACint i) ->
       print_endline @@ Format.sprintf "Translate structured const: int: %d" i;
-      (* Obj.repr i *)
       failwith "Link.transl_structured_const: ACint: not implemented"
   | SCatom (ACfloat f) ->
       print_endline @@ Format.sprintf "Translate structured const: float: %f" f;
-      (* Obj.repr f *)
       failwith "Link.transl_structured_const: ACfloat: not implemented"
   | SCatom (ACstring s) ->
       print_endline @@ Format.sprintf "Translate structured const: string: %s" s;
-      Bytes.cat (Bytes.of_string s) (Bytes.make 1 (Char.chr 0))
+      (* Length + 2 because of tag and null byte. *)
+      let res = Bytes.make (String.length s + 2) (Char.chr 0) in
+      (* String tag *)
+      Bytes.set res 0 (Char.chr 252);
+      Bytes.blit (Bytes.of_string s) 0 res 1 (String.length s);
+      res
   | SCatom (ACchar c) ->
       print_endline @@ Format.sprintf "Translate structured const: char: %c" c;
-      (* Obj.repr c *)
       failwith "Link.transl_structured_const: ACchar: not implemented"
   | SCblock (tag, comps) as sc ->
       print_endline
