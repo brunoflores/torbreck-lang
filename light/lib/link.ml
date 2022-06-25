@@ -81,7 +81,7 @@ let link_object oc ((object_filename, phrases) : string * compiled_phrase list)
     raise x
 
 (* Translate a structured constant into an object *)
-let transl_structured_const = function
+let rec transl_structured_const = function
   | SCatom (ACint i) ->
       print_endline @@ Format.sprintf "Translate structured const: int: %d" i;
       (* Obj.repr i *)
@@ -92,25 +92,30 @@ let transl_structured_const = function
       failwith "not implemented"
   | SCatom (ACstring s) ->
       print_endline @@ Format.sprintf "Translate structured const: string: %s" s;
-      Bytes.cat (Bytes.of_string s) (Bytes.create 1)
+      Bytes.cat (Bytes.of_string s) (Bytes.make 1 (Char.chr 0))
   | SCatom (ACchar c) ->
       print_endline @@ Format.sprintf "Translate structured const: char: %c" c;
       (* Obj.repr c *)
       failwith "not implemented"
-  | SCblock (_tag, _comps) ->
-      print_endline @@ Format.sprintf "Translate structured const: block";
-      (* let res = *)
-      (*   Obj.new_block (Symtable.get_num_of_tag tag) (List.length comps) *)
-      (* in *)
-      (* fill_structured_const 0 res comps; *)
-      (* res *)
-      failwith "not implemented"
+  | SCblock (tag, comps) as sc ->
+      print_endline
+      @@ Format.sprintf "Translate structured const: block: %s"
+           (Const.show_struct_constant sc);
+      let res = Bytes.make (succ (List.length comps)) (Char.chr 0) in
+      let num_of_tag = Symtable.get_num_of_tag tag in
+      let b =
+        try Char.chr num_of_tag
+        with Invalid_argument _ ->
+          failwith
+          @@ Format.sprintf "Tag %d is outside the range 0..255\n" num_of_tag
+      in
+      Bytes.set res 0 b;
+      fill_structured_const 0 res comps;
+      res
 
-(* and fill_structured_const n obj = function *)
-(*   | [] -> () *)
-(*   | cst :: rest -> *)
-(*       Obj.set_field obj n (transl_structured_const cst); *)
-(*       fill_structured_const (n + 1) obj rest *)
+and fill_structured_const _n _obj = function
+  | [] -> ()
+  | _cst :: _rest -> failwith "not implemented"
 
 (* Build the initial table of globals *)
 let emit_data oc =
