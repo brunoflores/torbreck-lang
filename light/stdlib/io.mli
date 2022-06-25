@@ -5,8 +5,7 @@ type in_channel
 ;;
 
 (* The standard input, standard output, and standard error output
-   for the process. [std_in], [std_out] and [std_err] are respectively
-   synonymous with [stdin], [stdout] and [stderr]. *)
+   for the process. *)
 value std_in : in_channel
 ;;
 
