@@ -15,6 +15,8 @@ exe_linker=../../_build/default/light/bin/linker.exe
 flags="-I ../stdlib"
 stdlib="io.ml exc.ml vect.ml"
 
+rm *.zo *.zi
+
 for test in "$(pwd)"/*.ml; do
     # Compile
     if ! $exe_light $flags $test > /dev/null; then
