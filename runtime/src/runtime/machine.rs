@@ -92,34 +92,43 @@ impl<'machine> Machine<'machine> {
     } else {
       0
     };
+
+    // Debug:
+    // println!("Number of globals: {}", number_of_globals);
+
     let mut global_vals: Vec<Value> =
-      Vec::with_capacity((number_of_globals + 1) as usize);
-    // Position after the 32-bit integer that told us about the number of
-    // globals in the bytecode.
+      vec![Value::Dummy; number_of_globals as usize];
 
     // Command line arguments
     let mut args_as_vals = Vec::with_capacity(args.len());
     for s in args.iter() {
       args_as_vals.push(Value::String(s.clone()));
     }
-    global_vals.push(Value::Vec(args_as_vals));
+    global_vals[0] = Value::Vec(args_as_vals);
 
-    let mut pos = 4;
-    for _ in 0..number_of_globals {
+    let number_of_literals: u32 =
+      u32::from_be_bytes(globals[4..8].try_into().unwrap());
+
+    // Debug:
+    // println!("Number of literals: {}", number_of_literals);
+
+    let mut pos = 8;
+    for _ in 0..number_of_literals {
       // TODO: Do not assume always strings in the globals section.
+
+      let index: u32 =
+        u32::from_be_bytes(globals[pos..pos + 4].try_into().unwrap());
+      pos += 4;
+
       let (val, len) = Value::string_from_bytes(&globals[pos..]);
-      pos += len;
       // Jump over the null byte that terminates the string.
-      pos += 1;
+      pos += len + 1;
 
-      global_vals.push(val);
-
-      // Debug:
-      // println!("{} {:?}", len, val);
+      global_vals[index as usize] = val;
     }
 
     // Debug:
-    // println!("{:?}", global_vals);
+    // println!("Globals are: {:?}", global_vals);
 
     Machine {
       instr: Instruction::Stop,
@@ -165,7 +174,10 @@ impl<'machine> Machine<'machine> {
       // println!("env: {:?}", self.env);
       // println!("astack: {:?}", self.astack);
       match self.instr {
-        Instruction::Stop => return self.accu.clone(),
+        Instruction::Stop => {
+          // println!("Stop with globals: {:?}", self.globals);
+          return self.accu.clone();
+        }
         Instruction::Access => {
           self.exec_access();
         }
