@@ -78,31 +78,50 @@ let link_object oc ((object_filename, phrases) : string * compiled_phrase list)
     raise x
 
 (* Translate a structured constant into an object *)
-let rec transl_structured_const = function
-  | SCatom (ACint i) -> Obj.repr i
-  | SCatom (ACfloat f) -> Obj.repr f
-  | SCatom (ACstring s) -> Obj.repr s
-  | SCatom (ACchar c) -> Obj.repr c
-  | SCblock (tag, comps) ->
-      let res =
-        Obj.new_block (Symtable.get_num_of_tag tag) (List.length comps)
-      in
-      fill_structured_const 0 res comps;
-      res
+let transl_structured_const = function
+  | SCatom (ACint i) ->
+      print_endline @@ Format.sprintf "Translate structured const: int: %d" i;
+      (* Obj.repr i *)
+      failwith "not implemented"
+  | SCatom (ACfloat f) ->
+      print_endline @@ Format.sprintf "Translate structured const: float: %f" f;
+      (* Obj.repr f *)
+      failwith "not implemented"
+  | SCatom (ACstring s) ->
+      print_endline @@ Format.sprintf "Translate structured const: string: %s" s;
+      Bytes.cat (Bytes.of_string s) (Bytes.create 1)
+  | SCatom (ACchar c) ->
+      print_endline @@ Format.sprintf "Translate structured const: char: %c" c;
+      (* Obj.repr c *)
+      failwith "not implemented"
+  | SCblock (_tag, _comps) ->
+      print_endline @@ Format.sprintf "Translate structured const: block";
+      (* let res = *)
+      (*   Obj.new_block (Symtable.get_num_of_tag tag) (List.length comps) *)
+      (* in *)
+      (* fill_structured_const 0 res comps; *)
+      (* res *)
+      failwith "not implemented"
 
-and fill_structured_const n obj = function
-  | [] -> ()
-  | cst :: rest ->
-      Obj.set_field obj n (transl_structured_const cst);
-      fill_structured_const (n + 1) obj rest
+(* and fill_structured_const n obj = function *)
+(*   | [] -> () *)
+(*   | cst :: rest -> *)
+(*       Obj.set_field obj n (transl_structured_const cst); *)
+(*       fill_structured_const (n + 1) obj rest *)
 
 (* Build the initial table of globals *)
 let emit_data oc =
-  let globals = Array.make (Symtable.number_of_globals ()) (Obj.repr 0) in
+  let globals = Array.make (Symtable.number_of_globals ()) (Bytes.create 0) in
   List.iter
-    (function n, sc -> globals.(n) <- transl_structured_const sc)
+    (function
+      | n, sc ->
+          print_endline @@ Format.sprintf "Working on global index %d" n;
+          globals.(n) <- transl_structured_const sc)
     !Symtable.literal_table;
-  output_value oc globals
+  print_endline @@ "Length of globals: " ^ string_of_int (Array.length globals);
+  output_binary_int oc (Array.length globals);
+  Array.iter (fun bs -> output_bytes oc bs) globals
+(* output_value oc globals *)
 
 (* Build a bytecode executable file *)
 let link object_files exec_name =
