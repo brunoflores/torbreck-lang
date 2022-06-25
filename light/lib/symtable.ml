@@ -116,8 +116,8 @@ let reset_linker_tables () =
       "string_of_int";
       "greaterequal";
       "string_of_char";
-      "sys_exit";
       "open_descriptor";
+      "sys_exit";
       "print_string";
       "input_char";
       "equal";
