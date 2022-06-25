@@ -116,15 +116,23 @@ impl<'machine> Machine<'machine> {
     for _ in 0..number_of_literals {
       // TODO: Do not assume always strings in the globals section.
 
-      let index: u32 =
-        u32::from_be_bytes(globals[pos..pos + 4].try_into().unwrap());
+      let index = u32::from_be_bytes(globals[pos..pos + 4].try_into().unwrap());
       pos += 4;
 
-      let (val, len) = Value::string_from_bytes(&globals[pos..]);
-      // Jump over the null byte that terminates the string.
-      pos += len + 1;
+      let tag = u8::from_be_bytes(globals[pos..pos + 1].try_into().unwrap());
+      pos += 1;
 
-      global_vals[index as usize] = val;
+      global_vals[index as usize] = match tag {
+        0 => Value::Atom0,
+        1 => Value::Atom1,
+        252 => {
+          let (val, len) = Value::string_from_bytes(&globals[pos..]);
+          // Jump over the null byte that terminates the string.
+          pos += len + 1;
+          val
+        }
+        _ => panic!(),
+      }
     }
 
     // Debug:
