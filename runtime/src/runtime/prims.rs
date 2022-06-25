@@ -50,3 +50,16 @@ pub fn string_of_int(vals: &[&Value]) -> Value {
     panic!()
   }
 }
+
+pub fn string_of_char(vals: &[&Value]) -> Value {
+  if let Value::Char(v) = vals[0] {
+    Value::String(v.to_string())
+  } else {
+    panic!()
+  }
+}
+
+pub fn open_descriptor(_vals: &[&Value]) -> Value {
+  // TODO
+  Value::Dummy
+}

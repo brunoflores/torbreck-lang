@@ -68,7 +68,7 @@ pub struct Machine<'machine> {
   asp: usize,                     // Argument stack pointer
   rsp: usize,                     // Return stack pointer
   accu: Value,                    // Accumulator for intermediate results.
-  prims: [prims::PrimFn; 4],      // Primitives table
+  prims: [prims::PrimFn; 6],      // Primitives table
   globals: Vec<Value>,            // Table of global values
                                   // cache size TODO
 }
@@ -166,6 +166,8 @@ impl<'machine> Machine<'machine> {
         prims::less_than,
         prims::string_of_int,
         prims::greaterequal,
+        prims::string_of_char,
+        prims::open_descriptor,
       ],
 
       globals: global_vals,
