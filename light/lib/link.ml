@@ -46,12 +46,15 @@ let scan_file tolink object_filename =
     let ic = open_in_bin actual_filename in
     let abs_out_position = input_binary_int ic in
     seek_in ic abs_out_position;
-    let compiled_phrase_index = (input_value ic : compiled_phrase list) in
-    let required : compiled_phrase list =
-      List.fold_left scan_phrase [] compiled_phrase_index
-    in
-    close_in ic;
-    (actual_filename, required) :: tolink
+    try
+      let compiled_phrase_index = (input_value ic : compiled_phrase list) in
+      let required : compiled_phrase list =
+        List.fold_left scan_phrase [] compiled_phrase_index
+      in
+      close_in ic;
+      (actual_filename, required) :: tolink
+    with End_of_file ->
+      failwith @@ Format.sprintf "End_of_file: %s" actual_filename
   with Misc.Cannot_find_file name ->
     Printf.eprintf "Cannot find file %s.\n" name;
     failwith "Link.scan_file"
