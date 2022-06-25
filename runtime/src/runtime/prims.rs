@@ -20,9 +20,9 @@ pub fn print_endline(vals: &[&Value]) -> Value {
 pub fn less_than(vals: &[&Value]) -> Value {
   if let (Value::Int(v1), Value::Int(v2)) = (vals[0], vals[1]) {
     if v1 < v2 {
-      Value::True
+      Value::Atom1
     } else {
-      Value::False
+      Value::Atom0
     }
   } else {
     panic!()
@@ -32,9 +32,9 @@ pub fn less_than(vals: &[&Value]) -> Value {
 pub fn greaterequal(vals: &[&Value]) -> Value {
   if let (Value::Int(v1), Value::Int(v2)) = (vals[0], vals[1]) {
     if v1 >= v2 {
-      Value::True
+      Value::Atom1
     } else {
-      Value::False
+      Value::Atom0
     }
   } else {
     panic!()

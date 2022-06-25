@@ -18,10 +18,10 @@ pub enum Value {
   Int(i32),
   Float(f32),
   String(String),
-  True,
-  False,
+  Char(u8),
   Dummy,
   Atom0,
+  Atom1,
   // Compound types
   Vec(Vec<Value>),
   Fn(Closure),
@@ -543,8 +543,8 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Boolnot => {
           self.accu = match self.accu {
-            Value::False => Value::True,
-            Value::True => Value::False,
+            Value::Atom0 => Value::Atom1,
+            Value::Atom1 => Value::Atom0,
             _ => panic!("not a bool in the accumulator"),
           };
           self.pc += 1;
@@ -604,19 +604,25 @@ impl<'machine> Machine<'machine> {
         }
         Instruction::Branchifnot => {
           self.pc += 1;
+          if let Value::Global(i) = self.accu {
+            self.accu = self.globals[i].clone();
+          }
           match self.accu {
-            Value::False => self.pc = (self.pc as i32 + self.i32pc()) as usize,
-            Value::True => {
+            Value::Atom0 => self.pc = (self.pc as i32 + self.i32pc()) as usize,
+            Value::Atom1 => {
               self.pc += 2; // Jump over short
             }
-            _ => panic!("not a boolean in the accumulator"),
+            _ => panic!("not a boolean in the accumulator: {:?}", self.accu),
           }
         }
         Instruction::Branchif => {
           self.pc += 1;
+          if let Value::Global(i) = self.accu {
+            self.accu = self.globals[i].clone();
+          }
           match self.accu {
-            Value::True => self.pc = (self.pc as i32 + self.i32pc()) as usize,
-            Value::False => {
+            Value::Atom1 => self.pc = (self.pc as i32 + self.i32pc()) as usize,
+            Value::Atom0 => {
               self.pc += 2; // Jump over short
             }
             _ => panic!("not a boolean in the accumulator"),
