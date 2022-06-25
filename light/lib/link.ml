@@ -85,18 +85,18 @@ let rec transl_structured_const = function
   | SCatom (ACint i) ->
       print_endline @@ Format.sprintf "Translate structured const: int: %d" i;
       (* Obj.repr i *)
-      failwith "not implemented"
+      failwith "Link.transl_structured_const: ACint: not implemented"
   | SCatom (ACfloat f) ->
       print_endline @@ Format.sprintf "Translate structured const: float: %f" f;
       (* Obj.repr f *)
-      failwith "not implemented"
+      failwith "Link.transl_structured_const: ACfloat: not implemented"
   | SCatom (ACstring s) ->
       print_endline @@ Format.sprintf "Translate structured const: string: %s" s;
       Bytes.cat (Bytes.of_string s) (Bytes.make 1 (Char.chr 0))
   | SCatom (ACchar c) ->
       print_endline @@ Format.sprintf "Translate structured const: char: %c" c;
       (* Obj.repr c *)
-      failwith "not implemented"
+      failwith "Link.transl_structured_const: ACchar: not implemented"
   | SCblock (tag, comps) as sc ->
       print_endline
       @@ Format.sprintf "Translate structured const: block: %s"
@@ -115,7 +115,7 @@ let rec transl_structured_const = function
 
 and fill_structured_const _n _obj = function
   | [] -> ()
-  | _cst :: _rest -> failwith "not implemented"
+  | _cst :: _rest -> failwith "Link.fill_structured_const: not implemented"
 
 (* Build the initial table of globals *)
 let emit_data oc =
