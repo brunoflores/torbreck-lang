@@ -15,20 +15,37 @@ exe_linker=../../_build/default/light/bin/linker.exe
 flags="-I ../stdlib"
 stdlib="io.ml exc.ml vect.ml"
 
-# First pass: build
 for test in "$(pwd)"/*.ml; do
-    $exe_light $flags $test > /dev/null
-    $exe_linker $flags $stdlib $test > /dev/null
+    # Compile
+    if ! $exe_light $flags $test > /dev/null; then
+        echo ""
+        echo "-------------------------"
+        printf "%sDID NOT COMPILE%s: %s\n" "$RED" "$NOCOLOR" "$test"
+        echo "-------------------------"
+        echo ""
+
+        exit_status=1
+    fi
+
+    # Link
+    if ! $exe_linker $flags $stdlib $test > /dev/null; then
+        echo ""
+        echo "-------------------------"
+        printf "%sDID NOT LINK%s: %s\n" "$RED" "$NOCOLOR" "$test"
+        echo "-------------------------"
+        echo ""
+
+        exit_status=1
+    fi
 done
 
-# Second pass: execute test
 for test in "$(pwd)"/single_*.sh; do
     fname_out=$(basename "$test" ".sh").stdout
     fname_err=$(basename "$test" ".sh").stderr
     fname_out_exp=$(basename "$test" ".sh").stdoutexp
     fname_err_exp=$(basename "$test" ".sh").stderrexp
 
-    bash "$test" 2> ./"$fname_err" 1> ./"$fname_out"
+    "$test" 2> ./"$fname_err" 1> ./"$fname_out"
 
     # To promote, uncomment:
     # cp ./"$fname_out" ./"$fname_out_exp"
