@@ -61,6 +61,10 @@ let type_of_type_expression strict_flag typexp =
 
 let typing_let = ref false
 
+let unify_pat pat expected_ty actual_ty =
+  try unify (expected_ty, actual_ty)
+  with Unify -> pat_wrong_type_err pat actual_ty expected_ty
+
 let rec tpat new_env ((pat, ty, mut_flag) : pattern * typ * mutable_flag) =
   pat.p_typ <- ty;
   begin
@@ -68,9 +72,19 @@ let rec tpat new_env ((pat, ty, mut_flag) : pattern * typ * mutable_flag) =
     | Zvarpat v ->
         if List.mem_assoc v new_env then non_linear_pattern_err pat v
         else (v, (ty, mut_flag)) :: new_env
+    | Zconstruct1pat (cstr, arg) -> begin
+        match cstr.info.cs_kind with
+        | Constr_constant -> constant_constr_err cstr pat.p_loc
+        | _ ->
+            let ty_res, ty_arg =
+              type_pair_instance (cstr.info.cs_res, cstr.info.cs_arg)
+            in
+            unify_pat pat ty ty_res;
+            tpat new_env (arg, ty_arg, cstr.info.cs_mut)
+      end
     | _ as p ->
         Printf.printf "%s\n" (Syntax.show_pattern_desc p);
-        failwith ""
+        failwith "Typing.new_env"
   end
 
 and tpat_list new_env (pat_list : pattern list) (ty_list : typ list) =

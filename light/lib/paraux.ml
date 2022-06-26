@@ -1,6 +1,5 @@
 (* Auxiliary functions for parsing *)
 
-open Error
 open Syntax
 open Location
 open Globals
@@ -56,8 +55,13 @@ let expr_constr_or_ident = function
       try make_expr (Zconstruct0 (find_constr_desc gr))
       with Desc_not_found -> (
         try make_expr (Zident (ref (Zglobal (find_value_desc gr))))
-        with Desc_not_found -> unbound_value_err gr (get_current_location ())))
+        with Desc_not_found ->
+          Error.unbound_value_err gr (get_current_location ())))
 
 let pat_constr_or_var s =
   try make_pat (Zconstruct0pat (find_constr_desc (GRname s)))
   with Desc_not_found -> make_pat (Zvarpat s)
+
+let find_constructor gr =
+  try find_constr_desc gr
+  with Desc_not_found -> Error.unbound_constr_err gr (get_current_location ())

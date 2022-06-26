@@ -281,12 +281,20 @@ binding_list:
     { [b] }
 
 binding:
-  | pat = pattern EQUAL e = expr
-    { (pat, e) }
   | id = ide pat = simple_pattern_list EQUAL e = expr
     { (pat_constr_or_var id, make_expr (Zfunction [pat, e])) }
+  | pat = simple_pattern EQUAL e = expr
+    { (pat, e) }
 
 /* Patterns */
+
+pattern:
+  | pat = simple_pattern
+    { pat }
+  | id = ext_ident pat = simple_pattern
+    { make_pat (Zconstruct1pat (find_constructor id, pat)) }
+  | p1 = pattern BAR p2 = pattern
+    { make_pat (Zorpat (p1, p2)) }
 
 simple_pattern_list:
   | pat = simple_pattern pats = simple_pattern_list
@@ -294,14 +302,8 @@ simple_pattern_list:
   | pat = simple_pattern
     { [pat] }
 
-pattern:
-  | pat = simple_pattern
-    { pat }
-  | p1 = pattern BAR p2 = pattern
-    { make_pat (Zorpat (p1, p2)) }
-
 simple_pattern:
-  | id = ide
+  | id = IDENT
     { pat_constr_or_var id }
   | LPAREN pat = pattern RPAREN
     { pat }

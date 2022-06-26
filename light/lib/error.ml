@@ -17,6 +17,18 @@ let unbound_value_err name loc =
     output_globalref name;
   failwith "unbound_value_err"
 
+let unbound_constr_err name loc =
+  Printf.eprintf "%aThe constructor %a is unbound.\n" output_location loc
+    output_globalref name;
+  failwith "unbound_constr_err"
+
+let pat_wrong_type_err _pat actual_ty expected_ty =
+  Printf.eprintf
+    "This pattern matches values of type %s, but should match values of type %s.\n"
+    (Globals.show_typ actual_ty)
+    (Globals.show_typ expected_ty);
+  failwith "pat_wrong_type_err"
+
 let unbound_type_var_err v ty =
   Printf.eprintf "%aThe type variable %s is unbound.\n" output_location
     ty.te_loc v;
