@@ -83,11 +83,9 @@ let compile_impl filename suffix =
       parse Parser.Incremental.implementation (compile_impl_phrase oc) lexbuf
         content
     done
-  with
-  | End_of_file ->
-      Emit_phr.end_emit_phrase oc;
-      close_out oc
-  | Sys_error s | Failure s -> failwith s
+  with End_of_file ->
+    Emit_phr.end_emit_phrase oc;
+    close_out oc
 
 let compile_interface (modname : string) (filename : string) : unit =
   let source_name = filename ^ ".mli" in
