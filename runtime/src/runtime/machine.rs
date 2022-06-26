@@ -147,7 +147,7 @@ impl<'machine> Machine<'machine> {
             _ => panic!(),
           }
         }
-        _ => panic!("impossible"),
+        _ => panic!("tag not implemented: {}", less_sig_byte),
       };
     }
 
