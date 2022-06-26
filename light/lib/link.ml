@@ -90,20 +90,25 @@ let rec transl_structured_const = function
       failwith "Link.transl_structured_const: ACfloat: not implemented"
   | SCatom (ACstring s) ->
       print_endline @@ Format.sprintf "Translate structured const: string: %s" s;
-      (* Length + 2 because of tag and null byte. *)
-      let res = Bytes.make (String.length s + 2) (Char.chr 0) in
+      let res = Bytes.create 4 in
       (* String tag *)
-      Bytes.set res 0 (Char.chr 252);
-      Bytes.blit (Bytes.of_string s) 0 res 1 (String.length s);
-      res
+      Bytes.set res 3 (Char.chr 252);
+      (* Length + 1 because of the null byte. *)
+      let bs = Bytes.make (String.length s + 1) (Char.chr 0) in
+      Bytes.blit (Bytes.of_string s) 0 bs 0 (String.length s);
+      Bytes.cat res bs
   | SCatom (ACchar c) ->
       print_endline @@ Format.sprintf "Translate structured const: char: %c" c;
-      failwith "Link.transl_structured_const: ACchar: not implemented"
+      let res = Bytes.create 4 in
+      Bytes.set res 3 c;
+      (* Mark least significant bit *)
+      Bytes.set res 0 (Char.chr 0b00000001);
+      res
   | SCblock (tag, comps) as sc ->
       print_endline
       @@ Format.sprintf "Translate structured const: block: %s"
            (Const.show_struct_constant sc);
-      let res = Bytes.make (succ (List.length comps)) (Char.chr 0) in
+      let res = Bytes.create 4 in
       let num_of_tag = Symtable.get_num_of_tag tag in
       let b =
         try Char.chr num_of_tag
@@ -111,7 +116,7 @@ let rec transl_structured_const = function
           failwith
           @@ Format.sprintf "Tag %d is outside the range 0..255\n" num_of_tag
       in
-      Bytes.set res 0 b;
+      Bytes.set res 3 b;
       fill_structured_const 0 res comps;
       res
 

@@ -84,20 +84,22 @@ impl<'machine> Machine<'machine> {
     // println!("{:?}", mem);
     // println!("{:?}", globals);
 
-    let number_of_globals: u32 = if !globals.is_empty() {
+    let mut pos = 0;
+
+    let number_of_globals = if !globals.is_empty() {
       // In this case we take four bytes as an unsigned 32-bit
       // integer that would have been created by OCaml's
       // [Stdlib.output_binary_int] in our linker.
-      u32::from_be_bytes(globals[0..4].try_into().unwrap())
+      u32::from_be_bytes(globals[pos..pos + 4].try_into().unwrap())
     } else {
       0
     };
+    pos += 4;
 
     // Debug:
     // println!("Number of globals: {}", number_of_globals);
 
-    let mut global_vals: Vec<Value> =
-      vec![Value::Dummy; number_of_globals as usize];
+    let mut global_vals = vec![Value::Dummy; number_of_globals as usize];
 
     // Command line arguments
     let mut args_as_vals = Vec::with_capacity(args.len());
@@ -106,33 +108,46 @@ impl<'machine> Machine<'machine> {
     }
     global_vals[0] = Value::Vec(args_as_vals);
 
-    let number_of_literals: u32 =
-      u32::from_be_bytes(globals[4..8].try_into().unwrap());
+    let number_of_literals =
+      u32::from_be_bytes(globals[pos..pos + 4].try_into().unwrap());
+    pos += 4;
 
     // Debug:
     // println!("Number of literals: {}", number_of_literals);
 
-    let mut pos = 8;
     for _ in 0..number_of_literals {
-      // TODO: Do not assume always strings in the globals section.
-
       let index = u32::from_be_bytes(globals[pos..pos + 4].try_into().unwrap());
       pos += 4;
+      println!("index: {}", index);
 
-      let tag = u8::from_be_bytes(globals[pos..pos + 1].try_into().unwrap());
-      pos += 1;
+      let less_sig_bit = globals[pos];
+      println!("less sig bit: {}", less_sig_bit);
 
-      global_vals[index as usize] = match tag {
-        0 => Value::Atom0,
-        1 => Value::Atom1,
-        252 => {
-          let (val, len) = Value::string_from_bytes(&globals[pos..]);
-          // Jump over the null byte that terminates the string.
-          pos += len + 1;
-          val
+      global_vals[index as usize] = match less_sig_bit {
+        1 => {
+          // TODO do not assume char
+          Value::Char(u8::from_be_bytes([globals[pos + 3]]))
         }
-        _ => panic!(),
-      }
+        0 => {
+          let tag =
+            u32::from_be_bytes(globals[pos..pos + 4].try_into().unwrap());
+          pos += 4;
+          println!("tag: {}", tag);
+
+          match tag {
+            0 => Value::Atom0,
+            1 => Value::Atom1,
+            252 => {
+              let (val, len) = Value::string_from_bytes(&globals[pos..]);
+              // Jump over the null byte that terminates the string.
+              pos += len + 1;
+              val
+            }
+            _ => panic!(),
+          }
+        }
+        _ => panic!("impossible"),
+      };
     }
 
     // Debug:
