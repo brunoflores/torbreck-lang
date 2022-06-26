@@ -17,11 +17,11 @@ pub enum Value {
   // Basic types
   Int(i32),
   Float(f32),
-  String(String),
   Char(u8),
   Dummy,
   Atom0,
   Atom1,
+  String(String),
   // Compound types
   Vec(Vec<Value>),
   Fn(Closure),
@@ -120,14 +120,15 @@ impl<'machine> Machine<'machine> {
       pos += 4;
       println!("index: {}", index);
 
-      let less_sig_bit = globals[pos];
-      println!("less sig bit: {}", less_sig_bit);
+      let less_sig_byte = u8::from_be_bytes([globals[pos]]);
+      println!("less sig byte: {}", less_sig_byte);
 
-      global_vals[index as usize] = match less_sig_bit {
+      global_vals[index as usize] = match less_sig_byte {
         1 => {
-          // TODO do not assume char
-          Value::Char(u8::from_be_bytes([globals[pos + 3]]))
+          // TODO integers
+          panic!("not implemented");
         }
+        2 => Value::Char(u8::from_be_bytes([globals[pos + 3]])),
         0 => {
           let tag =
             u32::from_be_bytes(globals[pos..pos + 4].try_into().unwrap());
@@ -151,7 +152,7 @@ impl<'machine> Machine<'machine> {
     }
 
     // Debug:
-    // println!("Globals are: {:?}", global_vals);
+    println!("Globals are: {:?}", global_vals);
 
     Machine {
       instr: Instruction::Stop,

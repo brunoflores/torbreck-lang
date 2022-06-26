@@ -102,7 +102,7 @@ let rec transl_structured_const = function
       let res = Bytes.create 4 in
       Bytes.set res 3 c;
       (* Mark least significant bit *)
-      Bytes.set res 0 (Char.chr 0b00000001);
+      Bytes.set res 0 (Char.chr 2);
       res
   | SCblock (tag, comps) as sc ->
       print_endline
