@@ -303,7 +303,7 @@ simple_pattern_list:
     { [pat] }
 
 simple_pattern:
-  | id = IDENT
+  | id = ide
     { pat_constr_or_var id }
   | LPAREN pat = pattern RPAREN
     { pat }
