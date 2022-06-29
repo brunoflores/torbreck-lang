@@ -1,85 +1,78 @@
-#!/usr/bin/env bash
+#!/usr/bin/env fish
 
-RED=$'\033[0;31m'
-GREEN=$'\033[0;32m'
-NOCOLOR=$'\033[0m'
-
-exit_status=0
+set exit_status 0
 
 dune build ../bin/light.exe
 dune build ../bin/linker.exe
 
-exe_light=../../_build/default/light/bin/light.exe
-exe_linker=../../_build/default/light/bin/linker.exe
+set exe_light ../../_build/default/light/bin/light.exe
+set exe_linker ../../_build/default/light/bin/linker.exe
 
-flags="-I ../stdlib"
-stdlib="io.ml exc.ml vect.ml"
+set flags "-I ../stdlib"
+set stdlib "io.ml exc.ml vect.ml"
 
 rm *.zo *.zi
 
-for test in "$(pwd)"/*.ml; do
-    # Compile
-    if ! $exe_light $flags $test > /dev/null; then
-        echo ""
-        echo "-------------------------"
-        printf "%sDID NOT COMPILE%s: %s\n" "$RED" "$NOCOLOR" "$test"
-        echo "-------------------------"
-        echo ""
+function echo_with_color -a color header msg err
+    echo
+    echo -------------------------
+    set_color $color; and echo -n $header; and set_color normal
+    echo $msg
+    echo
+    echo $err
+    echo -------------------------
+    echo
+end
 
-        exit_status=1
-    fi
+function echo_error -a header msg err
+    echo_with_color red $header $msg $err
+    set exit_status 1
+end
 
-    # Link
-    if ! $exe_linker $flags $stdlib $test > /dev/null; then
-        echo ""
-        echo "-------------------------"
-        printf "%sDID NOT LINK%s: %s\n" "$RED" "$NOCOLOR" "$test"
-        echo "-------------------------"
-        echo ""
+function echo_success -a header msg
+    set_color green; and echo -n $header; and set_color normal
+    echo $msg
+end
 
-        exit_status=1
-    fi
-done
+for test in *.ml
+    set tmpf (mktemp)
 
-for test in "$(pwd)"/single_*.sh; do
-    fname_out=$(basename "$test" ".sh").stdout
-    fname_err=$(basename "$test" ".sh").stderr
-    fname_out_exp=$(basename "$test" ".sh").stdoutexp
-    fname_err_exp=$(basename "$test" ".sh").stderrexp
+    eval $exe_light $flags $test 1>/dev/null 2>$tmpf
+    if test $status -ne 0
+        echo_error "DID NOT COMPILE: " $test (cat $tmpf)
+    end
 
-    "$test" 2> ./"$fname_err" 1> ./"$fname_out"
+    eval $exe_linker $flags $stdlib $test 1>/dev/null 2>$tmpf
+    if test $status -ne 0
+        echo_error "DID NOT LINK: " $test (cat $tmpf)
+    end
+end
+
+for test in single_*.sh
+    set fname_out (path change-extension .stdout $test)
+    set fname_err (path change-extension .stderr $test)
+    set fname_out_exp (path change-extension .stdoutexp $test)
+    set fname_err_exp (path change-extension .stderrexp $test)
+
+    bash $test 1>$fname_out 2>$fname_err
 
     # To promote, uncomment:
     # cp ./"$fname_out" ./"$fname_out_exp"
     # cp ./"$fname_err" ./"$fname_err_exp"
 
-    DIFF=$(diff ./"$fname_out" ./"$fname_out_exp")
-    if [ "$DIFF" != "" ]; then
-        echo ""
-        echo "-------------------------"
-        printf "%sFAIL (stdout)%s: %s\n" "$RED" "$NOCOLOR" "$test"
-        echo "$DIFF"
-        echo "-------------------------"
-        echo ""
-
-        exit_status=1
+    set diff (diff $fname_out $fname_out_exp)
+    if ! test -z "$diff"
+        echo_error "FAIL (stdout): " $test $diff
     else
-        printf "%sPASS (stdout):%s %s\n" "$GREEN" "$NOCOLOR" "$test"
-    fi
+        echo_success "PASS (stdout): " $test
+    end
 
-    DIFF=$(diff ./"$fname_err" ./"$fname_err_exp")
-    if [ "$DIFF" != "" ]; then
-        echo ""
-        echo "-------------------------"
-        printf "%sFAIL (stderr)%s: %s\n" "$RED" "$NOCOLOR" "$test"
-        echo "$DIFF"
-        echo "-------------------------"
-        echo ""
-
-        exit_status=1
+    set diff (diff $fname_err $fname_err_exp)
+    if ! test -z "$diff"
+        echo_error "FAIL (stderr): " $test $diff
     else
-        printf "%sPASS (stderr):%s %s\n" "$GREEN" "$NOCOLOR" "$test"
-    fi
-done
+        echo_success "PASS (stderr): " $test
+    end
+end
 
 exit $exit_status
