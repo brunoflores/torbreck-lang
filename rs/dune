@@ -1,0 +1,14 @@
+(ocamllex
+  (modules lexer))
+
+(menhir
+  (modules parser)
+  (flags --table))
+
+(executable
+  (name rs)
+  (modules lexer parser rs)
+  (libraries stdio menhirLib)
+  (preprocess
+    (pps ppx_jane ppx_deriving.show)))
+
