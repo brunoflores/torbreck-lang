@@ -7,7 +7,7 @@
 
 (executable
   (name rs)
-  (modules lexer parser rs)
+  (modules lexer parser ast rs)
   (libraries stdio menhirLib)
   (preprocess
     (pps ppx_jane ppx_deriving.show)))
