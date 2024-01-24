@@ -359,7 +359,8 @@ and meet ctx tyS tyT =
     | _ -> TyBot
 
 (* A transcription of the inversion lemma (9.3.1). *)
-let rec typeof ctx t =
+let rec typeof : context -> term -> ty =
+ fun ctx t ->
   match t with
   | TmDeref (fi, t1) -> (
       match simplifyty ctx (typeof ctx t1) with
