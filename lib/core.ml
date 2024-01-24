@@ -3,13 +3,15 @@ open Support.Error
 
 exception NoRuleApplies
 
-let rec isnumericval ctx t =
+let rec isnumericval : context -> term -> bool =
+ fun ctx t ->
   match t with
   | TmZero _ -> true
   | TmSucc (_, t1) -> isnumericval ctx t1
   | _ -> false
 
-let rec isval ctx t =
+let rec isval : context -> term -> bool =
+ fun ctx t ->
   match t with
   | TmLoc _ -> true
   | TmString _ -> true
@@ -31,10 +33,14 @@ let rec isval ctx t =
 type store = term list
 
 let emptystore = []
-let extendstore store v = (List.length store, List.append store [ v ])
-let lookuploc store l = List.nth store l
 
-let updatestore store n v =
+let extendstore : store -> term -> int * store =
+ fun store v -> (List.length store, List.append store [ v ])
+
+let lookuploc : store -> int -> term = fun store i -> List.nth store i
+
+let updatestore : store -> int -> term -> store =
+ fun store n v ->
   let rec f s =
     match s with
     | 0, _ :: rest -> (* Replace _ with v *) v :: rest
@@ -43,9 +49,11 @@ let updatestore store n v =
   in
   f (n, store)
 
-let shiftstore i store = List.map (fun t -> termshift i t) store
+let shiftstore : int -> store -> store =
+ fun i -> List.map (fun t -> termshift i t)
 
-let rec eval1 ctx store t =
+let rec eval1 : context -> store -> term -> term * store =
+ fun ctx store t ->
   match t with
   | TmRef (fi, t1) ->
       if not (isval ctx t1) then
@@ -54,15 +62,16 @@ let rec eval1 ctx store t =
       else
         let l, store' = extendstore store t1 in
         (TmLoc (dummyinfo, l), store')
-  | TmDeref (fi, t1) -> (
+  | TmDeref (fi, t1) -> begin
       if not (isval ctx t1) then
         let t1', store' = eval1 ctx store t1 in
         (TmDeref (fi, t1'), store')
       else
         match t1 with
         | TmLoc (_, l) -> (lookuploc store l, store)
-        | _ -> raise NoRuleApplies)
-  | TmAssign (fi, t1, t2) -> (
+        | _ -> raise NoRuleApplies
+    end
+  | TmAssign (fi, t1, t2) -> begin
       if not (isval ctx t1) then
         let t1', store' = eval1 ctx store t1 in
         (TmAssign (fi, t1', t2), store')
@@ -72,7 +81,8 @@ let rec eval1 ctx store t =
       else
         match t1 with
         | TmLoc (_, l) -> (TmUnit dummyinfo, updatestore store l t2)
-        | _ -> raise NoRuleApplies)
+        | _ -> raise NoRuleApplies
+    end
   (* TmAscribe *)
   | TmAscribe (_, v1, _) when isval ctx v1 -> (v1, store)
   | TmAscribe (fi, t1, tyT) ->
@@ -89,18 +99,20 @@ let rec eval1 ctx store t =
       let t1', store' = eval1 ctx store t1 in
       (TmTag (fi, l, t1', tyT), store')
   (* TmCase *)
-  | TmCase (_, TmTag (_, li, v11, _), branches) when isval ctx v11 -> (
+  | TmCase (_, TmTag (_, li, v11, _), branches) when isval ctx v11 -> begin
       try
         let _, body = List.assoc li branches in
         (termsubsttop v11 body, store)
-      with Not_found -> raise NoRuleApplies)
+      with Not_found -> raise NoRuleApplies
+    end
   | TmCase (fi, t1, branches) ->
       let t1', store' = eval1 ctx store t1 in
       (TmCase (fi, t1', branches), store')
-  | TmVar (fi, n, _) -> (
+  | TmVar (fi, n, _) -> begin
       match getbinding fi ctx n with
       | TmAbbBind (t, _) -> (t, store)
-      | _ -> raise NoRuleApplies)
+      | _ -> raise NoRuleApplies
+    end
   (* TmTimesFloat *)
   | TmTimesFloat (fi, TmFloat (_, f1), TmFloat (_, f2)) ->
       (TmFloat (fi, f1 *. f2), store)
@@ -129,8 +141,9 @@ let rec eval1 ctx store t =
       let fields', store' = evalfields fields in
       (TmRecord (fi, fields'), store')
   (* TmProj *)
-  | TmProj (_, TmRecord (_, fields), l) -> (
-      try (List.assoc l fields, store) with Not_found -> raise NoRuleApplies)
+  | TmProj (_, TmRecord (_, fields), l) -> begin
+      try (List.assoc l fields, store) with Not_found -> raise NoRuleApplies
+    end
   | TmProj (fi, t1, l) ->
       let t1', store' = eval1 ctx store t1 in
       (TmProj (fi, t1', l), store')
@@ -145,10 +158,11 @@ let rec eval1 ctx store t =
   | TmApp (i, t1, t2) ->
       let t1', store' = eval1 ctx store t1 in
       (TmApp (i, t1', t2), store')
-  | TmFix (_, v1) as t when isval ctx v1 -> (
+  | TmFix (_, v1) as t when isval ctx v1 -> begin
       match v1 with
       | TmAbs (_, _, _, t12) -> (termsubsttop t t12, store)
-      | _ -> raise NoRuleApplies)
+      | _ -> raise NoRuleApplies
+    end
   | TmSucc (i, t1) ->
       let t1', store' = eval1 ctx store t1 in
       (TmSucc (i, t1'), store')
@@ -170,81 +184,90 @@ let rec eval1 ctx store t =
   | TmFloat _ | TmAbs _ | TmFix _ | TmLoc _ | TmZero _ | TmInert _ ->
       raise NoRuleApplies
 
-let rec eval (ctx : context) (store : store) (t : term) =
+let rec eval : context -> store -> term -> term * store =
+ fun ctx store t ->
   try
     let t', store' = eval1 ctx store t in
     eval ctx store' t'
   with NoRuleApplies -> (t, store)
 
-let evalbinding (ctx : context) (store : store) (b : binding) =
+let evalbinding : context -> store -> binding -> binding * store =
+ fun ctx store b ->
   match b with
   | TmAbbBind (t, tyT) ->
       let t', store' = eval ctx store t in
       (TmAbbBind (t', tyT), store')
   | TyAbbBind _ | VarBind _ | TyVarBind | NameBind -> (b, store)
 
-let istyabb ctx i =
+let istyabb : context -> int -> bool =
+ fun ctx i ->
   match getbinding dummyinfo ctx i with TyAbbBind _ -> true | _ -> false
 
-let gettyabb ctx i =
+let gettyabb : context -> int -> ty =
+ fun ctx i ->
   match getbinding dummyinfo ctx i with
   | TyAbbBind tyT -> tyT
   | _ -> raise NoRuleApplies
 
-let computety ctx tyT =
+let computety : context -> ty -> ty =
+ fun ctx tyT ->
   match tyT with
   | TyRec (_, tyS1) as tyS -> typesubsttop tyS tyS1
   | TyVar (i, _) when istyabb ctx i -> gettyabb ctx i
   | _ -> raise NoRuleApplies
 
-let rec simplifyty ctx tyT =
+let rec simplifyty : context -> ty -> ty =
+ fun ctx tyT ->
   try
     let tyT' = computety ctx tyT in
     simplifyty ctx tyT'
   with NoRuleApplies -> tyT
 
-let rec tyeqv seen ctx tyS tyT =
-  List.mem (tyS, tyT) seen
-  ||
-  match (tyS, tyT) with
-  | TyRec (_, tyS1), _ ->
-      tyeqv ((tyS, tyT) :: seen) ctx (typesubsttop tyS tyS1) tyT
-  | _, TyRec (_, tyT1) ->
-      tyeqv ((tyS, tyT) :: seen) ctx tyS (typesubsttop tyT tyT1)
-  | TyUnit, TyUnit -> true
-  | TyBot, TyBot -> true
-  | TyId b1, TyId b2 -> b1 = b2
-  | TyVariant fields1, TyVariant fields2 ->
-      List.length fields1 = List.length fields2
-      && List.for_all2
-           (fun (li1, tyTi1) (li2, tyTi2) ->
-             li1 = li2 && tyeqv seen ctx tyTi1 tyTi2)
-           fields1 fields2
-  | TyString, TyString -> true
-  | TyFloat, TyFloat -> true
-  | TyArr (tyS1, tyS2), TyArr (tyT1, tyT2) ->
-      tyeqv seen ctx tyS1 tyT1 && tyeqv seen ctx tyS2 tyT2
-  | TyBool, TyBool -> true
-  | TyNat, TyNat -> true
-  | TyRecord fields1, TyRecord fields2 ->
-      List.length fields1 = List.length fields2
-      && List.for_all
-           (fun (li2, tyTi2) ->
-             try
-               let tyTi1 = List.assoc li2 fields1 in
-               tyeqv seen ctx tyTi1 tyTi2
-             with Not_found -> false)
-           fields2
-  | TyVar (i, _), _ when istyabb ctx i -> tyeqv seen ctx (gettyabb ctx i) tyT
-  | _, TyVar (i, _) when istyabb ctx i -> tyeqv seen ctx tyS (gettyabb ctx i)
-  | TyVar (i, _), TyVar (j, _) -> i = j
-  | _ -> false
-
-let tyeqv ctx tyS tyT = tyeqv [] ctx tyS tyT
+let tyeqv : context -> ty -> ty -> bool =
+  let rec tyeqv : (ty * ty) list -> context -> ty -> ty -> bool =
+   fun seen ctx tyS tyT ->
+    List.mem (tyS, tyT) seen
+    ||
+    match (tyS, tyT) with
+    | TyRec (_, tyS1), _ ->
+        tyeqv ((tyS, tyT) :: seen) ctx (typesubsttop tyS tyS1) tyT
+    | _, TyRec (_, tyT1) ->
+        tyeqv ((tyS, tyT) :: seen) ctx tyS (typesubsttop tyT tyT1)
+    | TyUnit, TyUnit -> true
+    | TyBot, TyBot -> true
+    | TyId b1, TyId b2 -> b1 = b2
+    | TyVariant fields1, TyVariant fields2 ->
+        List.length fields1 = List.length fields2
+        && List.for_all2
+             (fun (li1, tyTi1) (li2, tyTi2) ->
+               li1 = li2 && tyeqv seen ctx tyTi1 tyTi2)
+             fields1 fields2
+    | TyString, TyString -> true
+    | TyFloat, TyFloat -> true
+    | TyArr (tyS1, tyS2), TyArr (tyT1, tyT2) ->
+        tyeqv seen ctx tyS1 tyT1 && tyeqv seen ctx tyS2 tyT2
+    | TyBool, TyBool -> true
+    | TyNat, TyNat -> true
+    | TyRecord fields1, TyRecord fields2 ->
+        List.length fields1 = List.length fields2
+        && List.for_all
+             (fun (li2, tyTi2) ->
+               try
+                 let tyTi1 = List.assoc li2 fields1 in
+                 tyeqv seen ctx tyTi1 tyTi2
+               with Not_found -> false)
+             fields2
+    | TyVar (i, _), _ when istyabb ctx i -> tyeqv seen ctx (gettyabb ctx i) tyT
+    | _, TyVar (i, _) when istyabb ctx i -> tyeqv seen ctx tyS (gettyabb ctx i)
+    | TyVar (i, _), TyVar (j, _) -> i = j
+    | _ -> false
+  in
+  fun ctx tyS tyT -> tyeqv [] ctx tyS tyT
 
 exception Not_subtype of info * string
 
-let rec subtype ctx tyS tyT =
+let rec subtype : context -> ty -> ty -> bool =
+ fun ctx tyS tyT ->
   tyeqv ctx tyS tyT
   ||
   (* The [||] operator is a _short-circuiting_ boolean "or": optimization.
@@ -283,7 +306,8 @@ let rec subtype ctx tyS tyT =
   (* Else, handle remaining errors here *)
   | _ -> raise (Not_subtype (dummyinfo, ""))
 
-let rec join ctx tyS tyT =
+let rec join : context -> ty -> ty -> ty =
+ fun ctx tyS tyT ->
   if subtype ctx tyS tyT then tyT
   else if subtype ctx tyT tyS then tyS
   else
@@ -319,7 +343,8 @@ let rec join ctx tyS tyT =
         TyRecord commonFields
     | _ -> TyTop
 
-and meet ctx tyS tyT =
+and meet : context -> ty -> ty -> ty =
+ fun ctx tyS tyT ->
   if subtype ctx tyS tyT then tyS
   else if subtype ctx tyT tyS then tyT
   else
