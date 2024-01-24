@@ -151,7 +151,7 @@ let link object_files exec_name =
        This could be:
        output_string oc "#!/usr/bin/env breckrun\n"; *)
     output_string oc
-      "#!/home/bruno/devel/torbreck-lang/runtime/target/release/runtime\n";
+      "#!/home/bruno/devel/torbreck-lang/runtime/target/debug/runtime\n";
 
     (* The bytecode *)
     let pos1 = pos_out oc in
