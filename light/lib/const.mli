@@ -1,5 +1,3 @@
-(* Constants *)
-
 type qualified_ident = { qual : string; id : string } [@@deriving show]
 
 type constr_tag =
@@ -20,13 +18,6 @@ type struct_constant =
   | SCblock of constr_tag * struct_constant list
 [@@deriving show]
 
-let const_unit = SCblock (ConstrRegular (0, 1), [])
-
-let int_of_atom = function
-  | ACint i -> i
-  | ACchar c -> int_of_char c
-  | _ -> failwith "int_of_atom"
-
-let int_of_constr_tag = function
-  | ConstrRegular (i, _) -> i
-  | ConstrExtensible _ -> failwith "int_of_constr_tag"
+val const_unit : struct_constant
+val int_of_constr_tag : constr_tag -> int
+val int_of_atom : atomic_constant -> int
