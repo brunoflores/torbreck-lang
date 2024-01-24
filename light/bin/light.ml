@@ -1,6 +1,6 @@
 (* Command-line parsing *)
 
-open LightLib.Compiler_driver
+open LightLib.Driver
 module Modules = LightLib.Modules
 module Misc = LightLib.Misc
 
