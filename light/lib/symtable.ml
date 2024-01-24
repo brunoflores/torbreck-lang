@@ -31,19 +31,20 @@ let global_table = ref (new_numtable 1 : qualified_ident numtable)
 let literal_table = ref ([] : (int * struct_constant) list)
 let number_of_globals () = !global_table.num_cnt
 
-let get_slot_for_variable qualid =
+let get_slot_for_variable : qualified_ident -> int =
+ fun ({ qual; id } as qualid) ->
   try find_in_numtable !global_table qualid
   with Not_found ->
     if String.length !object_name > 0 then
       Printf.eprintf
         "The global value %s__%s is referenced (from %s) before being defined. \
          Please link %s.zo before %s.\n"
-        qualid.qual qualid.id !object_name qualid.qual !object_name
+        qual id !object_name qual !object_name
     else
       Printf.eprintf
         "The global value %s__%s is referenced before being defined. Please \
          load an implementation of module %s first.\n"
-        qualid.qual qualid.id qualid.qual;
+        qual id qual;
     failwith "get_slot_for_variable"
 
 let reserve_slot_for_variable qualid =
