@@ -19,5 +19,3 @@ type struct_constant =
 [@@deriving show]
 
 val const_unit : struct_constant
-val int_of_constr_tag : constr_tag -> int
-val int_of_atom : atomic_constant -> int

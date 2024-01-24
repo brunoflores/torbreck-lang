@@ -21,12 +21,3 @@ type struct_constant =
 [@@deriving show]
 
 let const_unit = SCblock (ConstrRegular (0, 1), [])
-
-let int_of_atom = function
-  | ACint i -> i
-  | ACchar c -> int_of_char c
-  | _ -> failwith "int_of_atom"
-
-let int_of_constr_tag = function
-  | ConstrRegular (i, _) -> i
-  | ConstrExtensible _ -> failwith "int_of_constr_tag"
