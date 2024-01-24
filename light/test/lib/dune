@@ -1,6 +1,0 @@
-(library
- (name lightTestLib)
- (inline_tests)
- (libraries stdio menhirLib lightLib)
- (preprocess
-  (pps ppx_deriving.show ppx_inline_test)))
