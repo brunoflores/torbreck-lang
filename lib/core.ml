@@ -362,13 +362,25 @@ and meet ctx tyS tyT =
 let rec typeof : context -> term -> ty =
  fun ctx t ->
   match t with
-  | TmDeref (fi, t1) -> (
+  | TmString _ -> TyString
+  | TmTrue _ -> TyBool
+  | TmFalse _ -> TyBool
+  | TmUnit _ -> TyUnit
+  | TmFloat _ -> TyFloat
+  | TmInert (_, tyT) -> tyT
+  | TmZero _ -> TyNat
+  | TmError _ -> TyBot
+  | TmVar (fi, i, _) -> gettypefromcontext fi ctx i
+  | TmLoc (fi, _) ->
+      error fi "locations are not supposed to occur in source programs"
+  | TmDeref (fi, t1) -> begin
       match simplifyty ctx (typeof ctx t1) with
       | TyRef tyT1 -> tyT1
       | TyBot -> TyBot
       | TySource tyT1 -> tyT1
-      | _ -> error fi "argument of ! is not a Ref or Source")
-  | TmAssign (fi, t1, t2) -> (
+      | _ -> error fi "argument of ! is not a Ref or Source"
+    end
+  | TmAssign (fi, t1, t2) -> begin
       match simplifyty ctx (typeof ctx t1) with
       | TyRef tyT1 ->
           if subtype ctx (typeof ctx t2) tyT1 then TyUnit
@@ -377,10 +389,9 @@ let rec typeof : context -> term -> ty =
       | TySink tyT1 ->
           if subtype ctx (typeof ctx t2) tyT1 then TyUnit
           else error fi "arguments of := are incompatible"
-      | _ -> error fi "argument of ! is not a Ref or Sink")
+      | _ -> error fi "argument of ! is not a Ref or Sink"
+    end
   | TmRef (_, t1) -> TyRef (typeof ctx t1)
-  | TmLoc (fi, _) ->
-      error fi "locations are not supposed to occur in source programs"
   | TmAscribe (fi, t1, tyT) ->
       let sub =
         try subtype ctx (typeof ctx t1) tyT
@@ -388,14 +399,11 @@ let rec typeof : context -> term -> ty =
       in
       if sub then tyT
       else error fi "body of as-term does not have the expected type"
-  | TmString _ -> TyString
-  | TmTrue _ -> TyBool
-  | TmFalse _ -> TyBool
   | TmIf (fi, t1, t2, t3) ->
       if subtype ctx (typeof ctx t1) TyBool then
         join ctx (typeof ctx t2) (typeof ctx t3)
       else error fi "guard of conditional not a boolean"
-  | TmCase (fi, t, cases) -> (
+  | TmCase (fi, t, cases) -> begin
       match simplifyty ctx (typeof ctx t) with
       | TyVariant fieldtys ->
           List.iter
@@ -419,42 +427,44 @@ let rec typeof : context -> term -> ty =
           in
           List.fold_left (join ctx) TyBot casetypes
       | TyBot -> TyBot
-      | _ -> error fi "expected variant type")
-  | TmTag (fi, li, ti, tyT) -> (
+      | _ -> error fi "expected variant type"
+    end
+  | TmTag (fi, li, ti, tyT) -> begin
       match simplifyty ctx tyT with
-      | TyVariant fieldtys -> (
+      | TyVariant fieldtys -> begin
           try
             let tyTiExpected = List.assoc li fieldtys in
             let tyTi = typeof ctx ti in
             if subtype ctx tyTi tyTiExpected then tyT
             else error fi "field does not have expected type"
-          with Not_found -> error fi @@ Format.sprintf "label %s not found" li)
-      | _ -> error fi "annotation is not a variant type")
-  | TmUnit _ -> TyUnit
-  | TmFloat _ -> TyFloat
+          with Not_found -> error fi @@ Format.sprintf "label %s not found" li
+        end
+      | _ -> error fi "annotation is not a variant type"
+    end
   | TmTimesFloat (fi, t1, t2) ->
       if
         subtype ctx (typeof ctx t1) TyFloat
         && subtype ctx (typeof ctx t2) TyFloat
       then TyFloat
       else error fi "argument of timesfloat is not a number"
-  | TmVar (fi, i, _) -> gettypefromcontext fi ctx i
-  | TmLet (fi, x, t1, t2) -> (
+  | TmLet (fi, x, t1, t2) -> begin
       let tyT1 =
         try typeof ctx t1
         with Not_subtype (fi', msg) -> error ?context:(Some fi) fi' msg
       in
       let ctx' = addbinding ctx x (VarBind tyT1) in
       try typeshift (-1) (typeof ctx' t2)
-      with Not_subtype (fi', msg) -> error fi' msg ?context:(Some fi))
+      with Not_subtype (fi', msg) -> error fi' msg ?context:(Some fi)
+    end
   | TmRecord (_, fields) ->
       let fieldtys = List.map (fun (li, ti) -> (li, typeof ctx ti)) fields in
       TyRecord fieldtys
   | TmProj (fi, t1, l) -> (
       match simplifyty ctx (typeof ctx t1) with
-      | TyRecord fieldtys -> (
+      | TyRecord fieldtys -> begin
           try List.assoc l fieldtys
-          with Not_found -> error fi @@ Format.sprintf "label %s not found" l)
+          with Not_found -> error fi @@ Format.sprintf "label %s not found" l
+        end
       | TyBot -> TyBot
       | TyVar (i, _) ->
           error fi
@@ -464,7 +474,6 @@ let rec typeof : context -> term -> ty =
           error fi
           @@ Format.sprintf "expected record type, got: %s"
           @@ Syntax.show_ty ty)
-  | TmInert (_, tyT) -> tyT
   | TmAbs (_, x, tyT1, t2) ->
       let ctx' = addbinding ctx x (VarBind tyT1) in
       let tyT2 = typeof ctx' t2 in
@@ -473,26 +482,27 @@ let rec typeof : context -> term -> ty =
       let tyT1 = typeof ctx t1 in
       let tyT2 = typeof ctx t2 in
       match simplifyty ctx tyT1 with
-      | TyArr (tyT11, tyT12) -> (
+      | TyArr (tyT11, tyT12) -> begin
           try
             if subtype ctx tyT2 tyT11 then tyT12
             else error fi "parameter type mismatch"
-          with Not_subtype (_, msg) -> error fi msg)
+          with Not_subtype (_, msg) -> error fi msg
+        end
       | TyBot -> TyBot
       | _ as ty ->
           error fi
           @@ Format.sprintf "expected arrow type, got: %s\nwith context:\n%s"
                (Syntax.show_ty ty)
                (Syntax.string_of_context ctx))
-  | TmFix (fi, t1) -> (
+  | TmFix (fi, t1) -> begin
       let tyT1 = typeof ctx t1 in
       match simplifyty ctx tyT1 with
       | TyArr (tyT11, tyT12) ->
           if subtype ctx tyT12 tyT11 then tyT12
           else error fi "result of body not compatible with domain"
       | TyBot -> TyBot
-      | _ -> error fi "arrow type expected")
-  | TmZero _ -> TyNat
+      | _ -> error fi "arrow type expected"
+    end
   | TmSucc (fi, t1) ->
       if subtype ctx (typeof ctx t1) TyNat then TyNat
       else error fi "argument of succ is not a number"
@@ -502,5 +512,4 @@ let rec typeof : context -> term -> ty =
   | TmIsZero (fi, t1) ->
       if subtype ctx (typeof ctx t1) TyNat then TyBool
       else error fi "argument of iszero is not a number"
-  | TmError _ -> TyBot
   | TmTry (_, t1, t2) -> join ctx (typeof ctx t1) (typeof ctx t2)
