@@ -20,7 +20,6 @@ module Module = struct
   }
   (** Information associated with module names *)
 
-  (* let get_value { values; _ } s = Hashtbl.find_opt values s *)
   let values m = m.values
   let types m = m.types
   let constrs m = m.constrs
