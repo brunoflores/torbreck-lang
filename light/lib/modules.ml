@@ -171,5 +171,4 @@ module State = struct
     { qualid = { qual = !defined_module.name; id = name }; info = desc }
 end
 
-(* To write the interface of the module currently compiled *)
 let write_compiled_interface oc = output_value oc !State.defined_module
