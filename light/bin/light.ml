@@ -20,10 +20,10 @@ let () =
   in
   let anonymous fname =
     (* Prepare environment *)
-    Modules.default_used_modules := [ "builtin" ];
+    Modules.State.default_used_modules := [ "builtin" ];
     if not !no_stdlib then
-      Modules.default_used_modules :=
-        !Modules.default_used_modules
+      Modules.State.default_used_modules :=
+        !Modules.State.default_used_modules
         @ [ "eq"; "int"; "string"; "io"; "exc"; "vect"; "bool"; "sys"; "ref" ];
 
     (* The business *)

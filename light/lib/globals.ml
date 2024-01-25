@@ -1,11 +1,13 @@
-(* Global symbol tables *)
+(** Global symbol tables. *)
 
 open Const
 open Prim
 
-(* A reference to a global, in a source file, is either a qualified
-   identifier mod__name, or an unqualified identifier name. *)
-type global_reference = GRname of string | GRmodname of qualified_ident
+(** A reference to a global, in a source file, is either a qualified
+    identifier [mod__name], or an unqualified identifier name. *)
+type global_reference =
+  | GRname of string  (** Unqualified *)
+  | GRmodname of qualified_ident  (** Qualified *)
 [@@deriving show]
 
 (* Internally, a global is represented by its fully qualified name,
@@ -81,14 +83,15 @@ and notgeneric = 0
 
 let no_type = { typ_desc = Tproduct []; typ_level = 0 }
 
-(* Global variables *)
+(** Global variables *)
 
 type value_desc = {
-  val_typ : typ; (* Type *)
-  val_prim : prim_desc; (* Is it a primitive? *)
+  val_typ : typ;  (** Type *)
+  val_prim : prim_desc;  (** Is it a primitive? *)
 }
 [@@deriving show]
 
 and prim_desc =
-  | ValueNotPrim
-  | ValuePrim of int * primitive (* arity and implementation *)
+  | ValueNotPrim  (** Not a primitive *)
+  | ValuePrim of int * primitive
+      (** Arity and implementation of the primitive *)

@@ -2,7 +2,7 @@
 
 open Const
 open Globals
-open Modules
+open Modules.State
 open Ty_decl
 open Error
 open Types
@@ -25,16 +25,16 @@ let enter_interface_definitions intf =
         ( ty_desc.qualid.id,
           { et_descr = ty_desc; et_manifest = manifest; et_defined = false } )
         :: !external_types)
-    (types_of_module intf);
+    (Modules.Module.types intf);
   Hashtbl.iter
     (fun _name val_desc ->
       match val_desc.info.val_prim with
       | ValuePrim _ -> add_value val_desc
       | _ -> ())
-    (values_of_module intf);
+    (Modules.Module.values intf);
   Hashtbl.iter
     (fun _name constr_desc -> add_constr constr_desc)
-    (constrs_of_module intf)
+    (Modules.Module.constrs intf)
 
 (* Check that an implementation matches an explicit interface *)
 
@@ -42,7 +42,7 @@ let check_value_match val_decl =
   let val_impl =
     try
       Hashtbl.find
-        (values_of_module !defined_module)
+        (Modules.Module.values !defined_module)
         (little_name_of_global val_decl)
     with Not_found -> undefined_value_err val_decl.info
   in
@@ -60,4 +60,4 @@ let check_interface intf =
       match val_desc.info.val_prim with
       | ValueNotPrim -> check_value_match val_desc
       | _ -> ())
-    (values_of_module intf)
+    (Modules.Module.values intf)

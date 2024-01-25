@@ -2,7 +2,8 @@
 
 open Types
 open Typing
-open Modules
+
+(* open Modules *)
 open Globals
 open Syntax
 open Const
@@ -17,8 +18,8 @@ let enter_new_variant is_extensible _loc (_ty_constr, ty_res, constrs) =
         let constr_tag =
           if is_extensible then
             ConstrExtensible
-              ( { qual = compiled_module_name (); id = constr_name },
-                Modules.new_exc_stamp () )
+              ( { qual = !Modules.State.defined_module.name; id = constr_name },
+                Modules.State.new_exc_stamp () )
           else ConstrRegular (constr_idx, nbr_constrs)
         in
         let kind =
@@ -31,7 +32,7 @@ let enter_new_variant is_extensible _loc (_ty_constr, ty_res, constrs) =
           | _ -> Constr_regular
         in
         let constr_glob =
-          defined_global constr_name
+          Modules.State.defined_global constr_name
             {
               cs_res = ty_res;
               cs_arg = ty_arg;
@@ -40,7 +41,7 @@ let enter_new_variant is_extensible _loc (_ty_constr, ty_res, constrs) =
               cs_kind = kind;
             }
         in
-        add_constr constr_glob;
+        Modules.State.add_constr constr_glob;
         constr_glob :: make_constrs (succ constr_idx) rest
   in
   let constr_descs = make_constrs 0 constrs in
@@ -65,27 +66,28 @@ let type_expression _loc expr =
   ty
 
 let type_valuedecl _loc decl =
-  let enter_val (name, typexp, prim) =
+  let enter_val { id; expr; prim } =
     push_type_level ();
     reset_type_expression_vars ();
-    let ty = type_of_type_expression false typexp in
+    let ty = type_of_type_expression false expr in
     pop_type_level ();
     generalize_type ty;
-    add_value (defined_global name { val_typ = ty; val_prim = prim })
+    Modules.State.add_value
+      (Modules.State.defined_global id { val_typ = ty; val_prim = prim })
   in
   List.iter enter_val decl
 
-let enter_new_type (ty_name, params, def) =
+let enter_new_type { id; params; decl } =
   let ty_constr =
-    defined_global ty_name
-      { ty_stamp = new_type_stamp (); ty_abbr = Tnotabbrev }
+    Modules.State.defined_global id
+      { ty_stamp = Modules.State.new_type_stamp (); ty_abbr = Tnotabbrev }
   in
   let ty_desc =
-    defined_global ty_name
+    Modules.State.defined_global id
       { ty_constr; ty_arity = List.length params; ty_desc = Abstract_type }
   in
-  add_type ty_desc;
-  (ty_desc, params, def)
+  Modules.State.add_type ty_desc;
+  (ty_desc, params, decl)
 
 let define_new_type loc (ty_desc, params, def) =
   push_type_level ();
@@ -150,8 +152,9 @@ let type_letdef _loc rec_flag pat_expr_list =
   typing_let := false;
   let enter_val =
     List.iter (fun (name, (ty, _mut_flag)) ->
-        add_value
-          (defined_global name { val_typ = ty; val_prim = ValueNotPrim }))
+        Modules.State.add_value
+          (Modules.State.defined_global name
+             { val_typ = ty; val_prim = ValueNotPrim }))
   in
   if rec_flag then enter_val env;
   List.iter2 (fun (_pat, exp) ty -> type_expect [] exp ty) pat_expr_list ty_list;

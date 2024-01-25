@@ -2,7 +2,7 @@
 
 open Const
 open Globals
-open Modules
+(* open Modules *)
 
 let builtin n d = { qualid = { qual = "builtin"; id = n }; info = d }
 
@@ -158,10 +158,10 @@ let constr_match_failure =
 (* Construction of the "builtin" module *)
 
 let () =
-  let module_builtin = new_module "builtin" in
+  let module_builtin = Modules.add "builtin" in
   List.iter
     (fun (name, desc) ->
-      Hashtbl.add module_builtin.mod_types name (builtin name desc))
+      Hashtbl.add module_builtin.types name (builtin name desc))
     [
       ( "unit",
         {
@@ -210,7 +210,7 @@ let () =
         } );
     ];
   List.iter
-    (fun desc -> Hashtbl.add module_builtin.mod_constrs desc.qualid.id desc)
+    (fun desc -> Hashtbl.add module_builtin.constrs desc.qualid.id desc)
     [
       constr_void;
       constr_nil;
@@ -221,4 +221,4 @@ let () =
       constr_false;
       constr_match_failure;
     ];
-  Hashtbl.add module_table "builtin" module_builtin
+  Hashtbl.add Modules.table "builtin" module_builtin

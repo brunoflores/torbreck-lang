@@ -1,7 +1,7 @@
 (* Basic operations over types *)
 
 open Globals
-open Modules
+(* open Modules *)
 
 (* Type constructor equality *)
 let same_type_constr cstr1 cstr2 =
@@ -357,7 +357,7 @@ let rec labels_of_type ty =
   | Tconstr ({ info = { ty_abbr = Tabbrev (params, body); _ }; _ }, args) ->
       labels_of_type (expand_abbrev params body args)
   | Tconstr (cstr, _) -> begin
-      match (type_descr_of_type_constr cstr).info.ty_desc with
+      match (Modules.State.type_descr_of_type_constr cstr).info.ty_desc with
       | Record_type lbl_list -> lbl_list
       | _ -> failwith "Types.labels_of_type"
     end

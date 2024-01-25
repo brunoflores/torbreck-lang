@@ -85,10 +85,10 @@ open Builtins
 implementation:
   | e = expr SEMISEMI
     { make_impl (Zexpr e) }
-  | LET bs = binding_list SEMISEMI
-    { make_impl (Zletdef (false, bs)) }
-  | LET REC bs = binding_list SEMISEMI
-    { make_impl (Zletdef (true, bs)) }
+  | LET binders = binding_list SEMISEMI
+    { make_impl (Zletdef {recflag = false; binders}) }
+  | LET REC binders = binding_list SEMISEMI
+    { make_impl (Zletdef {recflag = true; binders}) }
   | TYPE decl = type_decl SEMISEMI
     { make_impl (Ztypedef decl) }
   | SHARP d = directive SEMISEMI
@@ -209,18 +209,18 @@ constr_decl:
     { [decl] }
 
 value1_decl:
-  | id = ide COLON ty = typ
-    { (id, ty, ValueNotPrim) }
-  | id = ide COLON ty = typ EQUAL d = prim_decl
-    { (id, ty, d) }
+  | id = ide COLON expr = typ
+    { {id; expr; prim = ValueNotPrim} }
+  | id = ide COLON expr = typ EQUAL prim = prim_decl
+    { {id; expr; prim} }
 
 prim_decl:
   | arity = INT name = STRING
     { find_primitive arity name }
 
 type1_decl:
-  | params = type_params id = IDENT ty_def = type1_def
-    { (id, params, ty_def) }
+  | params = type_params id = IDENT decl = type1_def
+    { {id; params; decl} }
 
 type1_def:
   | /* epsilon */

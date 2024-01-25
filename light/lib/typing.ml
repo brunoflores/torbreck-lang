@@ -6,7 +6,7 @@ open Builtins
 open Globals
 open Error
 open Types
-open Modules
+(* open Modules *)
 
 (* To convert type expressions to types *)
 
@@ -43,8 +43,8 @@ let type_of_type_expression strict_flag typexp =
     | Ztypearrow (arg1, arg2) -> type_arrow (type_of arg1, type_of arg2)
     | Ztypeconstr (cstr_name, args) ->
         let cstr =
-          try find_type_desc cstr_name
-          with Desc_not_found ->
+          try Modules.State.find_type_desc cstr_name
+          with Modules.State.Desc_not_found ->
             unbound_type_constr_err cstr_name typexp.te_loc
         in
         if List.length args != cstr.info.ty_arity then
@@ -151,10 +151,11 @@ let rec type_expr env expr =
               type_instance ty_schema
             with Not_found -> (
               try
-                let glob_desc = find_value_desc (GRname s) in
+                let glob_desc = Modules.State.find_value_desc (GRname s) in
                 r := Zglobal glob_desc;
                 type_instance glob_desc.info.val_typ
-              with Desc_not_found -> unbound_value_err (GRname s) expr.e_loc)
+              with Modules.State.Desc_not_found ->
+                unbound_value_err (GRname s) expr.e_loc)
           end
       end
     | Zconstant c -> type_of_structured_constant c

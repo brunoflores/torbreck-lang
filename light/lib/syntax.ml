@@ -1,4 +1,4 @@
-(* The abstract syntax for the language *)
+(** The abstract syntax output from the parser. *)
 
 open Location
 open Const
@@ -71,30 +71,42 @@ and constr_decl =
   | Zconstr1decl of string * type_expression * mutable_flag
 [@@deriving show]
 
-type directiveu = Zdir of string * string [@@deriving show]
+type directive = Zdir of string * string [@@deriving show]
 
-type impl_phrase = { im_desc : impl_desc; im_loc : location }
-
-and impl_desc =
-  | Zexpr of expression
-  | Zletdef of bool * (pattern * expression) list
-  | Zimpldirective of directiveu
-  | Zexcdef of constr_decl list
-  | Ztypedef of (string * string list * type_decl) list
+type type_def = { id : string; params : string list; decl : type_decl }
 [@@deriving show]
 
-type intf_phrase = { in_desc : intf_desc; in_loc : location }
+type implementation =
+  | Zexpr of expression  (** Expression defined in implementation *)
+  | Zletdef of {
+      recflag : bool;  (** Whether this is a recursive let *)
+      binders : (pattern * expression) list;  (** All simultaneous binders *)
+    }  (** Let defined in implementation *)
+  | Zimpldirective of directive  (** Implementation directive *)
+  | Zexcdef of constr_decl list  (** Exception defined in implementation *)
+  | Ztypedef of type_def list
+      (** Simultaneous type definitions in implementation *)
+[@@deriving show]
 
-and intf_desc =
-  | Zvaluedecl of (string * type_expression * prim_desc) list
-  | Ztypedecl of (string * string list * type_decl) list
-  | Zintfdirective of directiveu
-  | Zexcdecl of constr_decl list
+type impl_phrase = { im_desc : implementation; im_loc : location }
+(** Implementation phrase from concrete syntax *)
+
+type value_decl = { id : string; expr : type_expression; prim : prim_desc }
+[@@deriving show]
+
+type interface =
+  | Zvaluedecl of value_decl list  (** Value declaration in interface *)
+  | Ztypedecl of type_def list  (** Type declaration in interface *)
+  | Zintfdirective of directive  (** Interface directive *)
+  | Zexcdecl of constr_decl list  (** Exception declared in interface *)
 [@@deriving show]
 
 (* and intf_desc = *)
 (*   | Zvaluedecl of (string * type_expression * prim_desc) list *)
 (*   | Ztypedecl of (string * string list * type_decl) list *)
+
+type intf_phrase = { in_desc : interface; in_loc : location }
+(** Interface phrase from concrete syntax *)
 
 let rec free_vars_of_pat pat =
   match pat.p_desc with

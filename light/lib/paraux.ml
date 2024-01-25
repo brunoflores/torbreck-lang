@@ -3,7 +3,7 @@
 open Syntax
 open Location
 open Globals
-open Modules
+open Modules.State
 
 let make_expr desc =
   { e_desc = desc; e_loc = get_current_location (); e_typ = no_type }

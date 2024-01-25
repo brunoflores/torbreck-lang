@@ -6,7 +6,7 @@ open Tr_env
 open Matching
 open Error
 open Builtins
-open Modules
+open Modules.State
 open Globals
 open Prim
 
@@ -61,8 +61,9 @@ let alloc_superfluous_constr cstr n =
   in
   Lprim (Pmakeblock cstr.info.cs_tag, extract_fields 0)
 
-(* Translation of expressions *)
-let rec translate_expr env =
+(** Translation of expressions into the "lambda" intermediate language. *)
+let rec translate_expr : transl_env -> expression -> lambda =
+ fun env ->
   let rec transl expr =
     match expr.e_desc with
     | Zident { contents = Zlocal s } -> translate_access s env
@@ -221,7 +222,7 @@ let rec make_sequence f = function
   | x :: rest -> Lsequence (f x, make_sequence f rest)
 
 let translate_letdef loc pat_expr_list =
-  let modname = !defined_module.mod_name in
+  let modname = !defined_module.name in
   match pat_expr_list with
   (* Simple case: let id = expr *)
   | [ ({ p_desc = Zvarpat i; _ }, expr) ] ->
@@ -260,7 +261,7 @@ let translate_letdef_rec _loc pat_expr_list =
   let var_expr_list =
     List.map (fun (pat, expr) -> (extract_variable pat, expr)) pat_expr_list
   in
-  let modname = !defined_module.mod_name in
+  let modname = !defined_module.name in
   (* Simple case: let rec id = fun *)
   try
     make_sequence

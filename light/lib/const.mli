@@ -1,11 +1,21 @@
-type qualified_ident = { qual : string; id : string } [@@deriving show]
+(** Constants. *)
 
+type qualified_ident = {
+  qual : string;  (** Qualifier *)
+  id : string;  (** Identifier *)
+}
+[@@deriving show]
+(** Type of qualified identifiers. In concrete syntax,
+    [ident__ident] is called a qualified name. *)
+
+(** Constructor tags. *)
 type constr_tag =
-  | ConstrExtensible of
-      qualified_ident * int (* name of constructor and stamp *)
-  | ConstrRegular of int * int (* tag number and number of constrs *)
+  | ConstrExtensible of qualified_ident * int
+      (** Name of constructor and numeric stamp *)
+  | ConstrRegular of int * int  (** Tag number and number of constructors *)
 [@@deriving show]
 
+(** Atomic constants. *)
 type atomic_constant =
   | ACint of int
   | ACfloat of float

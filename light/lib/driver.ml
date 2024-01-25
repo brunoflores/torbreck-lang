@@ -6,7 +6,7 @@ module Interpreter = Parser.MenhirInterpreter
 open Syntax
 
 let do_directive _loc = function
-  | Zdir ("open", name) -> Modules.open_module name
+  | Zdir ("open", name) -> Modules.State.open_module name
   | Zdir (d, _) -> failwith @@ Format.sprintf "unknown directive: %s\n" d
 
 let compile_intf_phrase (phr : Syntax.intf_phrase) =
@@ -27,16 +27,15 @@ let compile_impl_phrase oc (phr : Syntax.impl_phrase) =
       let _ty = Ty_decl.type_expression phr.im_loc expr in
       Emit_phr.emit_phrase oc (Syntax.expr_is_pure expr)
         (Back.compile_lambda false (Front.translate_expression expr))
-  | Zletdef (rec_flag, pat_expr_list) ->
-      let _env = Ty_decl.type_letdef phr.im_loc rec_flag pat_expr_list in
+  | Zletdef { recflag; binders } ->
+      let _env = Ty_decl.type_letdef phr.im_loc recflag binders in
       Emit_phr.emit_phrase oc
-        (Syntax.letdef_is_pure pat_expr_list)
-        (if rec_flag then
-         Back.compile_lambda true
-           (Front.translate_letdef_rec phr.im_loc pat_expr_list)
-        else
-          Back.compile_lambda false
-            (Front.translate_letdef phr.im_loc pat_expr_list))
+        (Syntax.letdef_is_pure binders)
+        (if recflag then
+           Back.compile_lambda true
+             (Front.translate_letdef_rec phr.im_loc binders)
+         else
+           Back.compile_lambda false (Front.translate_letdef phr.im_loc binders))
   | Ztypedef decl ->
       let _ = Ty_decl.type_typedecl phr.im_loc decl in
       ()
@@ -87,11 +86,11 @@ let compile_impl filename suffix =
     Emit_phr.end_emit_phrase oc;
     close_out oc
 
-let compile_interface (modname : string) (filename : string) : unit =
+let compile_interface (_modname : string) (filename : string) : unit =
   let source_name = filename ^ ".mli" in
   let intf_name = filename ^ ".zi" in
   let lexbuf, content = get_contents source_name in
-  let _ = Modules.reset modname in
+  let _ = Modules.State.reset () in
   try
     while true do
       parse Parser.Incremental.interface compile_intf_phrase lexbuf content
@@ -100,10 +99,10 @@ let compile_interface (modname : string) (filename : string) : unit =
   | End_of_file -> write_compiled_interface intf_name
   | Sys_error s | Failure s -> failwith @@ "compile_interface: " ^ s
 
-let compile_implementation (modname : string) (filename : string) : unit =
+let compile_implementation (_modname : string) (filename : string) : unit =
   let intf_name = filename ^ ".zi" in
   let suffix = ".ml" in
-  let _ = Modules.reset modname in
+  let _ = Modules.State.reset () in
   if Sys.file_exists (filename ^ ".mli") then begin
     (* Module interface provided by the user as .mli *)
     try
@@ -114,8 +113,8 @@ let compile_implementation (modname : string) (filename : string) : unit =
                "Cannot find file %s.zi. Please compile %s.mli first." filename
                filename
       in
-      let intf_mod = Modules.read_module modname intf_name in
-      Modules.start_compiling_implementation intf_mod;
+      let intf_mod = Modules.read_module intf_name in
+      Modules.State.start_compiling_implementation intf_mod;
       Ty_intf.enter_interface_definitions intf_mod;
       compile_impl filename suffix;
       Ty_intf.check_interface intf_mod
