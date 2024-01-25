@@ -113,7 +113,7 @@ let compile_implementation (_modname : string) (filename : string) : unit =
                "Cannot find file %s.zi. Please compile %s.mli first." filename
                filename
       in
-      let intf_mod = Modules.read_module intf_name in
+      let intf_mod = Modules.read intf_name in
       Modules.State.start_compiling_implementation intf_mod;
       Ty_intf.enter_interface_definitions intf_mod;
       compile_impl filename suffix;

@@ -49,7 +49,7 @@ let add name =
   m
 
 (** Load an interface from a file. *)
-let read_module filepath =
+let read filepath =
   try
     let ic = open_in_bin filepath in
     try
@@ -62,20 +62,20 @@ let read_module filepath =
       @@ Printf.sprintf "Corrupted compiled interface file: %s." filepath
   with _ -> failwith @@ Printf.sprintf "Could not open file: %s" filepath
 
-let load_module name =
+let load name =
   let name = name ^ ".zi" in
   try
     let fullpath = Misc.find_in_path name in
-    read_module fullpath
+    read fullpath
   with Misc.Cannot_find_file _ ->
     failwith @@ Printf.sprintf "Cannot find compiled interface file: %s." name
 
 (** Find an interface by its name. *)
-let find_module filename =
+let find filename =
   let modname = Filename.basename filename in
   try Hashtbl.find table modname
   with Not_found ->
-    let md = load_module filename in
+    let md = load filename in
     Hashtbl.add table modname md;
     md
 
@@ -101,7 +101,7 @@ module State = struct
       'a global =
    fun fn table -> function
     | GRmodname q -> begin
-        try Hashtbl.find (fn (find_module q.qual)) q.id
+        try Hashtbl.find (fn (find q.qual)) q.id
         with Not_found -> raise Desc_not_found
       end
     | GRname s -> begin
@@ -122,7 +122,7 @@ module State = struct
   and find_type_desc = find_desc Module.types types
 
   let open_module name =
-    let m = find_module name in
+    let m = find name in
     add_table m.values values;
     add_table m.constrs constrs;
     add_table m.types types;
@@ -153,7 +153,7 @@ module State = struct
           else select_type_descr rest
     in
     select_type_descr
-      (Hashtbl.find_all (find_module cstr.qualid.qual).types cstr.qualid.qual)
+      (Hashtbl.find_all (find cstr.qualid.qual).types cstr.qualid.qual)
 
   let new_exc_stamp () =
     let s = succ !defined_module.exc_stamp in
