@@ -128,8 +128,8 @@ module State = struct
       end
 
   let find_value_desc = find_desc Module.values values
-  and find_constr_desc = find_desc Module.constrs constrs
-  and find_type_desc = find_desc Module.types types
+  let find_constr_desc = find_desc Module.constrs constrs
+  let find_type_desc = find_desc Module.types types
 
   let open_module name =
     let m = Mem.find name in
