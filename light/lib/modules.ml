@@ -41,43 +41,53 @@ module Module = struct
     m
 end
 
-let table = (Hashtbl.create 37 : (string, Module.t) Hashtbl.t)
+module Mem : sig
+  val find : string -> Module.t
+  val create : string -> Module.t
+  val add : string -> Module.t -> unit
+  val read : string -> Module.t
+end = struct
+  (* The table of module interfaces already loaded in memory *)
+  let table = (Hashtbl.create 37 : (string, Module.t) Hashtbl.t)
 
-let add name =
-  let m = Module.defaults name in
-  Hashtbl.add table name m;
-  m
+  let create name =
+    let m = Module.defaults name in
+    Hashtbl.add table name m;
+    m
 
-(** Load an interface from a file. *)
-let read filepath =
-  try
-    let ic = open_in_bin filepath in
+  (** Load an interface from a file. *)
+  let read filepath =
     try
-      let m = Module.input_from_file ic in
-      close_in ic;
-      m
-    with _ ->
-      close_in_noerr ic;
-      failwith
-      @@ Printf.sprintf "Corrupted compiled interface file: %s." filepath
-  with _ -> failwith @@ Printf.sprintf "Could not open file: %s" filepath
+      let ic = open_in_bin filepath in
+      try
+        let m = Module.input_from_file ic in
+        close_in ic;
+        m
+      with _ ->
+        close_in_noerr ic;
+        failwith
+        @@ Printf.sprintf "Corrupted compiled interface file: %s." filepath
+    with _ -> failwith @@ Printf.sprintf "Could not open file: %s" filepath
 
-let load name =
-  let name = name ^ ".zi" in
-  try
-    let fullpath = Misc.find_in_path name in
-    read fullpath
-  with Misc.Cannot_find_file _ ->
-    failwith @@ Printf.sprintf "Cannot find compiled interface file: %s." name
+  let load name =
+    let name = name ^ ".zi" in
+    try
+      let fullpath = Misc.find_in_path name in
+      read fullpath
+    with Misc.Cannot_find_file _ ->
+      failwith @@ Printf.sprintf "Cannot find compiled interface file: %s." name
 
-(** Find an interface by its name. *)
-let find filename =
-  let modname = Filename.basename filename in
-  try Hashtbl.find table modname
-  with Not_found ->
-    let md = load filename in
-    Hashtbl.add table modname md;
-    md
+  (** Find an interface by its name. *)
+  let find filename =
+    let modname = Filename.basename filename in
+    try Hashtbl.find table modname
+    with Not_found ->
+      let md = load filename in
+      Hashtbl.add table modname md;
+      md
+
+  let add = Hashtbl.add table
+end
 
 module State = struct
   let opened_names = ref []
@@ -101,7 +111,7 @@ module State = struct
       'a global =
    fun fn table -> function
     | GRmodname q -> begin
-        try Hashtbl.find (fn (find q.qual)) q.id
+        try Hashtbl.find (fn (Mem.find q.qual)) q.id
         with Not_found -> raise Desc_not_found
       end
     | GRname s -> begin
@@ -122,7 +132,7 @@ module State = struct
   and find_type_desc = find_desc Module.types types
 
   let open_module name =
-    let m = find name in
+    let m = Mem.find name in
     add_table m.values values;
     add_table m.constrs constrs;
     add_table m.types types;
@@ -153,7 +163,7 @@ module State = struct
           else select_type_descr rest
     in
     select_type_descr
-      (Hashtbl.find_all (find cstr.qualid.qual).types cstr.qualid.qual)
+      (Hashtbl.find_all (Mem.find cstr.qualid.qual).types cstr.qualid.qual)
 
   let new_exc_stamp () =
     let s = succ !defined_module.exc_stamp in

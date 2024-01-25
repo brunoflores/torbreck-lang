@@ -158,7 +158,7 @@ let constr_match_failure =
 (* Construction of the "builtin" module *)
 
 let () =
-  let module_builtin = Modules.add "builtin" in
+  let module_builtin = Modules.Mem.create "builtin" in
   List.iter
     (fun (name, desc) ->
       Hashtbl.add module_builtin.types name (builtin name desc))
@@ -221,4 +221,4 @@ let () =
       constr_false;
       constr_match_failure;
     ];
-  Hashtbl.add Modules.table "builtin" module_builtin
+  Modules.Mem.add "builtin" module_builtin
