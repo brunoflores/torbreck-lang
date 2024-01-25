@@ -171,47 +171,5 @@ module State = struct
     { qualid = { qual = !defined_module.name; id = name }; info = desc }
 end
 
-(* let compiled_module_name () = !defined_module.mod_name *)
-
-(* Additions to the module being compiled *)
-
-(* let add_global_info sel_fct glob = *)
-(*   let tbl = sel_fct !defined_module in *)
-(*   (\* if !toplevel then begin *\) *)
-(*   add_rollback (fun () -> Hashtbl.remove tbl glob.qualid.id); *)
-(*   (\* end *\) *)
-(*   Hashtbl.add tbl glob.qualid.id glob *)
-
-(* let add_value = add_global_info values_of_module *)
-(* let add_constr = add_global_info constrs_of_module *)
-(* let add_type = add_global_info types_of_module *)
-
-(* Find the descriptor for a reference to a global identifier.
-    If the identifier is qualified (mod__name), just look into module mod.
-    If the identifier is not qualified, look inside the current module,
-   then inside the table of opened modules. *)
-
-(* exception Desc_not_found *)
-
-(* let find_desc sel_fn = function *)
-(*   | GRmodname q -> begin *)
-(*       try Hashtbl.find (sel_fn (find_module q.qual)) q.id *)
-(*       with Not_found -> raise Desc_not_found *)
-(*     end *)
-(*   | GRname s -> begin *)
-(*       try Hashtbl.find (sel_fn !defined_module) s *)
-(*       with Not_found -> ( *)
-(*         try *)
-(*           let res = Hashtbl.find (sel_fn !opened_modules) s in *)
-(*           (\* Record the module as actually used *\) *)
-(*           Hashtbl.find !used_opened_modules res.qualid.qual := true; *)
-(*           res *)
-(*         with Not_found -> raise Desc_not_found) *)
-(*     end *)
-
-(* let find_value_desc = find_desc values_of_module *)
-(* and find_constr_desc = find_desc constrs_of_module *)
-(* and find_type_desc = find_desc types_of_module *)
-
 (* To write the interface of the module currently compiled *)
 let write_compiled_interface oc = output_value oc !State.defined_module
