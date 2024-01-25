@@ -1,6 +1,5 @@
 (** Handling of modules and global symbol tables. *)
 
-(* open Misc *)
 open Globals
 
 type 'a globals_table = (string, 'a global) Hashtbl.t
