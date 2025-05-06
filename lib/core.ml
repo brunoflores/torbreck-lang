@@ -1,5 +1,5 @@
 open Syntax
-open Support.Error
+open Error
 
 exception NoRuleApplies
 

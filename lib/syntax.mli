@@ -1,4 +1,4 @@
-open Support.Error
+open Error
 
 (* Data type definitions *)
 type ty =
@@ -34,17 +34,17 @@ type term =
   | TmTag of info * string * term * ty
   | TmUnit of info
   | TmVar of info * int * int
-      (** Variable is its de Bruijn index and the total length of the context
-          in which it occurs. *)
+      (** Variable is its de Bruijn index and the total length of the context in
+          which it occurs. *)
   | TmFloat of info * float
   | TmTimesFloat of info * term * term
   | TmLet of info * string * term * term
   | TmRecord of info * (string * term) list
   | TmProj of info * term * string
   | TmAbs of info * string * ty * term
-      (** Abstractions are annotated with a string to
-          serve as a hint for the name of the bound variable.
-          This is used when converting them back from nameless form. *)
+      (** Abstractions are annotated with a string to serve as a hint for the
+          name of the bound variable. This is used when converting them back
+          from nameless form. *)
   | TmApp of info * term * term
   | TmFix of info * term
   | TmZero of info
@@ -93,10 +93,9 @@ val name_to_index : info -> context -> string -> int
 val isnamebound : context -> string -> bool
 
 val gettypefromcontext : info -> context -> int -> ty
-(** [gettypefromcontext fi ctx i] extract the typing assumption associated
-    with a particular variable [i] in a context [ctx].
-    The file information [fi] is used for printing an error message if [i]
-    is out of range. *)
+(** [gettypefromcontext fi ctx i] extract the typing assumption associated with
+    a particular variable [i] in a context [ctx]. The file information [fi] is
+    used for printing an error message if [i] is out of range. *)
 
 (* Shifting and substitution. *)
 val termshift : int -> term -> term

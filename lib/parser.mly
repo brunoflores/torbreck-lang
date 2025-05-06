@@ -3,69 +3,69 @@ open Syntax
 %}
 
 /* Keyword tokens */
-%token <Support.Error.info> AS
-%token <Support.Error.info> USTRING
-%token <Support.Error.info> IF
-%token <Support.Error.info> THEN
-%token <Support.Error.info> ELSE
-%token <Support.Error.info> TRUE
-%token <Support.Error.info> FALSE
-%token <Support.Error.info> BOOL
-%token <Support.Error.info> CASE
-%token <Support.Error.info> OF
-%token <Support.Error.info> UNIT
-%token <Support.Error.info> UUNIT
-%token <Support.Error.info> TIMESFLOAT
-%token <Support.Error.info> UFLOAT
-%token <Support.Error.info> LET
-%token <Support.Error.info> IN
-%token <Support.Error.info> INERT
-%token <Support.Error.info> LAMBDA
-%token <Support.Error.info> FIX
-%token <Support.Error.info> REC
-%token <Support.Error.info> LETREC
-%token <Support.Error.info> SUCC
-%token <Support.Error.info> PRED
-%token <Support.Error.info> ISZERO
-%token <Support.Error.info> NAT
-%token <Support.Error.info> REF
-%token <Support.Error.info> RREF
-%token <Support.Error.info> TBOT
-%token <Support.Error.info> TTOP
-%token <Support.Error.info> SSOURCE
-%token <Support.Error.info> SSINK
-%token <Support.Error.info> TRY
-%token <Support.Error.info> ERROR
-%token <Support.Error.info> OTHERWISE
+%token <Error.info> AS
+%token <Error.info> USTRING
+%token <Error.info> IF
+%token <Error.info> THEN
+%token <Error.info> ELSE
+%token <Error.info> TRUE
+%token <Error.info> FALSE
+%token <Error.info> BOOL
+%token <Error.info> CASE
+%token <Error.info> OF
+%token <Error.info> UNIT
+%token <Error.info> UUNIT
+%token <Error.info> TIMESFLOAT
+%token <Error.info> UFLOAT
+%token <Error.info> LET
+%token <Error.info> IN
+%token <Error.info> INERT
+%token <Error.info> LAMBDA
+%token <Error.info> FIX
+%token <Error.info> REC
+%token <Error.info> LETREC
+%token <Error.info> SUCC
+%token <Error.info> PRED
+%token <Error.info> ISZERO
+%token <Error.info> NAT
+%token <Error.info> REF
+%token <Error.info> RREF
+%token <Error.info> TBOT
+%token <Error.info> TTOP
+%token <Error.info> SSOURCE
+%token <Error.info> SSINK
+%token <Error.info> TRY
+%token <Error.info> ERROR
+%token <Error.info> OTHERWISE
 
 /* Identifier and constant value tokens */
-%token <string Support.Error.withinfo> UCID  /* uppercase-initial */
-%token <string Support.Error.withinfo> LCID  /* lowercase / symbolic-initial */
-%token <int Support.Error.withinfo> INTV
-%token <float Support.Error.withinfo> FLOATV
-%token <string Support.Error.withinfo> STRINGV
+%token <string Error.withinfo> UCID  /* uppercase-initial */
+%token <string Error.withinfo> LCID  /* lowercase / symbolic-initial */
+%token <int Error.withinfo> INTV
+%token <float Error.withinfo> FLOATV
+%token <string Error.withinfo> STRINGV
 
 /* Symbolic tokens */
-%token <Support.Error.info> ARROW
-%token <Support.Error.info> COLON
-%token <Support.Error.info> COMMA
-%token <Support.Error.info> DDARROW
-%token <Support.Error.info> DOT
-%token <Support.Error.info> EOF
-%token <Support.Error.info> EQ
-%token <Support.Error.info> GT
-%token <Support.Error.info> LCURLY
-%token <Support.Error.info> LPAREN
-%token <Support.Error.info> LSQUARE
-%token <Support.Error.info> LT
-%token <Support.Error.info> RCURLY
-%token <Support.Error.info> RPAREN
-%token <Support.Error.info> RSQUARE
-%token <Support.Error.info> SEMI
-%token <Support.Error.info> USCORE
-%token <Support.Error.info> VBAR
-%token <Support.Error.info> COLONEQ
-%token <Support.Error.info> BANG
+%token <Error.info> ARROW
+%token <Error.info> COLON
+%token <Error.info> COMMA
+%token <Error.info> DDARROW
+%token <Error.info> DOT
+%token <Error.info> EOF
+%token <Error.info> EQ
+%token <Error.info> GT
+%token <Error.info> LCURLY
+%token <Error.info> LPAREN
+%token <Error.info> LSQUARE
+%token <Error.info> LT
+%token <Error.info> RCURLY
+%token <Error.info> RPAREN
+%token <Error.info> RSQUARE
+%token <Error.info> SEMI
+%token <Error.info> USCORE
+%token <Error.info> VBAR
+%token <Error.info> COLONEQ
+%token <Error.info> BANG
 
 /* The starting production is the syntactic class [topLevel].
    The parser returns to the user program a function that,

@@ -1,5 +1,5 @@
 open Format
-open Support.Error
+open Error
 
 type ty =
   | TyBot

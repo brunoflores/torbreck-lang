@@ -34,9 +34,7 @@ let checkbinding fi ctx b =
   | Syntax.TmAbbBind (t, Some tyT) as b ->
       let tyT' = Core.typeof ctx t in
       if Core.tyeqv ctx tyT' tyT then b
-      else
-        CoreLib.Support.Error.error fi
-          "type of binding does not match declared type"
+      else CoreLib.Error.error fi "type of binding does not match declared type"
   | Syntax.TyVarBind as b -> b
   | Syntax.TyAbbBind _ as b -> b
 
@@ -113,4 +111,4 @@ let () =
   in
   Arg.parse spec readfname usage;
   cli_state#init ~debug:!debug;
-  try loop !filename with CoreLib.Support.Error.Exit code -> exit code
+  try loop !filename with CoreLib.Error.Exit code -> exit code

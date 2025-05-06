@@ -1,5 +1,5 @@
 {
-  open Support.Error
+  open Error
 
   let reservedWords = [
     (* Keywords *)
