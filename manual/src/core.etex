@@ -1,0 +1,19 @@
+\documentclass[11pt]{book}
+\begin{document}
+
+\chapter{The core language}
+
+This part of the manual is a tutorial introduction to the OCaml language.
+
+\section{Basics}
+
+Lorem.
+
+\begin{caml_example}{toplevel}
+1 + 2 * 3;;
+let pi = 4.0 *. atan 1.0;;
+let square x = x *. x;;
+square (sin pi) +. square (cos pi);;
+\end{caml_example}
+
+\end{document}
