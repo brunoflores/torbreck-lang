@@ -1,4 +1,5 @@
-ROOTDIR = ../../..
+ROOTDIR = ../..
+OCAMLRUN = ocamlrun
 
 CAMLLATEX = $(OCAMLRUN) $(addprefix -I ,$(LD_PATH)) \
 	$(ROOTDIR)/tools/ocamltex -repo-root $(ROOTDIR) -n 80 -v false
