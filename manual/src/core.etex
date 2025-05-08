@@ -11,9 +11,6 @@ Lorem.
 
 \begin{caml_example}{toplevel}
 1 + 2 * 3;;
-let pi = 4.0 *. atan 1.0;;
-let square x = x *. x;;
-square (sin pi) +. square (cos pi);;
 \end{caml_example}
 
 \end{document}
