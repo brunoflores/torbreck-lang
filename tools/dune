@@ -1,4 +1,4 @@
 (executable
   (name ocamltex)
-  (libraries compiler-libs.toplevel)
+  (libraries str compiler-libs.toplevel)
   (modes byte))
