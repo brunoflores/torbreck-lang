@@ -17,3 +17,11 @@ mix-use residential development in Queensland, Australia". (`Here <https://torbr
   :alt: Torbreck Home Units - tower
 
 Acknowledgements: Types and Programming Languages, by Benjamin C. Pierce.
+
+Install
+=========
+
+```
+$ opam install dune menhir ppx_jane ppx_deriving ppx_inline_test
+$ dune build
+```
