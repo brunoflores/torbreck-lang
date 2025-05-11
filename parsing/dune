@@ -7,5 +7,5 @@
 
 (library
  (name parsing)
- (libraries utils)
+ (libraries menhirLib utils)
  (modules_without_implementation parsetree))
