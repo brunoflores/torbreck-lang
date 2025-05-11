@@ -63,7 +63,7 @@ let parse start succeed lexbuf text =
   Interpreter.loop_handle succeed (fail text buffer) supplier checkpoint
 
 let get_contents filename =
-  let filename, content = (filename, Stdio.In_channel.read_all filename) in
+  let content = Stdio.In_channel.read_all filename in
   (LexerUtil.init filename (content |> Lexing.from_string), content)
 
 let write_compiled_interface intf_name =
