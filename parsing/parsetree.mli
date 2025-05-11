@@ -55,6 +55,16 @@ and expression_desc =
 
 and type_declaration = { ptype_name : string loc; ptype_loc : Location.t }
 
+(** {2 } *)
+
+and structure = structure_item list
+
+and structure_item = { pstr_desc : structure_item_desc; pstr_loc : Location.t }
+
+and structure_item_desc =
+  | Pstr_eval of expression
+  | Pstr_value of rec_flag * value_binding list
+
 and value_constraint =
   | Pvc_constraint of { typ : core_type }
       (** A simple type constraint on a value binding: [ let x : typ ] *)
