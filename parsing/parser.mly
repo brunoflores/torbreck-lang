@@ -43,6 +43,7 @@ let mkstrexp e =
 /* %token THEN                   "then" */
 /* %token TRUE                   "true" */
 %token EOF                    ""
+%token EOL                    "\\n"      (* not great, but EOL is unused *)
 
 /* Entry points */
 
